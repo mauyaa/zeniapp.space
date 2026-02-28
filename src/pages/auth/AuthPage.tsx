@@ -162,7 +162,17 @@ export function AuthPage({ initialMode = 'login', onModeChange }: AuthPageProps)
         user.role === 'admin' ? '/admin/verification' : user.role === 'agent' ? '/agent/dashboard' : '/app/home';
       setTimeout(() => navigate(home, { replace: true }), 0);
     } catch (err) {
-      setRegisterError(err instanceof Error ? err.message : 'Registration failed');
+      if (err instanceof ApiError) {
+        if (err.code === 'USER_EXISTS' || err.status === 409) {
+          setRegisterError('An account already exists with this email or phone. Try logging in instead.');
+        } else if (err.status === 400) {
+          setRegisterError('Please double-check your details and try again.');
+        } else {
+          setRegisterError(err.message || 'Registration failed');
+        }
+      } else {
+        setRegisterError('Registration failed');
+      }
     } finally {
       setRegisterLoading(false);
     }
