@@ -4,6 +4,7 @@ import { fetchInsights, subscribeNewsletter, searchListings } from '../lib/api';
 import type { ListingCard } from '../lib/api';
 import { PropertyMap } from '../components/PropertyMap';
 import { SERVICES, FAQS, MARQUEE_ITEMS, CTA_LINK_CLASSES } from './constants';
+import { getFallbackHomeImage } from '../constants/images';
 import { useAsyncEffect } from '../hooks/useAsyncEffect';
 import { useMotion } from '../hooks/useMotion';
 import { useKineticRing } from '../hooks/useKineticRing';
@@ -12,8 +13,6 @@ import { dedupeById, dedupeListingsByContent } from '../utils/dedupeById';
 import type { Property } from '../utils/mockData';
 import type { Project, InsightItem } from '../types/landing';
 
-const MAP_FALLBACK_IMG =
-  'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=60';
 const SUPPORT_TITLE_REGEX = /^Zeni Support$/i;
 
 /**
@@ -42,6 +41,7 @@ function listingToPropertyForMap(listing: ListingCard): Property | null {
   const lat = listing.location?.lat;
   const lng = listing.location?.lng;
   if (!isValidCoord(lat, lng)) return null;
+  const fallbackImage = getFallbackHomeImage();
   return {
     id: listing.id,
     title: listing.title ?? 'Property',
@@ -59,8 +59,8 @@ function listingToPropertyForMap(listing: ListingCard): Property | null {
     },
     features: { bedrooms: listing.beds ?? 0, bathrooms: listing.baths ?? 0, sqm: listing.sqm ?? 0 },
     isVerified: Boolean(listing.verified),
-    imageUrl: listing.imageUrl ?? listing.agent?.image ?? MAP_FALLBACK_IMG,
-    agent: { name: listing.agent?.name ?? 'Agent', image: listing.agent?.image ?? MAP_FALLBACK_IMG },
+    imageUrl: listing.imageUrl ?? listing.agent?.image ?? fallbackImage,
+    agent: { name: listing.agent?.name ?? 'Agent', image: listing.agent?.image ?? fallbackImage },
   };
 }
 
