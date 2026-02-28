@@ -1,0 +1,58 @@
+version: 2
+
+models:
+  - name: stg_pay_tx
+    description: "Staging for pay transactions (from Mongo)"
+    columns:
+      - name: _id
+        description: "Mongo id"
+        tests: [unique, not_null]
+      - name: user_id
+        tests: [not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              values: ['pending', 'paid', 'failed', 'reversed']
+      - name: method
+        tests:
+          - accepted_values:
+              values: ['mpesa_stk', 'card', 'bank_transfer']
+      - name: idempotency_key
+        tests: [not_null]
+      - name: risk_level
+        tags: [pii_risk]  # not PII, but flagged for risk dashboards
+      - name: created_at
+        tests: [not_null]
+
+  - name: dim_user
+    columns:
+      - name: user_id
+        tests: [unique, not_null]
+      - name: email
+        tags: [pii, pii_email]
+      - name: phone
+        tags: [pii, pii_phone]
+      - name: role
+      - name: status
+
+  - name: fct_pay_transactions
+    description: "Fact table with approvals, receipts, risk scores"
+    columns:
+      - name: user_id
+        tests: [not_null]
+      - name: status
+      - name: amount
+        tests: [not_null]
+      - name: risk_level
+      - name: approvals_count
+      - name: receipt_id
+      - name: created_date
+        tests: [not_null]
+
+sources:
+  - name: mongo
+    tables:
+      - name: paytransactions
+        freshness:
+          warn_after: {count: 25, period: hour}
+          error_after: {count: 30, period: hour}

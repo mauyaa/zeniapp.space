@@ -1,0 +1,658 @@
+/* URL IMPORTS (SUCH AS FONT IMPORTS) SHOULD BE KEPT ABOVE TAILWIND IMPORTS - DO NOT DELETE THIS COMMENT */
+/* Font loading is now NON-BLOCKING via <link> tags in index.html.
+   The CSS @import was removed because it is render-blocking — the browser stalls
+   the entire page until the remote stylesheet downloads.
+   The <link rel="stylesheet" media="print" onload="this.media='all'"> trick in
+   index.html loads fonts asynchronously while the page renders instantly. */
+@import './styles/theme.css';
+
+/* PLEASE NOTE: THESE TAILWIND IMPORTS SHOULD NEVER BE DELETED - DO NOT DELETE THIS COMMENT */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+/* DO NOT DELETE THESE TAILWIND IMPORTS, OTHERWISE THE STYLING WILL NOT RENDER AT ALL - DO NOT DELETE THIS COMMENT */
+
+/* ==========================================================================
+   CSS Reset — consistent cross-browser defaults
+   ========================================================================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html {
+  -moz-text-size-adjust: none;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
+}
+
+body {
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+}
+
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}
+
+/* ==========================================================================
+   Z-Index Scale — consistent stacking contexts
+   ========================================================================== */
+:root {
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-header: 300;
+  --z-overlay: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-toast: 700;
+  --z-tooltip: 800;
+  --z-skip-link: 900;
+}
+
+/* Theme tokens now live in styles/theme.css */
+
+/* Zeni user portal: serif/mono and animations */
+.font-serif {
+  font-family: 'Playfair Display', serif;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.animate-pulse-ring::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #22c55e;
+  border-radius: 50%;
+  z-index: -1;
+  animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+@keyframes ticker {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-ticker {
+  display: inline-block;
+  animation: ticker 40s linear infinite;
+}
+
+/* ZeniLoading: sweep and geometric animations */
+@keyframes zeni-load-move-h {
+  0% {
+    top: -50%;
+    opacity: 0;
+  }
+
+  30% {
+    opacity: 1;
+  }
+
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    top: 120%;
+    opacity: 0;
+  }
+}
+
+@keyframes zeni-load-move-v {
+  0% {
+    left: -50%;
+    opacity: 0;
+  }
+
+  30% {
+    opacity: 1;
+  }
+
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    left: 120%;
+    opacity: 0;
+  }
+}
+
+@keyframes zeni-load-rot {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  50% {
+    transform: rotate(180deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes zeni-load-scale {
+  0% {
+    scale: 1;
+    opacity: 0.5;
+  }
+
+  50% {
+    scale: 2.2;
+    opacity: 1;
+  }
+
+  100% {
+    scale: 1;
+    opacity: 0.5;
+  }
+}
+
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #E4E4E7;
+  border-radius: 3px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: #A1A1AA;
+}
+
+/* Agent / Admin portal: narrow scrollbar to match design */
+.portal-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.portal-scroll::-webkit-scrollbar-thumb {
+  background: #D4D4D8;
+  border-radius: 3px;
+}
+
+.portal-scroll::-webkit-scrollbar-thumb:hover {
+  background: #A1A1AA;
+}
+
+/* Curtain: shutter wipe from bottom to top (no fade). GPU-accelerated. */
+.curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: var(--zeni-background, #F8F9FA);
+  transform: translateY(0);
+  will-change: transform;
+  transition: transform 0.36s cubic-bezier(0.32, 0.72, 0, 1);
+  pointer-events: auto;
+}
+
+html.dark .curtain {
+  background: #09090B;
+}
+
+.curtain[data-revealed="true"] {
+  transform: translateY(-100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .curtain {
+    transition-duration: 0.15s;
+  }
+}
+
+/* User portal: fade-in and hover-lift (from design spec) */
+.fade-in {
+  animation: zeni-fade-in 0.4s ease-out forwards;
+}
+
+@keyframes zeni-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hover-lift {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .hover-lift:hover {
+    transform: none;
+  }
+}
+
+/* ---------- Performance: GPU layers & content-visibility ---------- */
+
+/* Promote sidebar + header to GPU layers to prevent repaints during scroll */
+aside[aria-label="Main sidebar navigation"],
+header {
+  will-change: transform;
+}
+
+/* Defer rendering of off-screen page content — huge win on long pages */
+.content-deferred {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 500px;
+}
+
+/* Smooth scroll only when no reduced-motion preference */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Optimise images — prevent layout shifts */
+img {
+  content-visibility: auto;
+}
+
+/* Improved touch responsiveness on mobile */
+a,
+button,
+[role="button"] {
+  touch-action: manipulation;
+}
+
+/* ==========================================================================
+   Skeleton / Shimmer — GPU-composited (transform-based, no background-position)
+   Background-position animations trigger CPU paint on Chrome/Android ChromeWebView.
+   This version uses transform:translateX on a pseudo-element overlay which runs
+   entirely on the compositor thread → zero flicker on Chrome, GChrWebView, iOS WKWebView.
+   ========================================================================== */
+@keyframes zeni-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.zeni-skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: #F0F0F0;
+  /* GPU layer promotion — prevents repaint during animation */
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.zeni-skeleton-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.55) 50%,
+      transparent 100%);
+  animation: zeni-shimmer 1.6s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Dark mode shimmer */
+.dark .zeni-skeleton-shimmer {
+  background-color: #27272A;
+}
+
+.dark .zeni-skeleton-shimmer::after {
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.07) 50%,
+      transparent 100%);
+}
+
+/* Reduce motion — keep the placeholder color but kill the sweep */
+@media (prefers-reduced-motion: reduce) {
+  .zeni-skeleton-shimmer::after {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   Verified "dot-live" badge — green pulse ring
+   ========================================================================== */
+.zeni-dot-live {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #16A34A;
+  position: relative;
+  /* GPU layer so pulse ring doesn't repaint surrounding text */
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.zeni-dot-live::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: #16A34A;
+  opacity: 0;
+  animation: zeni-dot-pulse 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+@keyframes zeni-dot-pulse {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.5;
+  }
+
+  70% {
+    transform: scale(2);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zeni-dot-live::before {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   Viewport fix for Android Chrome — URL bar collapses but 100vh stays fixed.
+   Use min-h-svh on root containers that need full viewport height.
+   ========================================================================== */
+.min-h-svh {
+  min-height: 100svh;
+  /* Small Viewport Height — Android Chrome safe */
+  min-height: -webkit-fill-available;
+}
+
+
+/* ==========================================================================
+   Range sliders — Price range (dual handle) + Mortgage calculator
+   Zero appearance so we can style the thumb freely on all browsers.
+   ========================================================================== */
+
+/* Shared reset for all custom sliders */
+.price-slider-thumb,
+.mortgage-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 0;
+  /* track height comes from parent's track div */
+  background: transparent;
+  cursor: pointer;
+  position: absolute;
+  left: 0;
+  pointer-events: none;
+  /* only thumb receives events */
+}
+
+/* Price range slider — both thumbs stacked */
+.price-slider-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  pointer-events: all;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #09090B;
+  /* zeni-foreground */
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  cursor: grab;
+  transition: box-shadow 0.15s;
+  will-change: transform;
+}
+
+.price-slider-thumb::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  box-shadow: 0 0 0 4px rgba(9, 9, 11, 0.15);
+}
+
+.price-slider-thumb::-moz-range-thumb {
+  pointer-events: all;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #09090B;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  cursor: grab;
+}
+
+.price-slider-thumb:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid #09090B;
+  outline-offset: 2px;
+}
+
+/* Mortgage calculator slider — standard single handle, green accent */
+.mortgage-slider {
+  position: static;
+  height: 4px;
+  border-radius: 9999px;
+  background: #E4E4E7;
+  /* zinc-200 rail */
+  pointer-events: auto;
+}
+
+.mortgage-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #16A34A;
+  /* green-600 */
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  cursor: grab;
+  transition: box-shadow 0.15s;
+}
+
+.mortgage-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.2);
+}
+
+.mortgage-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #16A34A;
+  border: 2px solid #ffffff;
+  cursor: grab;
+}
+
+.mortgage-slider:focus-visible {
+  outline: 2px solid #16A34A;
+  outline-offset: 2px;
+}
+
+/* Dark mode variants */
+.dark .price-slider-thumb::-webkit-slider-thumb {
+  background: #F4F4F5;
+}
+
+.dark .price-slider-thumb::-moz-range-thumb {
+  background: #F4F4F5;
+}
+
+.dark .mortgage-slider {
+  background: #3F3F46;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .price-slider-thumb::-webkit-slider-thumb,
+  .mortgage-slider::-webkit-slider-thumb {
+    transition: none;
+  }
+}
+
+
+.pay-console ::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.pay-console ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.pay-console ::-webkit-scrollbar-thumb {
+  background: #3F3F46;
+  border-radius: 3px;
+}
+
+.pay-console ::-webkit-scrollbar-thumb:hover {
+  background: #52525B;
+}
+
+.pay-console .pay-fade-in {
+  animation: zeni-fade-in 0.4s ease-out forwards;
+}
+
+.pay-console .glow-border:focus-within {
+  border-color: #10B981;
+  box-shadow: 0 0 15px -3px rgba(16, 185, 129, 0.2);
+}
+
+/* ==========================================================================
+   Print Styles — clean output for property listings and receipts
+   ========================================================================== */
+@media print {
+
+  /* Hide non-essential UI chrome */
+  aside[aria-label="Main sidebar navigation"],
+  header,
+  nav,
+  .bottom-nav,
+  .skip-to-content,
+  button:not([data-print]),
+  .animate-ticker,
+  .zeni-dot-live,
+  .zeni-dot-unread,
+  .NotificationDrawer,
+  [role="toolbar"] {
+    display: none !important;
+  }
+
+  /* Full-width main content */
+  main {
+    margin: 0 !important;
+    padding: 1rem !important;
+    width: 100% !important;
+  }
+
+  /* Remove shadows and backgrounds for ink savings */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 12pt;
+  }
+
+  /* Ensure images don't break across pages */
+  img {
+    page-break-inside: avoid;
+  }
+
+  /* Show URLs after links */
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #666;
+  }
+
+  /* Prevent widows/orphans in text blocks */
+  p,
+  h2,
+  h3 {
+    orphans: 3;
+    widows: 3;
+  }
+
+  h2,
+  h3 {
+    page-break-after: avoid;
+  }
+}

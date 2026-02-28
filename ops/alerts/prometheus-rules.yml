@@ -1,0 +1,38 @@
+groups:
+  - name: zeni-risk-alerts
+    rules:
+      - alert: AuditForwardFailures
+        expr: sum(increase(audit_forward_failures_total[5m])) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Audit forwarder failing"
+          description: "audit_forward_failures_total > 0 in the last 5m. Check AUDIT_WEBHOOK_URL sink."
+
+      - alert: PayHighRiskSpike
+        expr: sum(increase(pay_risk_flags_total{level="high"}[10m])) > 0
+        for: 1m
+        labels:
+          severity: high
+        annotations:
+          summary: "High-risk pay transactions detected"
+          description: "High-risk flags seen in last 10m. Investigate payment anomalies."
+
+      - alert: PayAnomalyFlagged
+        expr: sum(increase(pay_anomaly_flagged_total[10m])) > 0
+        for: 1m
+        labels:
+          severity: high
+        annotations:
+          summary: "Payments flagged as anomalies"
+          description: "pay_anomaly_flagged_total increased in the last 10m."
+
+      - alert: RateLimitErrors
+        expr: sum(increase(http_requests_total{status="429"}[5m])) > 50
+        for: 2m
+        labels:
+          severity: medium
+        annotations:
+          summary: "Spike in 429s"
+          description: "Excessive 429 responses in 5m; verify rate-limit configs and attackers."

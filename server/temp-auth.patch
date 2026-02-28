@@ -1,0 +1,47 @@
+*** Begin Patch
+*** Delete File: src/services/auth.service.ts
+*** End Patch
+*** Begin Patch
+*** Add File: src/services/auth.service.ts
+import jwt from 'jsonwebtoken';
+import { env } from '../config/env';
+import { UserDocument, UserModel } from '../models/User';
+
+function normalizeIdentifier(input?: string) {
+  return input?.trim().toLowerCase() ?? '';
+}
+
+export async function createUser(data: Partial<UserDocument>) {
+  const emailOrPhone = normalizeIdentifier(data.emailOrPhone);
+  if (!emailOrPhone) throw Object.assign(new Error('Email or phone is required'), { status: 400, code: 'INVALID_INPUT' });
+  const existing = await UserModel.findOne({
+    or: [{ emailOrPhone }, { email: emailOrPhone }, { phone: emailOrPhone }]
+  });
+  if (existing) throw Object.assign(new Error('Account exists'), { status: 409, code: 'ACCOUNT_EXISTS' });
+  const user = new UserModel({
+    ...data,
+    emailOrPhone,
+    email: data.email ? data.email.trim().toLowerCase() : undefined,
+    phone: data.phone ? data.phone.trim() : undefined
+  });
+  await user.save();
+  return user;
+}
+
+export async function authenticate(emailOrPhone: string, password: string) {
+  const normalized = normalizeIdentifier(emailOrPhone);
+  const user = await UserModel.findOne({
+    or: [{ emailOrPhone: normalized }, { email: normalized }, { phone: normalized }]
+  });
+  if (!user) throw Object.assign(new Error('Invalid credentials'), { status: 401, code: 'INVALID_LOGIN' });
+  const ok = await user.comparePassword(password);
+  if (!ok) throw Object.assign(new Error('Invalid credentials'), { status: 401, code: 'INVALID_LOGIN' });
+  if (user.status !== 'active') throw Object.assign(new Error('Account disabled'), { status: 403, code: 'ACCOUNT_DISABLED' });
+  return user;
+}
+
+export function signToken(user: UserDocument) {
+  const expiresIn = user.role === 'admin' ? '12h' : '7d';
+  return jwt.sign({ sub: user.id, role: user.role }, env.jwtSecret, { expiresIn });
+}
+*** End Patch
