@@ -62,6 +62,11 @@ A full-stack web application for property listings, viewings, messaging, and pay
 
 ## Recent Improvements (March 2026)
 
+### Imagery
+| Improvement | Detail |
+|---|---|
+| Kenyan fallback photos | Curated Nairobi/Westlands/Karen exteriors/interiors are used as placeholders while listings load or when agents haven’t uploaded media yet. Agent-uploaded photos (after admin approval) automatically override the fallbacks. |
+
 ### Search UX
 | Improvement | Detail |
 |---|---|
@@ -81,6 +86,7 @@ A full-stack web application for property listings, viewings, messaging, and pay
 | Neighbourhood trust | Safety/water/power/parking/service-charge notes for 11 Kenya areas |
 | Report modal | Category picker + optional message → `POST /api/listings/:id/report` |
 | Share button | `navigator.share()` → WhatsApp fallback on desktop |
+| Signup UX | Clear messaging for duplicate accounts (409/USER_EXISTS) and validation hints so users know to log in instead of re-registering. |
 
 ### Conversion
 | Improvement | Detail |
@@ -123,7 +129,7 @@ A full-stack web application for property listings, viewings, messaging, and pay
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd "FINAL PROJECT"
+   cd ZENI
    ```
 
 2. **Install frontend dependencies**
