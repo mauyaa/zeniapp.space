@@ -22,6 +22,12 @@ const PropertyMap = lazy(() =>
   import('../components/PropertyMap').then((m) => ({ default: m.PropertyMap }))
 );
 
+const MS_PER_DAY = 86_400_000;
+const DAYS_IN_WEEK = 7;
+const DAYS_IN_MONTH = 30;
+const THOUSAND = 1_000;
+const MILLION = 1_000_000;
+
 type ListingDetail = ListingCard & {
   purpose?: 'rent' | 'buy';
   type?: string;
@@ -40,21 +46,21 @@ type ListingDetail = ListingCard & {
 
 function formatPrice(price: number, currency: string, isRent: boolean): string {
   const sym = currency?.startsWith('KES') || currency === 'KES' ? 'KES' : currency || 'KES';
-  if (isRent) return `${sym} ${(price / 1000).toFixed(0)}K/mo`;
-  if (price >= 1_000_000) return `${sym} ${(price / 1_000_000).toFixed(1)}M`;
-  if (price >= 1_000) return `${sym} ${(price / 1_000).toFixed(0)}K`;
+  if (isRent) return `${sym} ${(price / THOUSAND).toFixed(0)}K/mo`;
+  if (price >= MILLION) return `${sym} ${(price / MILLION).toFixed(1)}M`;
+  if (price >= THOUSAND) return `${sym} ${(price / THOUSAND).toFixed(0)}K`;
   return `${sym} ${price.toLocaleString()}`;
 }
 
 function timeAgo(dateStr?: string): string | null {
   if (!dateStr) return null;
   const diff = Date.now() - new Date(dateStr).getTime();
-  const days = Math.floor(diff / 86_400_000);
+  const days = Math.floor(diff / MS_PER_DAY);
   if (days === 0) return 'Updated today';
   if (days === 1) return 'Updated yesterday';
-  if (days < 7) return `Updated ${days} days ago`;
-  if (days < 30) return `Updated ${Math.floor(days / 7)} week${days >= 14 ? 's' : ''} ago`;
-  return `Updated ${Math.floor(days / 30)} month${days >= 60 ? 's' : ''} ago`;
+  if (days < DAYS_IN_WEEK) return `Updated ${days} days ago`;
+  if (days < DAYS_IN_MONTH) return `Updated ${Math.floor(days / DAYS_IN_WEEK)} week${days >= 14 ? 's' : ''} ago`;
+  return `Updated ${Math.floor(days / DAYS_IN_MONTH)} month${days >= 60 ? 's' : ''} ago`;
 }
 
 function mapPropertyToListingDetail(p: Property): ListingDetail {

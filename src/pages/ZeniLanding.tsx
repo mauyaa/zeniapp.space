@@ -14,6 +14,7 @@ import type { Project, InsightItem } from '../types/landing';
 
 const MAP_FALLBACK_IMG =
   'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=60';
+const SUPPORT_TITLE_REGEX = /^Zeni Support$/i;
 
 /**
  * Returns whether the given values are valid WGS84 coordinates for map display.
@@ -323,7 +324,7 @@ export function ZeniLanding() {
     try {
       const res = await searchListings({ limit: MAP_LISTINGS_LIMIT });
       if (signal.cancelled) return;
-      const raw = (res.items ?? []).filter((item) => !/^Zeni Support$/i.test(item.title ?? ''));
+      const raw = (res.items ?? []).filter((item) => !SUPPORT_TITLE_REGEX.test(item.title ?? ''));
       const uniqueItems = dedupeListingsByContent(dedupeById(raw));
       const propertiesWithCoords = uniqueItems
         .map(listingToPropertyForMap)
@@ -449,10 +450,17 @@ export function ZeniLanding() {
   const showProjectPreview = (imageUrl: string | null) => {
     const gsapApi = gsap as GsapApi | null;
     if (!gsapApi) return;
-    if (imageUrl && previewImg.current && previewContainer.current) {
-      previewImg.current.src = imageUrl;
+
+    const hasPreviewElements = Boolean(previewImg.current && previewContainer.current);
+    const shouldShowPreview = Boolean(imageUrl && hasPreviewElements);
+
+    if (shouldShowPreview) {
+      previewImg.current!.src = imageUrl!;
       gsapApi.to(previewContainer.current, { opacity: 1, scale: 1, duration: 0.4, ease: 'power2.out' });
-    } else if (previewContainer.current) {
+      return;
+    }
+
+    if (hasPreviewElements) {
       gsapApi.to(previewContainer.current, { opacity: 0, scale: 0.8, duration: 0.3 });
     }
   };
