@@ -8,3 +8,17 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: TRUST_PROXY
+        value: true
+      - key: MONGO_URI
+        sync: false
+      - key: CORS_ORIGIN
+        value: https://zeniapp.space,https://www.zeniapp.space,http://localhost:5173,capacitor://localhost
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_DOMAIN
+        value: zeniapp.space,gmail.com
+      - key: ADMIN_STEP_UP_CODE
+        sync: false
+      - key: PAY_STEP_UP_CODE
+        sync: false

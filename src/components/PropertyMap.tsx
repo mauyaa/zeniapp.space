@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import { logger } from '../lib/logger';
 import type { Property } from '../utils/mockData';
 import { isWithinKenya } from '../utils/geo';
+import { getFallbackHomeImage } from '../constants/images';
 
 const DefaultIcon = L.icon({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -37,6 +38,7 @@ const isValidCoordinate = (lat?: number, lng?: number) => {
   if (lat === 0 && lng === 0) return false;
   return true;
 };
+const MAP_FALLBACK_IMAGE = getFallbackHomeImage();
 
 interface PropertyMapProps {
   properties: Property[];
@@ -197,6 +199,11 @@ export function PropertyMap({
                       src={property.imageUrl}
                       alt={property.title}
                       className="w-full h-24 object-cover rounded-md mb-2"
+                      onError={(event) => {
+                        if (event.currentTarget.src !== MAP_FALLBACK_IMAGE) {
+                          event.currentTarget.src = MAP_FALLBACK_IMAGE;
+                        }
+                      }}
                     />
                     <div className="font-semibold text-sm mb-1">
                       {property.currency} {property.price.toLocaleString()}

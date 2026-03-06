@@ -45,8 +45,8 @@ function dedupeKey(path: string, method: string): string | null {
 
 // ---------- Configuration ----------
 
-/** Default request timeout in milliseconds (15 seconds) */
-const DEFAULT_TIMEOUT_MS = 15_000;
+/** Default request timeout in milliseconds. Kept higher to tolerate cold starts in production. */
+const DEFAULT_TIMEOUT_MS = 60_000;
 const MAX_RETRY_AFTER_MS = 8_000;
 
 // ---------- Core request ----------
@@ -139,7 +139,11 @@ async function _doRequest<T>(
       // Distinguish timeout aborts from user-initiated aborts
       if (e instanceof DOMException && e.name === 'AbortError') {
         if (timeoutController.signal.aborted && !options.signal?.aborted) {
-          throw new ApiError(`Request to ${path} timed out after ${timeoutMs}ms`, 408, 'TIMEOUT');
+          throw new ApiError(
+            'Server is taking too long to respond. If this is the first request, please wait a moment and retry.',
+            408,
+            'TIMEOUT'
+          );
         }
         throw e; // user-initiated abort — re-throw as-is
       }

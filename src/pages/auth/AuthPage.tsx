@@ -203,8 +203,12 @@ export function AuthPage({ initialMode = 'login', onModeChange }: AuthPageProps)
     } catch (err) {
       if (err instanceof ApiError && (err.code === 'USER_EXISTS' || err.status === 409)) {
         setRegisterError('Account already exists. Try logging in.');
+      } else if (err instanceof ApiError && err.status === 408) {
+        setRegisterError('Server is waking up. Please wait a moment and try again.');
       } else {
-        setRegisterError('Registration failed. Please try again.');
+        setRegisterError(
+          err instanceof Error ? err.message : 'Registration failed. Please try again.'
+        );
       }
     } finally {
       setRegisterLoading(false);

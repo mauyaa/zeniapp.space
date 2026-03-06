@@ -3,7 +3,7 @@
  */
 
 import { request, buildQuery, getToken } from './client';
-import { apiUrl } from '../runtime';
+import { apiUrl, resolveApiAssetUrl } from '../runtime';
 
 // ---------- Types ----------
 
@@ -109,23 +109,63 @@ export type SavedSearch = {
   updatedAt?: string;
 };
 
+function normalizeListingCard(listing: ListingCard): ListingCard {
+  return {
+    ...listing,
+    imageUrl: resolveApiAssetUrl(listing.imageUrl) ?? listing.imageUrl,
+    floorPlans: listing.floorPlans?.map((plan) => ({
+      ...plan,
+      url: resolveApiAssetUrl(plan.url) ?? plan.url,
+    })),
+    agent: listing.agent
+      ? {
+          ...listing.agent,
+          image: resolveApiAssetUrl(listing.agent.image) ?? listing.agent.image,
+        }
+      : listing.agent,
+    images: listing.images?.map((image) => ({
+      ...image,
+      url: resolveApiAssetUrl(image.url) ?? image.url,
+    })),
+  };
+}
+
+function normalizeAgentListing(listing: AgentListing): AgentListing {
+  return {
+    ...listing,
+    images: listing.images?.map((image) => ({
+      ...image,
+      url: resolveApiAssetUrl(image.url) ?? image.url,
+    })),
+  };
+}
+
 // ---------- Public listings ----------
 
 export function searchListings(
   params: ListingSearchParams,
   options?: { signal?: AbortSignal }
 ): Promise<{ items: ListingCard[]; total: number }> {
-  return request(`/listings/search${buildQuery(params as Record<string, unknown>)}`, options);
+  return request<{ items: ListingCard[]; total: number }>(
+    `/listings/search${buildQuery(params as Record<string, unknown>)}`,
+    options
+  ).then((payload) => ({
+    ...payload,
+    items: (payload.items || []).map(normalizeListingCard),
+  }));
 }
 
 export function fetchListing(id: string, options?: { signal?: AbortSignal }): Promise<ListingCard> {
-  return request(`/listings/${id}`, options);
+  return request<ListingCard>(`/listings/${id}`, options).then(normalizeListingCard);
 }
 
 export function fetchSavedListings(options?: {
   signal?: AbortSignal;
 }): Promise<{ items: ListingCard[] }> {
-  return request<{ items: ListingCard[] }>('/listings/saved', options);
+  return request<{ items: ListingCard[] }>('/listings/saved', options).then((payload) => ({
+    ...payload,
+    items: (payload.items || []).map(normalizeListingCard),
+  }));
 }
 
 export function toggleSaveListing(listingId: string): Promise<{ saved: boolean }> {
@@ -160,7 +200,8 @@ export async function uploadImage(file: File): Promise<{ url: string }> {
     },
   });
   if (!res.ok) throw new Error('Upload failed');
-  return res.json() as Promise<{ url: string }>;
+  const payload = (await res.json()) as { url: string };
+  return { url: resolveApiAssetUrl(payload.url) ?? payload.url };
 }
 
 /** Upload an image for use as a chat attachment (user, agent, or admin). */
@@ -179,17 +220,20 @@ export async function uploadChatImage(file: File): Promise<{ url: string }> {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as { message?: string }).message || 'Upload failed');
   }
-  return res.json() as Promise<{ url: string }>;
+  const payload = (await res.json()) as { url: string };
+  return { url: resolveApiAssetUrl(payload.url) ?? payload.url };
 }
 
 // ---------- Agent listings ----------
 
 export function fetchAgentListings(): Promise<AgentListing[]> {
-  return request('/agent/listings');
+  return request<AgentListing[]>('/agent/listings').then((items) =>
+    (items || []).map(normalizeAgentListing)
+  );
 }
 
 export function fetchAgentListing(id: string): Promise<AgentListing> {
-  return request(`/agent/listings/${id}`);
+  return request<AgentListing>(`/agent/listings/${id}`).then(normalizeAgentListing);
 }
 
 export function createAgentListing(body: Record<string, unknown>) {
@@ -291,7 +335,10 @@ export function fetchSharedSavedSearch(token: string) {
 export function fetchRecommendations(options?: {
   signal?: AbortSignal;
 }): Promise<{ items: ListingCard[] }> {
-  return request('/recommendations', options);
+  return request<{ items: ListingCard[] }>('/recommendations', options).then((payload) => ({
+    ...payload,
+    items: (payload.items || []).map(normalizeListingCard),
+  }));
 }
 
 // ---------- Reservations ----------

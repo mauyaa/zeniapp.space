@@ -11,7 +11,7 @@ import { useMotion } from '../hooks/useMotion';
 import { useKineticRing } from '../hooks/useKineticRing';
 import { useCursor } from '../hooks/useCursor';
 import { dedupeById, dedupeListingsByContent } from '../utils/dedupeById';
-import type { Property } from '../utils/mockData';
+import { properties as FALLBACK_PROPERTIES, type Property } from '../utils/mockData';
 import type { Project, InsightItem } from '../types/landing';
 import { StepsSlider } from '../components/landing/StepsSlider';
 import { TrustTiles } from '../components/landing/TrustTiles';
@@ -92,9 +92,6 @@ function listingToPropertyForMap(listing: ListingCard): Property | null {
   };
 }
 
-const ensureRingImages = (images: string[]): string[] =>
-  images.length ? images : [getFallbackHomeImage()];
-
 type GsapApi = {
   to: (target: object, vars: object) => void;
   from: (target: object, vars: object) => void;
@@ -142,8 +139,6 @@ function getNewsletterErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Could not subscribe.';
 }
 
-const RING_PLACEHOLDER = getFallbackHomeImage();
-
 const NAV_SECTION_IDS = ['projects', 'neighborhoods', 'insights'] as const;
 const SCROLL_SPY_VISIBILITY_THRESHOLD = 0.15;
 const SCROLL_SPY_MIN_RATIO = 0.05;
@@ -165,6 +160,7 @@ const LANDING_REFRESH_MS = 8000;
 const FALLBACK_RING_IMAGES = Array.from({ length: RING_IMAGE_COUNT }).map((_, i) =>
   placeholderFromId(`ring-fallback-${i}`, `Zeni ${i + 1}`)
 );
+const FALLBACK_MAP_PROPERTIES: Property[] = FALLBACK_PROPERTIES.slice(0, 8);
 const PUBLIC_FEED_KEY =
   (import.meta.env.VITE_PUBLIC_FEED_KEY as string | undefined) || 'public-demo-key';
 
@@ -331,9 +327,7 @@ export function ZeniLanding() {
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
   const [featuredListingsLoading, setFeaturedListingsLoading] = useState(true);
   const [featuredListingsError, setFeaturedListingsError] = useState(false);
-  const [ringImages, setRingImages] = useState<string[]>(() =>
-    Array(RING_IMAGE_COUNT).fill(RING_PLACEHOLDER)
-  );
+  const [ringImages, setRingImages] = useState<string[]>(() => FALLBACK_RING_IMAGES);
   const [mapListings, setMapListings] = useState<Property[]>([]);
   const [mapListingsLoading, setMapListingsLoading] = useState(true);
   const [activeNavSection, setActiveNavSection] = useState<string | null>(null);
@@ -433,9 +427,9 @@ export function ZeniLanding() {
         .map(listingToPropertyForMap)
         .filter((p): p is Property => p !== null);
 
-      setMapListings(properties);
+      setMapListings(properties.length ? properties : FALLBACK_MAP_PROPERTIES);
     } catch {
-      setMapListings([]);
+      setMapListings((prev) => (prev.length ? prev : FALLBACK_MAP_PROPERTIES));
     } finally {
       if (!opts?.silent) setMapListingsLoading(false);
     }
@@ -589,7 +583,7 @@ export function ZeniLanding() {
         setRingImages(buildRingImagesFromProjects(projects));
       } else if (!opts?.silent) {
         setFeaturedProjects([]);
-        setRingImages(ensureRingImages([]));
+        setRingImages(FALLBACK_RING_IMAGES);
       }
     } catch {
       if (!opts?.silent) {
@@ -950,7 +944,7 @@ export function ZeniLanding() {
       />
 
       {/* Navbar */}
-      <header className="fixed top-6 left-6 right-6 z-50 py-4 px-6 flex justify-between items-center bg-[var(--zeni-white)]/90 backdrop-blur-xl shadow-sm rounded-lg border border-[var(--zeni-black)]/5">
+      <header className="fixed top-4 left-6 right-6 z-50 py-3 px-6 flex justify-between items-center bg-[var(--zeni-white)]/90 backdrop-blur-xl shadow-sm rounded-lg border border-[var(--zeni-black)]/5">
         <div className="flex flex-col gap-0.5">
           <div className="magnetic text-2xl font-serif font-bold tracking-tight leading-none cursor-pointer">
             <Link to="/" className="hover:opacity-90 transition-opacity" aria-label="Zeni Home">
@@ -1005,7 +999,7 @@ export function ZeniLanding() {
         </div>
       </header>
 
-      <main className="pt-32 kinetic-engine px-4 md:px-8 border-l border-r border-transparent">
+      <main className="pt-20 kinetic-engine px-4 md:px-8 border-l border-r border-transparent">
         {/* ── HERO SECTION ── */}
         <section
           id="hero"
@@ -1038,7 +1032,7 @@ export function ZeniLanding() {
             }}
           />
 
-          <div className="relative z-10 flex-1 flex flex-col justify-center w-full max-w-[1600px] mx-auto px-6 md:px-16 pt-36 pb-12">
+          <div className="relative z-10 flex-1 flex flex-col justify-center w-full max-w-[1600px] mx-auto px-6 md:px-16 pt-4 pb-12">
             {/* Top row: live pill + tagline */}
             <div className="hero-animate flex flex-wrap items-center gap-4 mb-10">
               <div className="flex items-center gap-2 bg-white/85 border border-[var(--zeni-black)]/12 rounded-full px-4 py-2">
@@ -1159,6 +1153,12 @@ export function ZeniLanding() {
                         className="w-full h-full object-cover rounded-sm shadow-2xl"
                         loading="eager"
                         decoding="async"
+                        onError={(event) => {
+                          const fallback = FALLBACK_RING_IMAGES[i % FALLBACK_RING_IMAGES.length];
+                          if (event.currentTarget.src !== fallback) {
+                            event.currentTarget.src = fallback;
+                          }
+                        }}
                       />
                     </div>
                   ))}
