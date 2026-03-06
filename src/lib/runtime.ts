@@ -13,13 +13,17 @@ const normalizeApiBase = (value: string) => {
 };
 
 const isNative = Capacitor.isNativePlatform();
+const shouldUseSameOriginApiProxy =
+  !isNative &&
+  typeof window !== 'undefined' &&
+  /(^|\.)zeniapp\.space$/i.test(window.location.hostname);
 
 const rawApiBase =
   (isNative
     ? (import.meta.env.VITE_MOBILE_API_BASE_URL as string | undefined) ||
       (import.meta.env.VITE_API_BASE_URL as string | undefined)
     : (import.meta.env.VITE_API_BASE_URL as string | undefined)) || '/api';
-export const API_BASE = normalizeApiBase(rawApiBase);
+export const API_BASE = shouldUseSameOriginApiProxy ? '/api' : normalizeApiBase(rawApiBase);
 
 const rawSocketUrl = (
   isNative
@@ -27,7 +31,8 @@ const rawSocketUrl = (
       (import.meta.env.VITE_SOCKET_URL as string | undefined)
     : (import.meta.env.VITE_SOCKET_URL as string | undefined)
 )?.trim();
-export const SOCKET_URL = rawSocketUrl ? trimTrailingSlash(rawSocketUrl) : undefined;
+export const SOCKET_URL =
+  shouldUseSameOriginApiProxy || !rawSocketUrl ? undefined : trimTrailingSlash(rawSocketUrl);
 
 const normalizePath = (path: string) => (path.startsWith('/') ? path : `/${path}`);
 
