@@ -7,6 +7,20 @@ import { NotificationModel } from '../src/models/Notification';
 import { signToken } from '../src/services/auth.service';
 import { shouldSkipDbTests } from './skipDb';
 
+async function waitForNotification(
+  query: Record<string, unknown>,
+  attempts = 20,
+  waitMs = 50
+) {
+  for (let i = 0; i < attempts; i += 1) {
+    const note = await NotificationModel.findOne(query);
+    if (note) return note;
+    // Chat notification creation is a side effect; allow a short propagation window.
+    await new Promise((resolve) => setTimeout(resolve, waitMs));
+  }
+  return null;
+}
+
 describe('notifications', () => {
   let user: any;
   let agent: any;
@@ -52,7 +66,7 @@ describe('notifications', () => {
       .send({ type: 'text', content: 'Hi there' })
       .expect(201);
 
-    const note = await NotificationModel.findOne({ userId: agent.id, type: 'message' });
+    const note = await waitForNotification({ userId: agent.id, type: 'message' });
     expect(note).toBeTruthy();
     expect(note?.title).toBe('New message');
   });

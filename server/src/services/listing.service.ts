@@ -564,7 +564,7 @@ export async function updateListing(agentId: string, id: string, data: Partial<L
                     ctaLabel: 'View listing',
                     ctaHref: (process.env.APP_URL || 'http://localhost:5173') + `/listing/${listing._id}`,
                   })
-                ).catch(() => { });
+                ).catch(() => undefined);
               })
           );
         } catch { /* don't block on email failure */ }
@@ -757,3 +757,4 @@ export async function recordListingLead(
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+

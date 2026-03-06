@@ -319,7 +319,13 @@ function FaqAccordion({ faqs }: { faqs: { q: string; a: string }[] }) {
                   : 'border-[var(--zeni-black)]/15 text-[var(--zeni-black)]/40 group-hover:border-[var(--zeni-green)] group-hover:text-[var(--zeni-green)]'
               }`}
             >
-              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-3.5 w-3.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M12 5v14M5 12h14" strokeLinecap="round" />
               </svg>
             </span>
@@ -766,7 +772,12 @@ export function ZeniLanding() {
         const rect = element.getBoundingClientRect();
         const offsetX = e.clientX - rect.left - rect.width / 2;
         const offsetY = e.clientY - rect.top - rect.height / 2;
-        gsapApi.to(element, { x: offsetX * 0.3, y: offsetY * 0.3, duration: 0.3, ease: 'power2.out' });
+        gsapApi.to(element, {
+          x: offsetX * 0.3,
+          y: offsetY * 0.3,
+          duration: 0.3,
+          ease: 'power2.out',
+        });
         document.body.classList.add('sticking');
       };
       const onMouseLeave = () => {
@@ -806,7 +817,13 @@ export function ZeniLanding() {
       label: 'Instagram',
       abbr: 'IG',
       icon: (
-        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <svg
+          viewBox="0 0 24 24"
+          className="h-4 w-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        >
           <rect x="2" y="2" width="20" height="20" rx="5" strokeLinecap="round" />
           <circle cx="12" cy="12" r="4" />
           <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" />
@@ -957,16 +974,27 @@ export function ZeniLanding() {
       {!disableMotion && <div className="grain-overlay" aria-hidden="true" />}
 
       {/* Fixed frames */}
-      <div className="fixed top-0 left-0 w-full h-3 bg-[var(--zeni-green)] z-[60]" aria-hidden="true" />
+      <div
+        className="fixed top-0 left-0 w-full h-3 bg-[var(--zeni-green)] z-[60]"
+        aria-hidden="true"
+      />
       <div
         className="fixed bottom-0 left-0 w-full h-3 bg-[var(--zeni-green)] z-[60] flex justify-between px-6 items-center pointer-events-none"
         aria-hidden="true"
       >
         <span className="text-[11px] font-mono uppercase tracking-widest text-white/80">Kenya</span>
-        <span className="text-[11px] font-mono uppercase tracking-widest text-white/80">Est. 2026 · KES</span>
+        <span className="text-[11px] font-mono uppercase tracking-widest text-white/80">
+          Est. 2026 · KES
+        </span>
       </div>
-      <div className="fixed top-0 left-0 w-3 h-full bg-[var(--zeni-white)] z-[60]" aria-hidden="true" />
-      <div className="fixed top-0 right-0 w-3 h-full bg-[var(--zeni-white)] z-[60]" aria-hidden="true" />
+      <div
+        className="fixed top-0 left-0 w-3 h-full bg-[var(--zeni-white)] z-[60]"
+        aria-hidden="true"
+      />
+      <div
+        className="fixed top-0 right-0 w-3 h-full bg-[var(--zeni-white)] z-[60]"
+        aria-hidden="true"
+      />
 
       {/* Navbar */}
       <header className="fixed top-6 left-6 right-6 z-50 py-4 px-6 flex justify-between items-center bg-[var(--zeni-white)]/90 backdrop-blur-xl shadow-sm rounded-lg border border-[var(--zeni-black)]/5">
@@ -1025,7 +1053,6 @@ export function ZeniLanding() {
       </header>
 
       <main className="pt-32 kinetic-engine px-4 md:px-8 border-l border-r border-transparent">
-
         {/* ── HERO SECTION ── */}
         <section
           id="hero"
@@ -1036,19 +1063,37 @@ export function ZeniLanding() {
           <div
             aria-hidden="true"
             style={{
-              position: 'absolute', inset: 0, zIndex: 0, opacity: 0.04,
-              backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
+              position: 'absolute',
+              inset: 0,
+              zIndex: 0,
+              opacity: 0.04,
+              backgroundImage:
+                'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
               backgroundSize: '60px 60px',
             }}
           />
           {/* Green glow */}
-          <div aria-hidden="true" style={{ position: 'absolute', top: '-20%', right: '-10%', width: '60%', height: '80%', background: 'radial-gradient(ellipse, rgba(5,150,105,0.12) 0%, transparent 70%)', zIndex: 0 }} />
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              top: '-20%',
+              right: '-10%',
+              width: '60%',
+              height: '80%',
+              background: 'radial-gradient(ellipse, rgba(5,150,105,0.12) 0%, transparent 70%)',
+              zIndex: 0,
+            }}
+          />
 
           <div className="relative z-10 flex-1 flex flex-col justify-center w-full max-w-[1600px] mx-auto px-6 md:px-16 pt-36 pb-12">
             {/* Top row: live pill + tagline */}
             <div className="hero-animate flex flex-wrap items-center gap-4 mb-10">
               <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2">
-                <span className="w-2 h-2 rounded-full bg-[var(--zeni-green)] animate-pulse" aria-hidden="true" />
+                <span
+                  className="w-2 h-2 rounded-full bg-[var(--zeni-green)] animate-pulse"
+                  aria-hidden="true"
+                />
                 <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/60">
                   Live · <span ref={heroStatusTextRef}>Verified</span>
                 </span>
@@ -1064,7 +1109,9 @@ export function ZeniLanding() {
                 <h1 className="hero-animate-delay-1 font-sans text-[clamp(3.5rem,10vw,7rem)] leading-[0.88] tracking-[-0.04em] text-white uppercase mb-8">
                   <span className="block font-extralight text-white/60">Where</span>
                   <span className="block font-black text-white">Kenya</span>
-                  <span className="block font-extralight" style={{ color: 'var(--zeni-green)' }}>Lives.</span>
+                  <span className="block font-extralight" style={{ color: 'var(--zeni-green)' }}>
+                    Lives.
+                  </span>
                 </h1>
 
                 <p className="hero-animate-delay-2 max-w-md text-base md:text-lg text-white/50 leading-relaxed mb-10 font-light">
@@ -1095,21 +1142,34 @@ export function ZeniLanding() {
                     <div className="text-2xl md:text-3xl font-light text-white">
                       {listingStats ? `${listingStats.verified}+` : '—'}
                     </div>
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-white/35 mt-1">Verified Listings</div>
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-white/35 mt-1">
+                      Verified Listings
+                    </div>
                   </div>
                   <div>
                     <div className="text-2xl md:text-3xl font-light text-white">
                       {listingStats ? `${listingStats.total}+` : '—'}
                     </div>
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-white/35 mt-1">Total Listings</div>
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-white/35 mt-1">
+                      Total Listings
+                    </div>
                   </div>
                   <div>
-                    <div className="text-2xl md:text-3xl font-light" style={{ color: 'var(--zeni-green)' }}>100%</div>
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-white/35 mt-1">Agent Vetted</div>
+                    <div
+                      className="text-2xl md:text-3xl font-light"
+                      style={{ color: 'var(--zeni-green)' }}
+                    >
+                      100%
+                    </div>
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-white/35 mt-1">
+                      Agent Vetted
+                    </div>
                   </div>
                   <div>
                     <div className="text-2xl md:text-3xl font-light text-white">6+</div>
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-white/35 mt-1">Neighborhoods</div>
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-white/35 mt-1">
+                      Neighborhoods
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1159,81 +1219,11 @@ export function ZeniLanding() {
               {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, i) => (
                 <span key={i} className="flex items-center gap-3">
                   <span className="w-1 h-1 rounded-full bg-[var(--zeni-green)] inline-block" />
-                  {item === 'Verified Listings' && listingStats ? `${listingStats.verified.toLocaleString()} Verified Listings` : item}
+                  {item === 'Verified Listings' && listingStats
+                    ? `${listingStats.verified.toLocaleString()} Verified Listings`
+                    : item}
                 </span>
               ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── SOCIAL PROOF / STATS STRIP ── */}
-        <section
-          ref={statsRef}
-          className="py-16 px-4 md:px-12 border-b border-[var(--zeni-black)]/8 bg-[var(--zeni-white)]"
-          aria-label="Platform statistics"
-        >
-          <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              {/* Verified listings */}
-              <div className="stat-card">
-                <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--zeni-black)]/40 mb-2">
-                  Verified Listings
-                </div>
-                <div className="text-3xl md:text-4xl font-light text-[var(--zeni-black)] tracking-tight">
-                  {statsVisible && listingStats ? (
-                    <AnimatedCounter target={listingStats.verified} suffix="+" />
-                  ) : (
-                    <span className="text-[var(--zeni-black)]/20">—</span>
-                  )}
-                </div>
-                <div className="mt-2 flex items-center gap-1.5">
-                  <span className="zeni-dot-live" aria-hidden="true" />
-                  <span className="font-mono text-[10px] text-[var(--zeni-green)] uppercase tracking-widest">Live</span>
-                </div>
-              </div>
-
-              {/* Total listings */}
-              <div className="stat-card">
-                <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--zeni-black)]/40 mb-2">
-                  Total Listings
-                </div>
-                <div className="text-3xl md:text-4xl font-light text-[var(--zeni-black)] tracking-tight">
-                  {statsVisible && listingStats ? (
-                    <AnimatedCounter target={listingStats.total} suffix="+" />
-                  ) : (
-                    <span className="text-[var(--zeni-black)]/20">—</span>
-                  )}
-                </div>
-                <div className="mt-2 font-mono text-[10px] text-[var(--zeni-black)]/40 uppercase tracking-widest">
-                  Across Kenya
-                </div>
-              </div>
-
-              {/* Neighborhoods */}
-              <div className="stat-card">
-                <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--zeni-black)]/40 mb-2">
-                  Neighborhoods
-                </div>
-                <div className="text-3xl md:text-4xl font-light text-[var(--zeni-black)] tracking-tight">
-                  {statsVisible ? <AnimatedCounter target={6} suffix="+" /> : <span className="text-[var(--zeni-black)]/20">—</span>}
-                </div>
-                <div className="mt-2 font-mono text-[10px] text-[var(--zeni-black)]/40 uppercase tracking-widest">
-                  Nairobi & beyond
-                </div>
-              </div>
-
-              {/* Agent vetted */}
-              <div className="stat-card">
-                <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--zeni-black)]/40 mb-2">
-                  Agent Vetted
-                </div>
-                <div className="text-3xl md:text-4xl font-light text-[var(--zeni-green)] tracking-tight">
-                  {statsVisible ? <AnimatedCounter target={100} suffix="%" /> : <span className="text-[var(--zeni-black)]/20">—</span>}
-                </div>
-                <div className="mt-2 font-mono text-[10px] text-[var(--zeni-black)]/40 uppercase tracking-widest">
-                  Identity checked
-                </div>
-              </div>
             </div>
           </div>
         </section>
@@ -1252,7 +1242,9 @@ export function ZeniLanding() {
               const parts: React.ReactNode[] = [<span key={`t-${i}`}>{text}</span>];
               if (i < arr.length - 1)
                 parts.push(
-                  <span key={`s-${i}`} className="zeni-orange-text">/</span>
+                  <span key={`s-${i}`} className="zeni-orange-text">
+                    /
+                  </span>
                 );
               return parts;
             })}
@@ -1472,7 +1464,10 @@ export function ZeniLanding() {
                   Loading live listings…
                 </div>
               ) : featuredListingsError ? (
-                <MapFallbackBlock message="Unable to load listings right now." linkText="Try the map" />
+                <MapFallbackBlock
+                  message="Unable to load listings right now."
+                  linkText="Try the map"
+                />
               ) : featuredProjects.length === 0 ? (
                 <MapFallbackBlock
                   message="No listings yet. Be the first to list or browse the map."
@@ -1527,7 +1522,12 @@ export function ZeniLanding() {
           className="fixed top-0 left-0 w-[320px] h-[220px] z-50 pointer-events-none opacity-0 overflow-hidden border border-[var(--zeni-black)]/10 bg-[var(--zeni-white)] hidden md:block"
           aria-hidden="true"
         >
-          <img ref={previewImg} src="" alt="Project Preview" className="w-full h-full object-cover" />
+          <img
+            ref={previewImg}
+            src=""
+            alt="Project Preview"
+            className="w-full h-full object-cover"
+          />
         </div>
 
         {/* ── AGENT SECTION ── */}
@@ -1635,7 +1635,9 @@ export function ZeniLanding() {
                   </button>
                   <div aria-live="polite">
                     {newsletterMessage && (
-                      <p className={`text-xs uppercase tracking-widest mt-3 ${newsletterMessageClassName}`}>
+                      <p
+                        className={`text-xs uppercase tracking-widest mt-3 ${newsletterMessageClassName}`}
+                      >
                         {newsletterMessage}
                       </p>
                     )}

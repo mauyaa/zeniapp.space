@@ -211,12 +211,11 @@ export async function findOrCreateUserFromGoogle(
 }
 
 export function signAccessToken(user: UserDocument, sessionId?: string): string {
-  const sid = sessionId || crypto.randomBytes(12).toString('hex');
-  const payload = {
+  const payload: { sub: string; role: string; sid?: string } = {
     sub: user.id,
     role: user.role,
-    sid,
   };
+  if (sessionId) payload.sid = sessionId;
 
   return jwt.sign(payload, env.jwtSecret, {
     expiresIn: ACCESS_TTL,

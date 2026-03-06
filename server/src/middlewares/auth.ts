@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 import { UserDocument, UserModel } from '../models/User';
 import { AuthSessionModel } from '../models/AuthSession';
+import { objectIdSchema } from '../utils/validators';
 
 export interface AuthRequest extends Request {
   user?: UserDocument;
@@ -25,8 +26,22 @@ export async function auth(req: AuthRequest, res: Response, next: NextFunction) 
     }
     req.user = user;
     if (payload.sid) {
+      if (!objectIdSchema.safeParse(payload.sid).success) {
+        return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Invalid session' });
+      }
+      const session = await AuthSessionModel.findById(payload.sid);
+      if (!session) {
+        return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Session expired' });
+      }
+      if (String(session.userId) !== String(user.id)) {
+        return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Invalid session' });
+      }
+      if (!session.expiresAt || session.expiresAt.getTime() < Date.now()) {
+        await session.deleteOne();
+        return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Session expired' });
+      }
       req.authSessionId = payload.sid;
-      req.authSession = await AuthSessionModel.findById(payload.sid);
+      req.authSession = session;
     }
     next();
   } catch {

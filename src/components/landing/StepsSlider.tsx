@@ -8,7 +8,13 @@ const steps = [
     description:
       'Search Kenya on the map, compare listings by price and amenities, and shortlist faster than any portal.',
     icon: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <svg
+        viewBox="0 0 24 24"
+        className="h-6 w-6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      >
         <circle cx="11" cy="11" r="7" strokeLinecap="round" />
         <path d="M21 21l-4.35-4.35" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
@@ -20,8 +26,18 @@ const steps = [
     description:
       'Every listing and agent is checked before you engage. Title deeds, identity, and on-site details — all confirmed.',
     icon: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6l7-3z" strokeLinecap="round" strokeLinejoin="round" />
+      <svg
+        viewBox="0 0 24 24"
+        className="h-6 w-6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      >
+        <path
+          d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6l7-3z"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
         <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
@@ -32,7 +48,13 @@ const steps = [
     description:
       'Chat securely, schedule a viewing in-app, and visit with a trusted verified agent. Every step tracked.',
     icon: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <svg
+        viewBox="0 0 24 24"
+        className="h-6 w-6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      >
         <path d="M4 5h16v10H7l-3 3V5z" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
@@ -43,7 +65,13 @@ const steps = [
     description:
       'Compare offers, review KES pricing data, and close with confidence. Documents stored securely in your vault.',
     icon: (
-      <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <svg
+        viewBox="0 0 24 24"
+        className="h-6 w-6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      >
         <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
         <rect x="3" y="3" width="18" height="18" rx="2" strokeLinecap="round" />
       </svg>
@@ -140,9 +168,7 @@ export function StepsSlider() {
                 aria-label={`Go to step ${i + 1}`}
                 className={clsx(
                   'h-1 rounded-full transition-all duration-500',
-                  i === active
-                    ? 'bg-[var(--zeni-green)] flex-1'
-                    : 'bg-[var(--zeni-black)]/15 w-6'
+                  i === active ? 'bg-[var(--zeni-green)] flex-1' : 'bg-[var(--zeni-black)]/15 w-6'
                 )}
               />
             ))}
@@ -156,7 +182,13 @@ export function StepsSlider() {
               className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--zeni-black)]/10 text-[var(--zeni-black)]/50 transition hover:border-[var(--zeni-green)] hover:text-[var(--zeni-green)]"
               aria-label="Previous step"
             >
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
                 <path d="M15 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
@@ -166,7 +198,13 @@ export function StepsSlider() {
               className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--zeni-black)]/10 text-[var(--zeni-black)]/50 transition hover:border-[var(--zeni-green)] hover:text-[var(--zeni-green)]"
               aria-label="Next step"
             >
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
                 <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
