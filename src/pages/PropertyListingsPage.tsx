@@ -1,35 +1,138 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Map as MapIcon, List } from 'lucide-react';
 import { PropertyMap } from '../components/PropertyMap';
 import { PropertyCard } from '../components/PropertyCard';
 import { SearchBar } from '../components/SearchBar';
-import { properties } from '../utils/mockData';
 import { useAuth } from '../context/AuthProvider';
+import { searchListings, type ListingCard } from '../lib/api/listings';
+import { normalizeKenyaLatLng } from '../utils/geo';
+import { properties as FALLBACK_PROPERTIES, type Property } from '../utils/mockData';
+import { getPublicSocket, disconnectPublicSocket } from '../lib/publicSocket';
+import { resolveApiAssetUrl } from '../lib/runtime';
+import { listingThumbUrl } from '../lib/cloudinary';
+
+const fallbackImage =
+  'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=60';
+
+const PUBLIC_FEED_KEY =
+  (import.meta.env.VITE_PUBLIC_FEED_KEY as string | undefined) || 'public-demo-key';
+
+function listingToProperty(listing: ListingCard): Property {
+  const [lat, lng] = normalizeKenyaLatLng(
+    listing.location?.lat ?? listing.location?.coordinates?.[1],
+    listing.location?.lng ?? listing.location?.coordinates?.[0]
+  );
+
+  const rawImage = listing.imageUrl || listing.images?.[0]?.url || listing.agent?.image;
+  const resolvedImage = resolveApiAssetUrl(rawImage);
+  const image = listingThumbUrl(resolvedImage) || fallbackImage;
+
+  return {
+    id: listing.id,
+    title: listing.title,
+    category: listing.category,
+    description: listing.description,
+    price: listing.price,
+    currency: listing.currency,
+    purpose: (listing.purpose as Property['purpose']) || 'rent',
+    type: (listing.type as Property['type']) || 'Apartment',
+    agentId: listing.agent?.id,
+    location: {
+      neighborhood: listing.location?.neighborhood || '',
+      city: listing.location?.city || '',
+      lat,
+      lng,
+    },
+    features: {
+      bedrooms: listing.beds ?? 0,
+      bathrooms: listing.baths ?? 0,
+      sqm: listing.sqm ?? 0,
+    },
+    amenities: listing.amenities,
+    catalogueUrl: listing.catalogueUrl,
+    isVerified: Boolean(listing.verified),
+    imageUrl: image,
+    images: (listing.images && listing.images.length > 0)
+      ? listing.images.map((img) => ({
+        ...img,
+        url: resolveApiAssetUrl(img.url) || fallbackImage,
+      }))
+      : [{ url: image }],
+    agent: {
+      name: listing.agent?.name || 'Agent',
+      image: listingThumbUrl(resolveApiAssetUrl(listing.agent?.image)) || fallbackImage,
+    },
+  };
+}
+
 export function PropertyListingsPage() {
   const navigate = useNavigate();
-  const { isAuthed } = useAuth();
+  const { isAuthed, user } = useAuth();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isMapOpen, setIsMapOpen] = useState(false); // For mobile toggle
   const [searchTerm, setSearchTerm] = useState('');
   const [verifiedOnly, setVerifiedOnly] = useState(false);
-  const [filteredProperties, setFilteredProperties] = useState(properties);
+  const [listings, setListings] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Keep filtered list in sync with search/filter state
   useEffect(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
-    const filtered = properties.filter((p) => {
-      const matchesSearch =
-        !normalizedSearch ||
-        p.location.neighborhood.toLowerCase().includes(normalizedSearch) ||
-        p.location.city.toLowerCase().includes(normalizedSearch) ||
-        p.title.toLowerCase().includes(normalizedSearch);
-      const matchesVerification = !verifiedOnly || p.isVerified;
-      return matchesSearch && matchesVerification;
-    });
-    setFilteredProperties(filtered);
-  }, [searchTerm, verifiedOnly]);
+    let cancelled = false;
+    setLoading(true);
+    searchListings({
+      q: searchTerm,
+      verifiedOnly: verifiedOnly || undefined,
+      limit: isAuthed ? 50 : 6,
+      availabilityOnly: true,
+      noCache: true,
+    })
+      .then((res) => {
+        if (cancelled) return;
+        const converted = (res.items || []).map(listingToProperty);
+        if (converted.length) {
+          setListings(converted);
+        } else if (!searchTerm && !verifiedOnly) {
+          // If search is empty and verification is not filtered, fall back to mock data
+          setListings(FALLBACK_PROPERTIES.slice(0, isAuthed ? 50 : 6));
+        } else {
+          setListings([]);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load listings', err);
+        if (cancelled) return;
+        // Fall back to mock data on total failure
+        if (!searchTerm && !verifiedOnly) {
+          setListings(FALLBACK_PROPERTIES.slice(0, isAuthed ? 50 : 6));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchTerm, verifiedOnly, isAuthed, refreshTrigger]);
+
+  // Socket updates
+  useEffect(() => {
+    const socket = getPublicSocket(PUBLIC_FEED_KEY);
+    const handleUpdate = () => {
+      setRefreshTrigger((prev) => prev + 1);
+    };
+
+    socket.on('listing:changed', handleUpdate);
+    socket.on('listing:deleted', handleUpdate);
+
+    return () => {
+      socket.off('listing:changed', handleUpdate);
+      socket.off('listing:deleted', handleUpdate);
+      disconnectPublicSocket();
+    };
+  }, []);
 
   // Scroll to selected card
   useEffect(() => {
@@ -43,63 +146,68 @@ export function PropertyListingsPage() {
       }
     }
   }, [selectedId]);
+
   const handleSearch = (term: string) => {
     setSearchTerm(term);
   };
+
   const handleFilter = () => {
     setVerifiedOnly((prev) => !prev);
   };
 
-  // Limit dataset for guests; full list for authenticated users
-  const displayProperties = useMemo(
-    () => (isAuthed ? filteredProperties : filteredProperties.slice(0, 6)),
-    [filteredProperties, isAuthed]
-  );
-
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 overflow-hidden">
       {/* Header / Nav */}
-      <header className="bg-white border-b border-gray-200 z-20 flex-shrink-0">
-        <div className="max-w-[1920px] mx-auto px-4 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">K</span>
+      <header className="bg-white/90 backdrop-blur-xl border-b border-gray-200 z-20 flex-shrink-0">
+        <div className="max-w-[1920px] mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex flex-col gap-0.5">
+            <div className="text-2xl font-serif font-bold tracking-tight leading-none cursor-pointer">
+              <Link to="/" className="hover:opacity-90 transition-opacity" aria-label="Zeni Home">
+                ZENI<span className="text-[var(--zeni-green)]">.</span>
+              </Link>
             </div>
-            <span className="text-xl font-bold text-gray-900 tracking-tight">
-              ZENI<span className="text-green-500">.</span>
+            <span className="text-[10px] sm:text-[11px] font-sans font-extralight uppercase tracking-[0.25em] text-[var(--zeni-black)]/70">
+              Real Estate System
             </span>
-          </Link>
+          </div>
 
           {isAuthed ? (
             <div className="flex items-center gap-4">
-              <button className="text-sm font-medium text-gray-600 hover:text-gray-900">
+              <button className="text-xs font-mono uppercase tracking-widest text-gray-600 hover:text-gray-900 transition-colors">
                 For Rent
               </button>
-              <button className="text-sm font-medium text-gray-600 hover:text-gray-900">
+              <button className="text-xs font-mono uppercase tracking-widest text-gray-600 hover:text-gray-900 transition-colors">
                 For Sale
               </button>
               <div className="h-4 w-px bg-gray-300 mx-2" />
               <button
                 onClick={() => navigate('/agentlogin')}
-                className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
+                className="text-xs font-mono uppercase tracking-widest text-emerald-600 hover:text-emerald-700 transition-colors"
               >
                 List Property
               </button>
-              <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden border border-gray-300">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User" />
+              <div className="w-9 h-9 rounded-full bg-gray-100 overflow-hidden border border-gray-200">
+                <img
+                  src={
+                    user?.avatarUrl ||
+                    'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'
+                  }
+                  alt="User"
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-6">
               <button
                 onClick={() => navigate('/login')}
-                className="text-sm font-bold uppercase tracking-widest text-gray-700 hover:text-black"
+                className="text-xs font-mono font-bold uppercase tracking-[0.2em] text-gray-700 hover:text-black transition-colors"
               >
                 Login
               </button>
               <button
                 onClick={() => navigate('/register')}
-                className="bg-black text-white px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-gray-800"
+                className="bg-black text-white px-5 py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-gray-800 transition-all rounded-sm"
               >
                 Create account
               </button>
@@ -119,7 +227,7 @@ export function PropertyListingsPage() {
           `}
         >
           <PropertyMap
-            properties={displayProperties}
+            properties={listings}
             selectedId={selectedId}
             onSelect={setSelectedId}
           />
@@ -152,11 +260,17 @@ export function PropertyListingsPage() {
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 mb-1">Properties in Kenya</h1>
                 <p className="text-gray-500 text-sm">
-                  {displayProperties.length} listings found {isAuthed ? '' : '(preview)'}
+                  {loading ? (
+                    'Searching...'
+                  ) : (
+                    <>
+                      {listings.length} listings found {isAuthed ? '' : '(preview)'}
+                    </>
+                  )}
                 </p>
               </div>
 
-              <select className="text-sm border-gray-200 rounded-lg text-gray-600 focus:ring-emerald-500 focus:border-emerald-500 bg-white shadow-sm">
+              <select className="text-xs font-mono uppercase tracking-widest border-gray-200 rounded-lg text-gray-600 focus:ring-emerald-500 focus:border-emerald-500 bg-white shadow-sm p-2 outline-none">
                 <option>Sort by: Recommended</option>
                 <option>Price: Low to High</option>
                 <option>Price: High to Low</option>
@@ -165,7 +279,7 @@ export function PropertyListingsPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {displayProperties.map((property, index) => (
+              {listings.map((property, index) => (
                 <motion.div
                   key={property.id}
                   id={`card-${property.id}`}
@@ -191,7 +305,7 @@ export function PropertyListingsPage() {
               ))}
             </div>
 
-            {displayProperties.length === 0 && (
+            {!loading && listings.length === 0 && (
               <div className="text-center py-20">
                 <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                   <MapIcon className="w-8 h-8 text-gray-400" />
@@ -203,23 +317,23 @@ export function PropertyListingsPage() {
 
             {!isAuthed && (
               <div className="mt-10 rounded-xl border border-gray-200 bg-white p-6 text-center shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2 font-serif">
                   Unlock full map & listings
                 </h3>
-                <p className="text-gray-600 text-sm mb-4">
+                <p className="text-gray-600 text-sm mb-4 font-light">
                   Create an account or log in to view all properties, save listings, and use
                   advanced filters.
                 </p>
-                <div className="flex justify-center gap-3">
+                <div className="flex justify-center gap-4">
                   <button
                     onClick={() => navigate('/register')}
-                    className="bg-black text-white px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-gray-800"
+                    className="bg-black text-white px-6 py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-gray-800 transition-all rounded-sm"
                   >
                     Create account
                   </button>
                   <button
                     onClick={() => navigate('/login')}
-                    className="border border-black px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-colors"
+                    className="border border-black px-6 py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-black hover:text-white transition-all rounded-sm"
                   >
                     Login
                   </button>

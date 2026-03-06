@@ -7,6 +7,7 @@ import { searchListings } from '../lib/api/listings';
 import { normalizeKenyaLatLng } from '../utils/geo';
 import type { Property } from '../utils/mockData';
 import { listingThumbUrl } from '../lib/cloudinary';
+import { resolveApiAssetUrl } from '../lib/runtime';
 
 const fallbackImage =
   'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=60';
@@ -33,6 +34,10 @@ export function PublicMapPage() {
             listing.location?.lng ?? listing.location?.coordinates?.[0]
           );
 
+          const rawImg = listing.imageUrl || listing.images?.[0]?.url || listing.agent?.image;
+          const resolvedImg = resolveApiAssetUrl(rawImg);
+          const image = listingThumbUrl(resolvedImg) || fallbackImage;
+
           return {
             id: listing.id,
             title: listing.title,
@@ -57,11 +62,16 @@ export function PublicMapPage() {
             amenities: listing.amenities,
             catalogueUrl: listing.catalogueUrl,
             isVerified: Boolean(listing.verified),
-            imageUrl: listing.imageUrl || listing.agent?.image || fallbackImage,
-            images: listing.images || [{ url: listing.imageUrl || fallbackImage }],
+            imageUrl: image,
+            images: (listing.images && listing.images.length > 0)
+              ? listing.images.map((img) => ({
+                ...img,
+                url: resolveApiAssetUrl(img.url) || fallbackImage,
+              }))
+              : [{ url: image }],
             agent: {
               name: listing.agent?.name || 'Agent',
-              image: listing.agent?.image || fallbackImage,
+              image: listingThumbUrl(resolveApiAssetUrl(listing.agent?.image)) || fallbackImage,
             },
             saved: listing.saved,
           };

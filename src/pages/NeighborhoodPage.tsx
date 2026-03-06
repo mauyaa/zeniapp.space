@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { MapPin, BedDouble, ShieldCheck, ChevronRight, ArrowLeft } from 'lucide-react';
 import { searchListings, type ListingCard } from '../lib/api';
 import { listingThumbUrl } from '../lib/cloudinary';
+import { resolveApiAssetUrl } from '../lib/runtime';
 import { properties as mockProperties } from '../utils/mockData';
 
 const NEIGHBORHOODS: Record<
@@ -256,7 +257,7 @@ export function NeighborhoodPage() {
               >
                 <div className="aspect-[4/3] bg-zinc-100 overflow-hidden">
                   <img
-                    src={listingThumbUrl(l.imageUrl, 400)}
+                    src={listingThumbUrl(resolveApiAssetUrl(l.imageUrl), 400)}
                     alt={l.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     loading="lazy"

@@ -18,6 +18,8 @@ import { TrustTiles } from '../components/landing/TrustTiles';
 import { SafetySection } from '../components/landing/SafetySection';
 import { AgentSection } from '../components/landing/AgentSection';
 import { SiteIndexSection } from '../components/landing/SiteIndexSection';
+import { resolveApiAssetUrl } from '../lib/runtime';
+import { listingThumbUrl } from '../lib/cloudinary';
 
 const SUPPORT_TITLE_REGEX = /^Zeni Support$/i;
 const PLACEHOLDER_TEXT = 'ZENI';
@@ -68,8 +70,11 @@ function listingToPropertyForMap(listing: ListingCard): Property | null {
   const lng = isValidCoord(listing.location?.lat, listing.location?.lng)
     ? (listing.location?.lng as number)
     : 36.8219;
-  const primaryImg = listing.imageUrl || listing.images?.[0]?.url || listing.agent?.image;
-  const image = primaryImg || placeholderFromId(listing.id, listing.title);
+
+  const rawImage = listing.imageUrl || listing.images?.[0]?.url || listing.agent?.image;
+  const resolvedImage = resolveApiAssetUrl(rawImage);
+  const image = listingThumbUrl(resolvedImage) || placeholderFromId(listing.id, listing.title);
+
   return {
     id: listing.id,
     title: listing.title ?? 'Property',
@@ -88,7 +93,10 @@ function listingToPropertyForMap(listing: ListingCard): Property | null {
     features: { bedrooms: listing.beds ?? 0, bathrooms: listing.baths ?? 0, sqm: listing.sqm ?? 0 },
     isVerified: Boolean(listing.verified),
     imageUrl: image,
-    agent: { name: listing.agent?.name ?? 'Agent', image: listing.agent?.image ?? fallbackImage },
+    agent: {
+      name: listing.agent?.name ?? 'Agent',
+      image: listingThumbUrl(resolveApiAssetUrl(listing.agent?.image)) || fallbackImage
+    },
   };
 }
 
@@ -161,6 +169,17 @@ const FALLBACK_RING_IMAGES = Array.from({ length: RING_IMAGE_COUNT }).map((_, i)
   placeholderFromId(`ring-fallback-${i}`, `Zeni ${i + 1}`)
 );
 const FALLBACK_MAP_PROPERTIES: Property[] = FALLBACK_PROPERTIES.slice(0, 8);
+const FALLBACK_PROJECTS: Project[] = FALLBACK_PROPERTIES.slice(0, 6).map((p, i) => ({
+  id: i,
+  listingId: p.id,
+  title: p.title,
+  location: p.location.neighborhood.toUpperCase(),
+  type: p.type.toUpperCase(),
+  price: `KES ${(p.price / 1000).toFixed(0)}K`,
+  image: p.imageUrl,
+  alt: p.title,
+}));
+
 const PUBLIC_FEED_KEY =
   (import.meta.env.VITE_PUBLIC_FEED_KEY as string | undefined) || 'public-demo-key';
 
@@ -214,6 +233,9 @@ function listingCardToProject(item: ListingCard): Project {
   const fallbackImg = getFallbackHomeImage();
   const indexedItem = item as ListingCard & { _idx?: number };
 
+  const rawImg = primaryImg || anyImg || item.imageUrl;
+  const resolvedImg = resolveApiAssetUrl(rawImg);
+
   return {
     id: indexedItem._idx ?? 0,
     listingId: item.id,
@@ -221,7 +243,7 @@ function listingCardToProject(item: ListingCard): Project {
     location: (item.location?.neighborhood || item.location?.city || 'Kenya').toUpperCase(),
     type: (item.type || item.category || 'PROPERTY').toUpperCase(),
     price: formatKesPrice(item.price, isRental),
-    image: primaryImg || anyImg || item.imageUrl || fallbackImg,
+    image: listingThumbUrl(resolvedImg) || fallbackImg,
     alt: item.title || 'Property image',
   };
 }
@@ -273,18 +295,16 @@ function FaqAccordion({ faqs }: { faqs: { q: string; a: string }[] }) {
             aria-expanded={openIndex === i}
           >
             <span
-              className={`text-base font-light transition-colors ${
-                openIndex === i ? 'text-[var(--zeni-black)]' : 'text-[var(--zeni-black)]/70'
-              } group-hover:text-[var(--zeni-black)]`}
+              className={`text-base font-light transition-colors ${openIndex === i ? 'text-[var(--zeni-black)]' : 'text-[var(--zeni-black)]/70'
+                } group-hover:text-[var(--zeni-black)]`}
             >
               {faq.q}
             </span>
             <span
-              className={`ml-4 flex-shrink-0 w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-300 ${
-                openIndex === i
-                  ? 'border-[var(--zeni-green)] bg-[var(--zeni-green)] text-white rotate-45'
-                  : 'border-[var(--zeni-black)]/15 text-[var(--zeni-black)]/40 group-hover:border-[var(--zeni-green)] group-hover:text-[var(--zeni-green)]'
-              }`}
+              className={`ml-4 flex-shrink-0 w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-300 ${openIndex === i
+                ? 'border-[var(--zeni-green)] bg-[var(--zeni-green)] text-white rotate-45'
+                : 'border-[var(--zeni-black)]/15 text-[var(--zeni-black)]/40 group-hover:border-[var(--zeni-green)] group-hover:text-[var(--zeni-green)]'
+                }`}
             >
               <svg
                 viewBox="0 0 24 24"
@@ -298,9 +318,8 @@ function FaqAccordion({ faqs }: { faqs: { q: string; a: string }[] }) {
             </span>
           </button>
           <div
-            className={`overflow-hidden transition-all duration-300 ease-in-out ${
-              openIndex === i ? 'max-h-48 pb-6' : 'max-h-0'
-            }`}
+            className={`overflow-hidden transition-all duration-300 ease-in-out ${openIndex === i ? 'max-h-48 pb-6' : 'max-h-0'
+              }`}
           >
             <p className="text-sm text-[var(--zeni-black)]/60 leading-relaxed font-light pr-12">
               {faq.a}
@@ -581,17 +600,21 @@ export function ZeniLanding() {
         const projects = uniqueItems.map((item) => listingCardToProject(item));
         setFeaturedProjects(projects);
         setRingImages(buildRingImagesFromProjects(projects));
-      } else if (!opts?.silent) {
-        setFeaturedProjects([]);
-        setRingImages(FALLBACK_RING_IMAGES);
+      } else if (!opts?.silent || !featuredProjects.length) {
+        setFeaturedProjects(FALLBACK_PROJECTS);
+        setRingImages(buildRingImagesFromProjects(FALLBACK_PROJECTS));
       }
     } catch {
       if (!opts?.silent) {
         setFeaturedListingsLoading(false);
         setFeaturedListingsError(true);
+        if (!featuredProjects.length) {
+          setFeaturedProjects(FALLBACK_PROJECTS);
+          setRingImages(buildRingImagesFromProjects(FALLBACK_PROJECTS));
+        }
       }
     }
-  }, []);
+  }, [featuredProjects.length, fetchMapListings]);
 
   useEffect(() => {
     const tick = () => {
@@ -1328,9 +1351,8 @@ export function ZeniLanding() {
             {SERVICES.map((service, index) => (
               <article
                 key={service.id}
-                className={`p-16 border-[var(--zeni-black)]/5 hover:bg-[var(--zeni-white)] transition-colors group ${
-                  index % 2 === 0 ? 'md:border-r' : ''
-                } ${index < 2 ? 'border-b' : ''}`}
+                className={`p-16 border-[var(--zeni-black)]/5 hover:bg-[var(--zeni-white)] transition-colors group ${index % 2 === 0 ? 'md:border-r' : ''
+                  } ${index < 2 ? 'border-b' : ''}`}
               >
                 <div className="font-mono text-xs text-[var(--zeni-green)] mb-8" aria-hidden="true">
                   {service.id}.
