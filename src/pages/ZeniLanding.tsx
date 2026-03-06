@@ -331,16 +331,18 @@ function FaqAccordion({ faqs }: { faqs: { q: string; a: string }[] }) {
             aria-expanded={openIndex === i}
           >
             <span
-              className={`text-base font-light transition-colors ${openIndex === i ? 'text-[var(--zeni-black)]' : 'text-[var(--zeni-black)]/70'
-                } group-hover:text-[var(--zeni-black)]`}
+              className={`text-base font-light transition-colors ${
+                openIndex === i ? 'text-[var(--zeni-black)]' : 'text-[var(--zeni-black)]/70'
+              } group-hover:text-[var(--zeni-black)]`}
             >
               {faq.q}
             </span>
             <span
-              className={`ml-4 flex-shrink-0 w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-300 ${openIndex === i
-                ? 'border-[var(--zeni-green)] bg-[var(--zeni-green)] text-white rotate-45'
-                : 'border-[var(--zeni-black)]/15 text-[var(--zeni-black)]/40 group-hover:border-[var(--zeni-green)] group-hover:text-[var(--zeni-green)]'
-                }`}
+              className={`ml-4 flex-shrink-0 w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-300 ${
+                openIndex === i
+                  ? 'border-[var(--zeni-green)] bg-[var(--zeni-green)] text-white rotate-45'
+                  : 'border-[var(--zeni-black)]/15 text-[var(--zeni-black)]/40 group-hover:border-[var(--zeni-green)] group-hover:text-[var(--zeni-green)]'
+              }`}
             >
               <svg
                 viewBox="0 0 24 24"
@@ -354,8 +356,9 @@ function FaqAccordion({ faqs }: { faqs: { q: string; a: string }[] }) {
             </span>
           </button>
           <div
-            className={`overflow-hidden transition-all duration-300 ease-in-out ${openIndex === i ? 'max-h-48 pb-6' : 'max-h-0'
-              }`}
+            className={`overflow-hidden transition-all duration-300 ease-in-out ${
+              openIndex === i ? 'max-h-48 pb-6' : 'max-h-0'
+            }`}
           >
             <p className="text-sm text-[var(--zeni-black)]/60 leading-relaxed font-light pr-12">
               {faq.a}
@@ -1414,8 +1417,9 @@ export function ZeniLanding() {
             {SERVICES.map((service, index) => (
               <article
                 key={service.id}
-                className={`p-16 border-[var(--zeni-black)]/5 hover:bg-[var(--zeni-white)] transition-colors group ${index % 2 === 0 ? 'md:border-r' : ''
-                  } ${index < 2 ? 'border-b' : ''}`}
+                className={`p-16 border-[var(--zeni-black)]/5 hover:bg-[var(--zeni-white)] transition-colors group ${
+                  index % 2 === 0 ? 'md:border-r' : ''
+                } ${index < 2 ? 'border-b' : ''}`}
               >
                 <div className="font-mono text-xs text-[var(--zeni-green)] mb-8" aria-hidden="true">
                   {service.id}.
