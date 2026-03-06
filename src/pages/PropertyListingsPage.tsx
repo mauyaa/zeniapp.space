@@ -67,6 +67,18 @@ function listingToProperty(listing: ListingCard): Property {
   };
 }
 
+/** 
+ * Races a promise against a timeout. 
+ * If timeout wins, returns the fallback value.
+ */
+async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  let timer: any;
+  const timeoutPromise = new Promise<T>((resolve) => {
+    timer = setTimeout(() => resolve(fallback), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
+}
+
 export function PropertyListingsPage() {
   const navigate = useNavigate();
   const { isAuthed, user } = useAuth();
@@ -81,16 +93,20 @@ export function PropertyListingsPage() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    searchListings({
+
+    const searchPromise = searchListings({
       q: searchTerm,
       verifiedOnly: verifiedOnly || undefined,
       limit: isAuthed ? 50 : 6,
       availabilityOnly: true,
       noCache: true,
-    })
+    });
+
+    // 5 second timeout for production resilience
+    withTimeout(searchPromise, 5000, { items: [], total: 0 })
       .then((res) => {
         if (cancelled) return;
-        const converted = (res.items || []).map(listingToProperty);
+        const converted = (res?.items || []).map(listingToProperty);
         if (converted.length) {
           setListings(converted);
         } else if (!searchTerm && !verifiedOnly) {

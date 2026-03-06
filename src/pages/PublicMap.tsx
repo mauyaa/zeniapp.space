@@ -16,6 +16,18 @@ type PropertyWithMeta = Property & {
   saved?: boolean;
 };
 
+/** 
+ * Races a promise against a timeout. 
+ * If timeout wins, returns the fallback value.
+ */
+async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  let timer: any;
+  const timeoutPromise = new Promise<T>((resolve) => {
+    timer = setTimeout(() => resolve(fallback), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
+}
+
 export function PublicMapPage() {
   const navigate = useNavigate();
   const { isAuthed, user } = useAuth();
@@ -24,10 +36,13 @@ export function PublicMapPage() {
 
   useEffect(() => {
     let cancelled = false;
-    searchListings({ limit: 50, verifiedOnly: true, noCache: true })
+
+    const searchPromise = searchListings({ limit: 50, verifiedOnly: true, noCache: true });
+
+    withTimeout(searchPromise, 5000, { items: [], total: 0 })
       .then((res) => {
         if (cancelled) return;
-        const raw = res.items || [];
+        const raw = res?.items || [];
         const converted: PropertyWithMeta[] = raw.map((listing) => {
           const [lat, lng] = normalizeKenyaLatLng(
             listing.location?.lat ?? listing.location?.coordinates?.[1],

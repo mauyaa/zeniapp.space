@@ -6,6 +6,18 @@ import { listingThumbUrl } from '../lib/cloudinary';
 import { resolveApiAssetUrl } from '../lib/runtime';
 import { properties as mockProperties } from '../utils/mockData';
 
+/** 
+ * Races a promise against a timeout. 
+ * If timeout wins, returns the fallback value.
+ */
+async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  let timer: any;
+  const timeoutPromise = new Promise<T>((resolve) => {
+    timer = setTimeout(() => resolve(fallback), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
+}
+
 const NEIGHBORHOODS: Record<
   string,
   { title: string; description: string; faqs: { q: string; a: string }[] }
@@ -169,10 +181,12 @@ export function NeighborhoodPage() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    searchListings({ q: neighborhood, purpose, limit: 12 })
+    const searchPromise = searchListings({ q: neighborhood, purpose, limit: 12 });
+
+    withTimeout(searchPromise, 5000, { items: [], total: 0 })
       .then((res) => {
         if (cancelled) return;
-        if (res.items && res.items.length > 0) {
+        if (res?.items && res.items.length > 0) {
           setListings(res.items);
         } else {
           setListings(fallbackFromMock());
