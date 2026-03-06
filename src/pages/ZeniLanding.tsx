@@ -161,7 +161,6 @@ const INSIGHTS_LIMIT = 3;
 const HERO_STATUS_CYCLE_MS = 1600;
 const SCROLL_OFFSET_PX = -80;
 const LANDING_REFRESH_MS = 8000;
-const MAP_REFRESH_MS = 15_000;
 
 const FALLBACK_RING_IMAGES = Array.from({ length: RING_IMAGE_COUNT }).map((_, i) =>
   placeholderFromId(`ring-fallback-${i}`, `Zeni ${i + 1}`)
@@ -263,34 +262,6 @@ function ProjectRowWrapper({ project, children }: { project: Project; children: 
   return <div>{children}</div>;
 }
 
-/** Animated counter that counts up from 0 to target on mount */
-function AnimatedCounter({ target, suffix = '' }: { target: number; suffix?: string }) {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    if (target === 0) return;
-    const duration = 1200;
-    const steps = 40;
-    const increment = target / steps;
-    let current = 0;
-    const timer = setInterval(() => {
-      current += increment;
-      if (current >= target) {
-        setCount(target);
-        clearInterval(timer);
-      } else {
-        setCount(Math.floor(current));
-      }
-    }, duration / steps);
-    return () => clearInterval(timer);
-  }, [target]);
-  return (
-    <span>
-      {count.toLocaleString()}
-      {suffix}
-    </span>
-  );
-}
-
 /** Interactive FAQ accordion — one item open at a time */
 function FaqAccordion({ faqs }: { faqs: { q: string; a: string }[] }) {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
@@ -366,7 +337,6 @@ export function ZeniLanding() {
   const [mapListings, setMapListings] = useState<Property[]>([]);
   const [mapListingsLoading, setMapListingsLoading] = useState(true);
   const [activeNavSection, setActiveNavSection] = useState<string | null>(null);
-  const [statsVisible, setStatsVisible] = useState(false);
 
   const navigate = useNavigate();
 
@@ -375,7 +345,6 @@ export function ZeniLanding() {
   const previewContainer = useRef<HTMLDivElement>(null);
   const previewImg = useRef<HTMLImageElement>(null);
   const heroStatusTextRef = useRef<HTMLSpanElement>(null);
-  const statsRef = useRef<HTMLDivElement>(null);
 
   const { reduceMotion, coarsePointer, disableMotion, gsap, lenis, ScrollTrigger } = useMotion();
   useCursor({ enabled: false, gsap });
@@ -422,22 +391,6 @@ export function ZeniLanding() {
       const el = document.getElementById(id);
       if (el) observer.observe(el);
     });
-    return () => observer.disconnect();
-  }, []);
-
-  // Trigger animated counters when stats strip enters viewport
-  useEffect(() => {
-    if (!statsRef.current) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setStatsVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.3 }
-    );
-    observer.observe(statsRef.current);
     return () => observer.disconnect();
   }, []);
 
@@ -1056,8 +1009,7 @@ export function ZeniLanding() {
         {/* ── HERO SECTION ── */}
         <section
           id="hero"
-          className="relative min-h-[100vh] flex flex-col border-b border-[var(--zeni-black)]/10 overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, #0a0a0a 0%, #0d1a12 50%, #0a0a0a 100%)' }}
+          className="relative min-h-[100vh] flex flex-col border-b border-[var(--zeni-black)]/10 overflow-hidden bg-[var(--zeni-white)]"
         >
           {/* Subtle grid overlay */}
           <div
@@ -1068,7 +1020,7 @@ export function ZeniLanding() {
               zIndex: 0,
               opacity: 0.04,
               backgroundImage:
-                'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
+                'linear-gradient(rgba(11,12,12,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(11,12,12,0.08) 1px, transparent 1px)',
               backgroundSize: '60px 60px',
             }}
           />
@@ -1089,12 +1041,12 @@ export function ZeniLanding() {
           <div className="relative z-10 flex-1 flex flex-col justify-center w-full max-w-[1600px] mx-auto px-6 md:px-16 pt-36 pb-12">
             {/* Top row: live pill + tagline */}
             <div className="hero-animate flex flex-wrap items-center gap-4 mb-10">
-              <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2">
+              <div className="flex items-center gap-2 bg-white/85 border border-[var(--zeni-black)]/12 rounded-full px-4 py-2">
                 <span
                   className="w-2 h-2 rounded-full bg-[var(--zeni-green)] animate-pulse"
                   aria-hidden="true"
                 />
-                <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/60">
+                <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-[var(--zeni-black)]/60">
                   Live · <span ref={heroStatusTextRef}>Verified</span>
                 </span>
               </div>
@@ -1106,15 +1058,15 @@ export function ZeniLanding() {
             {/* Main headline + ring side by side */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-0 items-center">
               <div className="md:col-span-6 flex flex-col">
-                <h1 className="hero-animate-delay-1 font-sans text-[clamp(3.5rem,10vw,7rem)] leading-[0.88] tracking-[-0.04em] text-white uppercase mb-8">
-                  <span className="block font-extralight text-white/60">Where</span>
-                  <span className="block font-black text-white">Kenya</span>
+                <h1 className="hero-animate-delay-1 font-sans text-[clamp(3.5rem,10vw,7rem)] leading-[0.88] tracking-[-0.04em] text-[var(--zeni-black)] uppercase mb-8">
+                  <span className="block font-extralight text-[var(--zeni-black)]/55">Where</span>
+                  <span className="block font-black text-[var(--zeni-black)]">Kenya</span>
                   <span className="block font-extralight" style={{ color: 'var(--zeni-green)' }}>
                     Lives.
                   </span>
                 </h1>
 
-                <p className="hero-animate-delay-2 max-w-md text-base md:text-lg text-white/50 leading-relaxed mb-10 font-light">
+                <p className="hero-animate-delay-2 max-w-md text-base md:text-lg text-[var(--zeni-black)]/65 leading-relaxed mb-10 font-light">
                   Verified listings, intelligent mapping, and architectural precision for the modern
                   Kenyan buyer and renter.
                 </p>
@@ -1130,27 +1082,27 @@ export function ZeniLanding() {
                   <a
                     href="#projects"
                     onClick={(e) => onNavAnchorClick(e, '#projects')}
-                    className="font-mono text-xs uppercase tracking-[0.15em] px-8 py-4 rounded-xl border border-white/15 text-white/70 hover:border-white/40 hover:text-white transition-all"
+                    className="font-mono text-xs uppercase tracking-[0.15em] px-8 py-4 rounded-xl border border-[var(--zeni-black)]/20 text-[var(--zeni-black)]/70 hover:border-[var(--zeni-black)]/40 hover:text-[var(--zeni-black)] transition-all"
                   >
                     View Inventory ↓
                   </a>
                 </div>
 
                 {/* Inline stats row */}
-                <div className="hero-animate-delay-4 flex flex-wrap gap-6 md:gap-10 border-t border-white/10 pt-8">
+                <div className="hero-animate-delay-4 flex flex-wrap gap-6 md:gap-10 border-t border-[var(--zeni-black)]/10 pt-8">
                   <div>
-                    <div className="text-2xl md:text-3xl font-light text-white">
+                    <div className="text-2xl md:text-3xl font-light text-[var(--zeni-black)]">
                       {listingStats ? `${listingStats.verified}+` : '—'}
                     </div>
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-white/35 mt-1">
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--zeni-black)]/45 mt-1">
                       Verified Listings
                     </div>
                   </div>
                   <div>
-                    <div className="text-2xl md:text-3xl font-light text-white">
+                    <div className="text-2xl md:text-3xl font-light text-[var(--zeni-black)]">
                       {listingStats ? `${listingStats.total}+` : '—'}
                     </div>
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-white/35 mt-1">
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--zeni-black)]/45 mt-1">
                       Total Listings
                     </div>
                   </div>
@@ -1161,13 +1113,15 @@ export function ZeniLanding() {
                     >
                       100%
                     </div>
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-white/35 mt-1">
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--zeni-black)]/45 mt-1">
                       Agent Vetted
                     </div>
                   </div>
                   <div>
-                    <div className="text-2xl md:text-3xl font-light text-white">6+</div>
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-white/35 mt-1">
+                    <div className="text-2xl md:text-3xl font-light text-[var(--zeni-black)]">
+                      6+
+                    </div>
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--zeni-black)]/45 mt-1">
                       Neighborhoods
                     </div>
                   </div>
@@ -1214,8 +1168,8 @@ export function ZeniLanding() {
           </div>
 
           {/* Bottom ticker bar */}
-          <div className="relative z-10 border-t border-white/8 py-3 overflow-hidden bg-white/3">
-            <div className="flex gap-12 font-mono text-[10px] uppercase tracking-widest text-white/30 whitespace-nowrap animate-[marquee_30s_linear_infinite]">
+          <div className="relative z-10 border-t border-[var(--zeni-black)]/8 py-3 overflow-hidden bg-[var(--zeni-white)]">
+            <div className="flex gap-12 font-mono text-[10px] uppercase tracking-widest text-[var(--zeni-black)]/45 whitespace-nowrap animate-[marquee_30s_linear_infinite]">
               {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, i) => (
                 <span key={i} className="flex items-center gap-3">
                   <span className="w-1 h-1 rounded-full bg-[var(--zeni-green)] inline-block" />
