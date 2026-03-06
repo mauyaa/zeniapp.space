@@ -33,13 +33,13 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       <I18nProvider>
         <ToastProvider>
           <AuthProvider>
-          <SessionTimeoutGate>
-            <NotificationProvider>
-              <ChatProvider>
-                <BrowserRouter>{children}</BrowserRouter>
-              </ChatProvider>
-            </NotificationProvider>
-          </SessionTimeoutGate>
+            <SessionTimeoutGate>
+              <NotificationProvider>
+                <ChatProvider>
+                  <BrowserRouter>{children}</BrowserRouter>
+                </ChatProvider>
+              </NotificationProvider>
+            </SessionTimeoutGate>
           </AuthProvider>
         </ToastProvider>
       </I18nProvider>

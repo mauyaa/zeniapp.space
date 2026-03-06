@@ -12,7 +12,8 @@ export function PayTopbar({
 }) {
   const { user } = usePayAuth();
   const initial = user?.name?.slice(0, 1).toUpperCase() || 'U';
-  const roleLabel = user?.role === 'user' ? 'Tenant' : user?.role === 'agent' ? 'Agent' : user?.role || 'User';
+  const roleLabel =
+    user?.role === 'user' ? 'Tenant' : user?.role === 'agent' ? 'Agent' : user?.role || 'User';
   const unitLabel = user?.role === 'user' ? 'Unit 4B' : '';
 
   return (
@@ -24,7 +25,13 @@ export function PayTopbar({
           onClick={onMenuClick}
           aria-label="Open menu"
         >
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <svg
+            className="w-5 h-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
             <path d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>

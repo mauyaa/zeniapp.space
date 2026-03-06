@@ -14,7 +14,11 @@ export async function runSavedSearchAlerts(): Promise<{ processed: number; notif
   const now = new Date();
   const searches = await SavedSearchModel.find({
     alertsEnabled: true,
-    $or: [{ snoozeUntil: { $exists: false } }, { snoozeUntil: null }, { snoozeUntil: { $lt: now } }]
+    $or: [
+      { snoozeUntil: { $exists: false } },
+      { snoozeUntil: null },
+      { snoozeUntil: { $lt: now } },
+    ],
   })
     .limit(MAX_ALERTS_PER_RUN)
     .lean();
@@ -26,7 +30,7 @@ export async function runSavedSearchAlerts(): Promise<{ processed: number; notif
       const query: ListingSearchQuery = {
         page: 1,
         limit: 10,
-        ...params
+        ...params,
       };
       const result = await searchListings(query);
       if (result.items.length > 0) {
@@ -34,7 +38,7 @@ export async function runSavedSearchAlerts(): Promise<{ processed: number; notif
           title: 'New listings match your search',
           description: `${result.items.length} new listing(s) match "${search.name}".`,
           type: 'saved_search',
-          actionUrl: `/app/explore?${new URLSearchParams(params as Record<string, string>).toString()}`
+          actionUrl: `/app/explore?${new URLSearchParams(params as Record<string, string>).toString()}`,
         });
         notified++;
       }

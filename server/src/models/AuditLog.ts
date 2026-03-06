@@ -31,7 +31,7 @@ const AuditLogSchema = new Schema<AuditLogDocument>(
     requestId: String,
     correlationId: String,
     ip: String,
-    userAgent: String
+    userAgent: String,
   },
   { timestamps: true }
 );
@@ -50,7 +50,7 @@ AuditLogSchema.post('save', (doc: AuditLogDocument) => {
     entityId: doc.entityId,
     createdAt: doc.createdAt,
     requestId: doc.requestId,
-    correlationId: doc.correlationId
+    correlationId: doc.correlationId,
   });
 });
 

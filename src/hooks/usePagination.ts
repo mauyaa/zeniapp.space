@@ -34,10 +34,7 @@ interface PaginationResult<T> {
  * Client-side pagination hook.
  * Pass in the full list and get back paginated results + controls.
  */
-export function usePagination<T>(
-  items: T[],
-  options: PaginationOptions = {}
-): PaginationResult<T> {
+export function usePagination<T>(items: T[], options: PaginationOptions = {}): PaginationResult<T> {
   const { initialPage = 1, pageSize = 10 } = options;
   const [page, setPage] = useState(initialPage);
 

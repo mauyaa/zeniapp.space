@@ -11,7 +11,7 @@ import {
   getAgentOtherPartyLabel,
   getAdminOtherPartyLabel,
   getAgentOtherPartyKey,
-  getAdminOtherPartyKey
+  getAdminOtherPartyKey,
 } from './contactLabels';
 
 type InboxTab = 'All' | 'Unread' | 'Archived';
@@ -32,7 +32,7 @@ export function InboxPage() {
     activeConversationId,
     searchTerm,
     setSearchTerm,
-    setActiveConversation
+    setActiveConversation,
   } = useChat();
   const basePath =
     role === 'agent' ? '/agent/messages' : role === 'admin' ? '/admin/messages' : '/app/messages';
@@ -102,7 +102,7 @@ export function InboxPage() {
     navigate(`${basePath}/${conversationIdToOpen}`);
   };
 
-  const displayName = (conversation: typeof filteredConversations[0]) => {
+  const displayName = (conversation: (typeof filteredConversations)[0]) => {
     if (role === 'user') return resolveUserContactLabel(conversation.agentSnapshot?.name);
     if (role === 'agent') return getAgentOtherPartyLabel(conversation);
     if (role === 'admin') return getAdminOtherPartyLabel(conversation);
@@ -206,8 +206,8 @@ export function InboxPage() {
             {loadingConversations
               ? 'Loading...'
               : baseConversations.length === 0
-              ? 'Create Zeni Agent & Zeni Admin'
-              : 'Refresh'}
+                ? 'Create Zeni Agent & Zeni Admin'
+                : 'Refresh'}
           </button>
         </div>
       ) : (
@@ -225,13 +225,13 @@ export function InboxPage() {
               ? typeof lastMessage.content === 'string'
                 ? lastMessage.content
                 : lastMessage.type === 'attachment'
-                ? 'Sent an attachment'
-                : lastMessage.type === 'schedule'
-                ? 'Viewing scheduled'
-                : 'Message'
+                  ? 'Sent an attachment'
+                  : lastMessage.type === 'schedule'
+                    ? 'Viewing scheduled'
+                    : 'Message'
               : conversation.lastMessagePreview
-              ? conversation.lastMessagePreview
-              : 'Tap to start chatting';
+                ? conversation.lastMessagePreview
+                : 'Tap to start chatting';
             const isActive = activeId === conversation.id;
             const name = displayName(conversation);
 
@@ -255,7 +255,9 @@ export function InboxPage() {
                 >
                   <div className="min-w-0">
                     <div className="flex items-baseline justify-between gap-2">
-                      <span className="line-clamp-1 text-[1.08rem] font-semibold text-black">{name}</span>
+                      <span className="line-clamp-1 text-[1.08rem] font-semibold text-black">
+                        {name}
+                      </span>
                       <span className="flex-shrink-0 text-xs text-gray-500">
                         {formatTime(conversation.lastMessageAt)}
                       </span>

@@ -13,12 +13,17 @@ export interface MessageDocument extends Document {
 
 const MessageSchema = new Schema<MessageDocument>(
   {
-    conversationId: { type: Schema.Types.ObjectId, ref: 'Conversation', index: true, required: true },
+    conversationId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Conversation',
+      index: true,
+      required: true,
+    },
     senderType: { type: String, required: true },
     type: { type: String, required: true },
     content: Schema.Types.Mixed,
     status: { type: String, default: 'sent' },
-    clientTempId: { type: String, index: true }
+    clientTempId: { type: String, index: true },
   },
   { timestamps: true }
 );

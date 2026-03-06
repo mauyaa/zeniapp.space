@@ -7,17 +7,15 @@ import {
   updateEarbNumber,
   submitUserKyc,
   submitBusinessVerify,
-  listUserKyc
+  listUserKyc,
 } from '../services/verification.service';
 
 export async function submitVerificationEvidence(req: AuthRequest, res: Response) {
   const schema = z.object({
-    body: z.object({
-      url: z.string().url(),
-      note: z.string().max(200).optional()
-    })
+    url: z.string().url(),
+    note: z.string().max(200).optional(),
   });
-  const { body } = schema.parse(req);
+  const body = schema.parse(req.body);
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
   const updated = await addVerificationEvidence(userId, body);
@@ -32,7 +30,9 @@ export async function getVerificationHistory(req: AuthRequest, res: Response) {
 }
 
 export async function updateEarb(req: AuthRequest, res: Response) {
-  const schema = z.object({ body: z.object({ earbRegistrationNumber: z.string().min(1).max(64) }) });
+  const schema = z.object({
+    body: z.object({ earbRegistrationNumber: z.string().min(1).max(64) }),
+  });
   const { body } = schema.parse(req);
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
@@ -42,8 +42,11 @@ export async function updateEarb(req: AuthRequest, res: Response) {
 
 /** Any user: submit identity (KYC) documents for admin review. */
 export async function submitKyc(req: AuthRequest, res: Response) {
-  const schema = z.object({ body: z.object({ url: z.string().url(), note: z.string().max(200).optional() }) });
-  const { body } = schema.parse(req);
+  const schema = z.object({
+    url: z.string().trim().min(4, 'Document URL required'),
+    note: z.string().max(500).optional(),
+  });
+  const body = schema.parse(req.body);
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
   const updated = await submitUserKyc(userId, body);
@@ -60,8 +63,8 @@ export async function getKycStatus(req: AuthRequest, res: Response) {
 
 /** Agent: submit business verification documents. */
 export async function submitBusinessVerifyEvidence(req: AuthRequest, res: Response) {
-  const schema = z.object({ body: z.object({ url: z.string().url(), note: z.string().max(200).optional() }) });
-  const { body } = schema.parse(req);
+  const schema = z.object({ url: z.string().url(), note: z.string().max(200).optional() });
+  const body = schema.parse(req.body);
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
   const updated = await submitBusinessVerify(userId, body);

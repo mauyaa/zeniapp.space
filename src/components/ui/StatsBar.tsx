@@ -30,9 +30,7 @@ export function StatsBar({ items, variant = 'zeni', loading = false, className }
     <div
       className={cn(
         'inline-flex flex-wrap border rounded-lg overflow-hidden',
-        isZeni
-          ? 'border-zinc-200 bg-white'
-          : 'border-slate-700 bg-slate-900/60',
+        isZeni ? 'border-zinc-200 bg-white' : 'border-slate-700 bg-slate-900/60',
         className
       )}
       role="group"
@@ -43,7 +41,8 @@ export function StatsBar({ items, variant = 'zeni', loading = false, className }
           key={item.label}
           className={cn(
             'px-5 py-3.5 flex flex-col justify-center min-w-[100px]',
-            idx < items.length - 1 && (isZeni ? 'border-r border-zinc-200' : 'border-r border-slate-700')
+            idx < items.length - 1 &&
+              (isZeni ? 'border-r border-zinc-200' : 'border-r border-slate-700')
           )}
         >
           <p
@@ -64,16 +63,18 @@ export function StatsBar({ items, variant = 'zeni', loading = false, className }
             />
           ) : (
             <div className="flex items-center gap-2">
-              {item.dot && (
-                <span className={cn('h-2 w-2 rounded-full flex-shrink-0', item.dot)} />
-              )}
+              {item.dot && <span className={cn('h-2 w-2 rounded-full flex-shrink-0', item.dot)} />}
               <p
                 className={cn(
                   'text-xl font-semibold tabular-nums',
                   isZeni ? 'font-serif' : 'font-mono',
                   item.muted
-                    ? (isZeni ? 'text-zinc-300' : 'text-slate-600')
-                    : (isZeni ? 'text-zinc-900' : 'text-slate-100')
+                    ? isZeni
+                      ? 'text-zinc-300'
+                      : 'text-slate-600'
+                    : isZeni
+                      ? 'text-zinc-900'
+                      : 'text-slate-100'
                 )}
               >
                 {item.value}

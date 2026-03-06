@@ -12,12 +12,14 @@ export const translations: Record<Locale, Record<string, string>> = {
     'refunds.requestRefund': 'Request refund',
     'refunds.myRequests': 'My refund requests',
     'refunds.noRequests': 'No refund requests yet',
-    'refunds.noRequestsHint': 'If a payment should be refunded, use "Request refund" above. Zeni acts as mediator so you get a fair outcome.',
+    'refunds.noRequestsHint':
+      'If a payment should be refunded, use "Request refund" above. Zeni acts as mediator so you get a fair outcome.',
     'refunds.pending': 'Under review',
     'refunds.approved': 'Approved',
     'refunds.rejected': 'Rejected',
     'viewings.title': 'Your viewing schedule',
-    'viewings.subtitle': 'Track upcoming property visits, manage confirmations, and connect with agents.',
+    'viewings.subtitle':
+      'Track upcoming property visits, manage confirmations, and connect with agents.',
     'viewings.bookViewing': 'Book a viewing',
     'viewings.confirmCompleted': 'Confirm viewing completed',
     'viewings.noViewings': 'No viewings yet',
@@ -34,7 +36,8 @@ export const translations: Record<Locale, Record<string, string>> = {
     'refunds.requestRefund': 'Omba kurudishwa',
     'refunds.myRequests': 'Maombi yangu',
     'refunds.noRequests': 'Hakuna maombi bado',
-    'refunds.noRequestsHint': 'Ikiwa malipo yanapaswa kurudishwa, tumia "Omba kurudishwa" hapa juu. Zeni ni mpatanishi ili upate matokeo sawa.',
+    'refunds.noRequestsHint':
+      'Ikiwa malipo yanapaswa kurudishwa, tumia "Omba kurudishwa" hapa juu. Zeni ni mpatanishi ili upate matokeo sawa.',
     'refunds.pending': 'Inakaguliwa',
     'refunds.approved': 'Imekubaliwa',
     'refunds.rejected': 'Imekataliwa',

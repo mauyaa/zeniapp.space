@@ -44,10 +44,13 @@ const paddingStyles = {
 
 // Auto-theme styles use Tailwind dark: variants so the card follows the global theme
 const autoVariantStyles: Record<string, string> = {
-  default: 'border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70 dark:shadow-lg dark:shadow-slate-950/30',
-  elevated: 'border-slate-200 bg-white shadow-lg shadow-slate-200/50 dark:border-slate-800 dark:bg-slate-900 dark:shadow-xl dark:shadow-slate-950/50',
+  default:
+    'border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70 dark:shadow-lg dark:shadow-slate-950/30',
+  elevated:
+    'border-slate-200 bg-white shadow-lg shadow-slate-200/50 dark:border-slate-800 dark:bg-slate-900 dark:shadow-xl dark:shadow-slate-950/50',
   outlined: 'border-slate-200 bg-transparent dark:border-slate-700 dark:bg-transparent',
-  glass: 'border-slate-200/50 bg-white/80 backdrop-blur-xl shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50 dark:backdrop-blur-xl',
+  glass:
+    'border-slate-200/50 bg-white/80 backdrop-blur-xl shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50 dark:backdrop-blur-xl',
 };
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(
@@ -68,9 +71,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
 
     // Resolve variant styles based on theme mode
     const resolvedVariantClass =
-      theme === 'auto'
-        ? autoVariantStyles[variant]
-        : variantStyles[theme][variant];
+      theme === 'auto' ? autoVariantStyles[variant] : variantStyles[theme][variant];
 
     return (
       <motion.div
@@ -119,9 +120,21 @@ export function CardHeader({
   const isAuto = theme === 'auto';
   const isDark = theme === 'dark';
 
-  const iconBg = isAuto ? 'bg-slate-100 dark:bg-slate-800' : isDark ? 'bg-slate-800' : 'bg-slate-100';
-  const titleColor = isAuto ? 'text-slate-900 dark:text-slate-100' : isDark ? 'text-slate-100' : 'text-slate-900';
-  const subtitleColor = isAuto ? 'text-slate-500 dark:text-slate-400' : isDark ? 'text-slate-400' : 'text-slate-500';
+  const iconBg = isAuto
+    ? 'bg-slate-100 dark:bg-slate-800'
+    : isDark
+      ? 'bg-slate-800'
+      : 'bg-slate-100';
+  const titleColor = isAuto
+    ? 'text-slate-900 dark:text-slate-100'
+    : isDark
+      ? 'text-slate-100'
+      : 'text-slate-900';
+  const subtitleColor = isAuto
+    ? 'text-slate-500 dark:text-slate-400'
+    : isDark
+      ? 'text-slate-400'
+      : 'text-slate-500';
 
   return (
     <div className={clsx('flex items-start justify-between gap-4', className)} {...props}>
@@ -132,14 +145,8 @@ export function CardHeader({
           </div>
         )}
         <div>
-          <h3 className={clsx('font-semibold', titleColor)}>
-            {title}
-          </h3>
-          {subtitle && (
-            <p className={clsx('mt-0.5 text-sm', subtitleColor)}>
-              {subtitle}
-            </p>
-          )}
+          <h3 className={clsx('font-semibold', titleColor)}>{title}</h3>
+          {subtitle && <p className={clsx('mt-0.5 text-sm', subtitleColor)}>{subtitle}</p>}
         </div>
       </div>
       {action && <div>{action}</div>}
@@ -169,17 +176,14 @@ interface CardFooterProps extends React.HTMLAttributes<HTMLDivElement> {
   theme?: 'dark' | 'light' | 'auto';
 }
 
-export function CardFooter({
-  className,
-  theme = 'auto',
-  children,
-  ...props
-}: CardFooterProps) {
+export function CardFooter({ className, theme = 'auto', children, ...props }: CardFooterProps) {
   const isAuto = theme === 'auto';
   const isDark = theme === 'dark';
   const borderBg = isAuto
     ? 'border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50'
-    : isDark ? 'border-slate-800 bg-slate-900/50' : 'border-slate-100 bg-slate-50';
+    : isDark
+      ? 'border-slate-800 bg-slate-900/50'
+      : 'border-slate-100 bg-slate-50';
 
   return (
     <div
@@ -204,14 +208,14 @@ interface CardSkeletonProps {
   hasHeader?: boolean;
 }
 
-export function CardSkeleton({
-  theme = 'auto',
-  lines = 3,
-  hasHeader = true,
-}: CardSkeletonProps) {
+export function CardSkeleton({ theme = 'auto', lines = 3, hasHeader = true }: CardSkeletonProps) {
   const isAuto = theme === 'auto';
   const isDark = theme === 'dark';
-  const bgColor = isAuto ? 'bg-slate-200 dark:bg-slate-800' : isDark ? 'bg-slate-800' : 'bg-slate-200';
+  const bgColor = isAuto
+    ? 'bg-slate-200 dark:bg-slate-800'
+    : isDark
+      ? 'bg-slate-800'
+      : 'bg-slate-200';
 
   return (
     <Card theme={theme} className="animate-pulse">

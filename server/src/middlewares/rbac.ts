@@ -8,7 +8,7 @@ export function requireRole(roles: Role[]) {
     if (env.nodeEnv === 'test' && process.env.RBAC_RELAX === 'true') return next();
     if (!req.user) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
     if (!roles.includes(req.user.role)) {
-      if (env.nodeEnv === 'test') {
+      if (env.nodeEnv === 'test' && process.env.RBAC_DEBUG === 'true') {
         console.warn('[rbac] forbidden', { expected: roles, got: req.user.role });
       }
       return res.status(403).json({ code: 'FORBIDDEN', message: 'Insufficient role' });
@@ -16,4 +16,3 @@ export function requireRole(roles: Role[]) {
     next();
   };
 }
-

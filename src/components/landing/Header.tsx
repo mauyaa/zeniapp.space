@@ -9,7 +9,7 @@ const navItems = [
   { label: 'Trust', href: '#trust' },
   { label: 'How it works', href: '#how-it-works' },
   { label: 'Agents', href: '#agents' },
-  { label: 'Contact', href: '#contact' }
+  { label: 'Contact', href: '#contact' },
 ];
 
 export function Header() {
@@ -38,7 +38,10 @@ export function Header() {
           scrolled ? 'h-14' : 'h-16'
         )}
       >
-        <Link to="/" className="flex items-center gap-3 text-sm font-semibold tracking-[0.2em] text-[rgb(var(--text))]">
+        <Link
+          to="/"
+          className="flex items-center gap-3 text-sm font-semibold tracking-[0.2em] text-[rgb(var(--text))]"
+        >
           <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[rgb(var(--border))] text-[rgb(var(--accent))]">
             Z
           </span>
@@ -69,7 +72,13 @@ export function Header() {
             className="flex h-9 w-9 items-center justify-center rounded-full border border-[rgb(var(--border))] text-[rgb(var(--muted))] transition hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--accent))]"
             aria-label="Scroll to listings"
           >
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
               <path d="M12 5v14" strokeLinecap="round" />
               <path d="M7 14l5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -83,7 +92,13 @@ export function Header() {
           aria-label="Toggle navigation"
           aria-expanded={menuOpen}
         >
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <svg
+            viewBox="0 0 24 24"
+            className="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
             <path d="M4 7h16" strokeLinecap="round" />
             <path d="M4 12h16" strokeLinecap="round" />
             <path d="M4 17h16" strokeLinecap="round" />
@@ -104,7 +119,10 @@ export function Header() {
               />
             ))}
             <div className="flex items-center gap-4 pt-3">
-              <Link to="/login" className="text-sm text-[rgb(var(--muted))] hover:text-[rgb(var(--accent))]">
+              <Link
+                to="/login"
+                className="text-sm text-[rgb(var(--muted))] hover:text-[rgb(var(--accent))]"
+              >
                 Sign in
               </Link>
               <Link

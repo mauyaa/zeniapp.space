@@ -5,18 +5,18 @@ const steps = [
   {
     id: '01',
     title: 'Discover',
-    description: 'Search Kenya on the map, compare listings, and shortlist faster.'
+    description: 'Search Kenya on the map, compare listings, and shortlist faster.',
   },
   {
     id: '02',
     title: 'Verify',
-    description: 'Listings and agents are checked before you engage.'
+    description: 'Listings and agents are checked before you engage.',
   },
   {
     id: '03',
     title: 'Connect',
-    description: 'Chat, schedule, and visit with trusted agents.'
-  }
+    description: 'Chat, schedule, and visit with trusted agents.',
+  },
 ];
 
 export function StepsSlider() {
@@ -39,7 +39,9 @@ export function StepsSlider() {
             className="h-full w-full object-cover"
           />
         </div>
-        <div className="mt-3 text-xs text-[rgb(var(--muted))]">Sample imagery - replace in /public/landing</div>
+        <div className="mt-3 text-xs text-[rgb(var(--muted))]">
+          Sample imagery - replace in /public/landing
+        </div>
       </div>
 
       <div className="relative lg:-ml-16">
@@ -77,7 +79,13 @@ export function StepsSlider() {
               className="flex h-9 w-9 items-center justify-center rounded-full border border-[rgb(var(--border))] text-[rgb(var(--muted))] transition hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--accent))]"
               aria-label="Previous step"
             >
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
                 <path d="M15 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
@@ -87,7 +95,13 @@ export function StepsSlider() {
               className="flex h-9 w-9 items-center justify-center rounded-full border border-[rgb(var(--border))] text-[rgb(var(--muted))] transition hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--accent))]"
               aria-label="Next step"
             >
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
                 <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>

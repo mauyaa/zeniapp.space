@@ -66,7 +66,7 @@ export function ThemeProvider({ children, defaultTheme = 'system' }: ThemeProvid
     root.classList.remove('light', 'dark');
     root.classList.add(effectiveTheme);
     root.setAttribute('data-theme', effectiveTheme);
-    
+
     // Update meta theme-color for mobile browser chrome
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
@@ -80,7 +80,7 @@ export function ThemeProvider({ children, defaultTheme = 'system' }: ThemeProvid
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prev => {
+    setTheme((prev) => {
       if (prev === 'light') return 'dark';
       if (prev === 'dark') return 'light';
       return 'dark'; // If system, toggle to dark
@@ -92,14 +92,10 @@ export function ThemeProvider({ children, defaultTheme = 'system' }: ThemeProvid
     effectiveTheme,
     toggleTheme,
     setTheme,
-    isDark
+    isDark,
   };
 
-  return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {
@@ -124,17 +120,13 @@ export function ThemedComponent({
   children,
   lightClassName = '',
   darkClassName = '',
-  className = ''
+  className = '',
 }: ThemedComponentProps) {
   const { isDark } = useTheme();
-  
+
   const combinedClassName = `${className} ${isDark ? darkClassName : lightClassName}`.trim();
-  
-  return (
-    <div className={combinedClassName}>
-      {children}
-    </div>
-  );
+
+  return <div className={combinedClassName}>{children}</div>;
 }
 
 /**
@@ -147,17 +139,17 @@ interface ThemeSwitcherProps {
 
 export function ThemeSwitcher({ variant = 'icon', size = 'md' }: ThemeSwitcherProps) {
   const { theme, toggleTheme, isDark } = useTheme();
-  
+
   const sizeClasses = {
     sm: 'h-8 w-8',
     md: 'h-10 w-10',
-    lg: 'h-12 w-12'
+    lg: 'h-12 w-12',
   };
 
   const iconSize = {
     sm: 'w-4 h-4',
     md: 'w-5 h-5',
-    lg: 'w-6 h-6'
+    lg: 'w-6 h-6',
   };
 
   if (variant === 'icon') {
@@ -173,7 +165,11 @@ export function ThemeSwitcher({ variant = 'icon', size = 'md' }: ThemeSwitcherPr
           </svg>
         ) : (
           <svg className={iconSize[size]} fill="currentColor" viewBox="0 0 24 24">
-            <path fillRule="evenodd" d="M9.528 1.718a.75.75 0 0 1 .162.819A8.97 8.97 0 0 0 9 6a9 9 0 0 0 9 9 8.97 8.97 0 0 0 3.463-.69.75.75 0 0 1 .981.98 10.503 10.503 0 0 1-9.694 6.46c-5.799 0-10.5-4.7-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 0 1 .818.162Z" clipRule="evenodd" />
+            <path
+              fillRule="evenodd"
+              d="M9.528 1.718a.75.75 0 0 1 .162.819A8.97 8.97 0 0 0 9 6a9 9 0 0 0 9 9 8.97 8.97 0 0 0 3.463-.69.75.75 0 0 1 .981.98 10.503 10.503 0 0 1-9.694 6.46c-5.799 0-10.5-4.7-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 0 1 .818.162Z"
+              clipRule="evenodd"
+            />
           </svg>
         )}
       </button>
@@ -195,7 +191,11 @@ export function ThemeSwitcher({ variant = 'icon', size = 'md' }: ThemeSwitcherPr
       ) : (
         <>
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-            <path fillRule="evenodd" d="M9.528 1.718a.75.75 0 0 1 .162.819A8.97 8.97 0 0 0 9 6a9 9 0 0 0 9 9 8.97 8.97 0 0 0 3.463-.69.75.75 0 0 1 .981.98 10.503 10.503 0 0 1-9.694 6.46c-5.799 0-10.5-4.7-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 0 1 .818.162Z" clipRule="evenodd" />
+            <path
+              fillRule="evenodd"
+              d="M9.528 1.718a.75.75 0 0 1 .162.819A8.97 8.97 0 0 0 9 6a9 9 0 0 0 9 9 8.97 8.97 0 0 0 3.463-.69.75.75 0 0 1 .981.98 10.503 10.503 0 0 1-9.694 6.46c-5.799 0-10.5-4.7-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 0 1 .818.162Z"
+              clipRule="evenodd"
+            />
           </svg>
           <span>Dark Mode</span>
         </>

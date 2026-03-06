@@ -5,7 +5,7 @@ import { Badge } from '../../../components/ui/Badge';
 
 const pending = [
   { id: 'tx-44', invoice: 'inv-101', phone: '07xx123', amount: 'KES 25,000' },
-  { id: 'tx-45', invoice: 'inv-090', phone: '07xx555', amount: 'KES 12,000' }
+  { id: 'tx-45', invoice: 'inv-090', phone: '07xx555', amount: 'KES 12,000' },
 ];
 
 export function PayAdminReconciliationPage() {

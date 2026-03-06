@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useToast } from '../../context/ToastContext';
 import { useChat } from '../../context/ChatContext';
-import { fetchPendingListings, verifyListing } from '../../lib/api';
+import { fetchPendingListings, verifyListing, deleteAdminListing } from '../../lib/api';
 import type { PendingListing } from '../../types/api';
 import { useAdminStepUp } from '../../context/AdminStepUpContext';
 import { errors } from '../../constants/messages';
@@ -34,11 +34,20 @@ export function ListingsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load on mount only
   }, []);
 
-  const handleAction = async (id: string, action: 'approve' | 'reject') => {
+  const handleAction = async (id: string, action: 'approve' | 'reject' | 'delete') => {
+    if (action === 'delete') {
+      const confirm = window.confirm('Are you sure you want to permanently delete this listing?');
+      if (!confirm) return;
+    }
+
     setActionId(id);
     try {
-      await runWithStepUp(() => verifyListing(id, action));
-      success(`Listing ${action}d`);
+      if (action === 'delete') {
+        await runWithStepUp(() => deleteAdminListing(id));
+      } else {
+        await runWithStepUp(() => verifyListing(id, action));
+      }
+      success(action === 'delete' ? 'Listing deleted' : `Listing ${action}d`);
       load();
     } catch (e) {
       error('Action failed');
@@ -65,7 +74,9 @@ export function ListingsPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-serif text-black mb-2">Inventory</h1>
-        <p className="text-sm text-gray-500">Approve listings that meet quality and compliance standards. Pending: {rows.length}</p>
+        <p className="text-sm text-gray-500">
+          Approve listings that meet quality and compliance standards. Pending: {rows.length}
+        </p>
       </div>
       {loading ? (
         <div className="rounded-sm border border-gray-200 bg-white shadow-sm overflow-hidden overflow-x-auto">
@@ -82,11 +93,21 @@ export function ListingsPage() {
             <tbody>
               {Array.from({ length: 5 }).map((_, idx) => (
                 <tr key={`listing-skeleton-${idx}`} className="border-b border-gray-100">
-                  <td className="py-3 pl-4 pr-2"><div className="h-3 w-16 rounded bg-gray-200 animate-pulse" /></td>
-                  <td className="py-3 px-2"><div className="h-3 w-44 rounded bg-gray-200 animate-pulse" /></td>
-                  <td className="py-3 px-2"><div className="h-3 w-20 rounded bg-gray-200 animate-pulse" /></td>
-                  <td className="py-3 px-2"><div className="h-5 w-16 rounded bg-gray-200 animate-pulse" /></td>
-                  <td className="py-3 pr-4 pl-2 text-right"><div className="h-8 w-24 rounded ml-auto bg-gray-200 animate-pulse" /></td>
+                  <td className="py-3 pl-4 pr-2">
+                    <div className="h-3 w-16 rounded bg-gray-200 animate-pulse" />
+                  </td>
+                  <td className="py-3 px-2">
+                    <div className="h-3 w-44 rounded bg-gray-200 animate-pulse" />
+                  </td>
+                  <td className="py-3 px-2">
+                    <div className="h-3 w-20 rounded bg-gray-200 animate-pulse" />
+                  </td>
+                  <td className="py-3 px-2">
+                    <div className="h-5 w-16 rounded bg-gray-200 animate-pulse" />
+                  </td>
+                  <td className="py-3 pr-4 pl-2 text-right">
+                    <div className="h-8 w-24 rounded ml-auto bg-gray-200 animate-pulse" />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -116,13 +137,19 @@ export function ListingsPage() {
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors last:border-b-0">
+                  <tr
+                    key={r._id}
+                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors last:border-b-0"
+                  >
                     <td className="py-3 pl-4 pr-2 font-mono text-xs text-gray-500 tabular-nums">
                       {r._id.slice(-8)}
                     </td>
                     <td className="py-3 px-2 text-black line-clamp-1 max-w-[200px]">{r.title}</td>
                     <td className="py-3 px-2 font-mono text-gray-700 tabular-nums">
-                      {(r as { currency?: string; price?: number }).currency} {(r as { price?: number }).price?.toLocaleString?.() ?? (r as { price?: number }).price ?? '—'}
+                      {(r as { currency?: string; price?: number }).currency}{' '}
+                      {(r as { price?: number }).price?.toLocaleString?.() ??
+                        (r as { price?: number }).price ??
+                        '—'}
                     </td>
                     <td className="py-3 px-2">
                       <span className="inline-flex items-center gap-1.5 rounded-sm border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-amber-700">
@@ -149,6 +176,15 @@ export function ListingsPage() {
                           aria-label={`Reject ${r.title}`}
                         >
                           Reject
+                        </Button>
+                        <Button
+                          size="sm"
+                          disabled={actionId === r._id}
+                          onClick={() => handleAction(r._id, 'delete')}
+                          variant="danger"
+                          aria-label={`Delete ${r.title}`}
+                        >
+                          Delete
                         </Button>
                         <Button
                           size="sm"

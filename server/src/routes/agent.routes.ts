@@ -2,12 +2,19 @@ import { Router } from 'express';
 import { auth } from '../middlewares/auth';
 import { requireRole } from '../middlewares/rbac';
 import { asyncHandler } from '../middlewares/errorHandler';
-import { getStats, dashboard, getAvailability, updateAvailability, payoutChecklist, payoutTest } from '../controllers/agent.controller';
+import {
+  getStats,
+  dashboard,
+  getAvailability,
+  updateAvailability,
+  payoutChecklist,
+  payoutTest,
+} from '../controllers/agent.controller';
 import {
   submitVerificationEvidence,
   getVerificationHistory,
   updateEarb,
-  submitBusinessVerifyEvidence
+  submitBusinessVerifyEvidence,
 } from '../controllers/verification.controller';
 
 const router = Router();

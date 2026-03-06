@@ -79,15 +79,30 @@ export function PayAdminReconcile() {
           <InsightCard label="Stale pending" value={insights.stalePending} tone="rose" />
           <InsightCard label="Failed" value={insights.failed} tone="slate" />
           <InsightCard label="Missing receipts" value={insights.missingReceipts} tone="yellow" />
-          {insights.lastStaleRun && <InsightCard label="Last stale sweep" value={new Date(insights.lastStaleRun).toLocaleString()} tone="emerald" />}
-          {insights.lastReceiptScan && <InsightCard label="Last receipt scan" value={new Date(insights.lastReceiptScan).toLocaleString()} tone="emerald" />}
+          {insights.lastStaleRun && (
+            <InsightCard
+              label="Last stale sweep"
+              value={new Date(insights.lastStaleRun).toLocaleString()}
+              tone="emerald"
+            />
+          )}
+          {insights.lastReceiptScan && (
+            <InsightCard
+              label="Last receipt scan"
+              value={new Date(insights.lastReceiptScan).toLocaleString()}
+              tone="emerald"
+            />
+          )}
         </div>
       )}
 
       {loading && (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, idx) => (
-            <div key={idx} className="h-16 animate-pulse rounded-2xl border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-800/50" />
+            <div
+              key={idx}
+              className="h-16 animate-pulse rounded-2xl border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-800/50"
+            />
           ))}
         </div>
       )}
@@ -140,13 +155,21 @@ export function PayAdminReconcile() {
   );
 }
 
-function InsightCard({ label, value, tone = 'emerald' }: { label: string; value: string | number; tone?: 'emerald' | 'amber' | 'rose' | 'yellow' | 'slate' }) {
+function InsightCard({
+  label,
+  value,
+  tone = 'emerald',
+}: {
+  label: string;
+  value: string | number;
+  tone?: 'emerald' | 'amber' | 'rose' | 'yellow' | 'slate';
+}) {
   const colors: Record<string, string> = {
     emerald: 'border-emerald-200 bg-emerald-50 text-emerald-800',
     amber: 'border-amber-200 bg-amber-50 text-amber-800',
     rose: 'border-rose-200 bg-rose-50 text-rose-800',
     yellow: 'border-yellow-200 bg-yellow-50 text-yellow-800',
-    slate: 'border-slate-200 bg-slate-50 text-slate-700'
+    slate: 'border-slate-200 bg-slate-50 text-slate-700',
   };
   return (
     <div className={`rounded-2xl border px-4 py-3 text-sm ${colors[tone] || colors.emerald}`}>
@@ -161,7 +184,7 @@ function Section({
   subtitle,
   items,
   onResolve,
-  onRefund
+  onRefund,
 }: {
   title: string;
   subtitle: string;
@@ -180,14 +203,18 @@ function Section({
       <div className="mt-4 space-y-3">
         {items.length === 0 && <div className="text-sm text-slate-500">No items.</div>}
         {items.map((tx) => (
-          <div key={tx._id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
+          <div
+            key={tx._id}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950"
+          >
             <div>
               <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                 {tx.currency} {tx.amount.toLocaleString()}
               </div>
               <div className="text-xs text-slate-500">Ref {tx.ref || '--'}</div>
               <div className="text-xs text-slate-500">
-                Approvals: {tx.approvals?.length || 0} {tx.approvals?.length ? ' / dual-control' : ''}
+                Approvals: {tx.approvals?.length || 0}{' '}
+                {tx.approvals?.length ? ' / dual-control' : ''}
               </div>
               {tx.riskLevel && <RiskBadge level={tx.riskLevel} flags={tx.riskFlags} />}
               {tx.receiptId && <div className="text-xs text-emerald-600">Receipt attached</div>}
@@ -217,14 +244,18 @@ function RiskBadge({ level, flags }: { level?: string; flags?: string[] }) {
   const colors: Record<string, string> = {
     high: 'bg-rose-50 text-rose-700 border-rose-200',
     medium: 'bg-amber-50 text-amber-700 border-amber-200',
-    low: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+    low: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   };
   const label = level ? level.toUpperCase() : 'LOW';
   const tone = level && colors[level] ? colors[level] : colors.low;
   return (
-    <div className={`mt-1 inline-flex items-center gap-2 rounded-full border px-2 py-1 text-[11px] font-semibold ${tone}`}>
+    <div
+      className={`mt-1 inline-flex items-center gap-2 rounded-full border px-2 py-1 text-[11px] font-semibold ${tone}`}
+    >
       <span>{label} risk</span>
-      {flags?.length ? <span className="text-[10px] text-slate-500">{flags.slice(0, 2).join(', ')}</span> : null}
+      {flags?.length ? (
+        <span className="text-[10px] text-slate-500">{flags.slice(0, 2).join(', ')}</span>
+      ) : null}
     </div>
   );
 }

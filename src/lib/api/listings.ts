@@ -22,6 +22,7 @@ export type ListingSearchParams = {
   amenities?: string;
   verifiedOnly?: boolean;
   availabilityOnly?: boolean;
+  noCache?: boolean;
   lng?: number;
   lat?: number;
   radiusKm?: number;
@@ -47,7 +48,13 @@ export type ListingCard = {
   purpose?: 'rent' | 'buy';
   floorPlans?: { label: string; url: string; sizeBytes?: number }[];
   catalogueUrl?: string;
-  location?: { neighborhood?: string; city?: string; lat?: number; lng?: number; coordinates?: number[] };
+  location?: {
+    neighborhood?: string;
+    city?: string;
+    lat?: number;
+    lng?: number;
+    coordinates?: number[];
+  };
   beds?: number;
   baths?: number;
   sqm?: number;
@@ -115,7 +122,9 @@ export function fetchListing(id: string, options?: { signal?: AbortSignal }): Pr
   return request(`/listings/${id}`, options);
 }
 
-export function fetchSavedListings(options?: { signal?: AbortSignal }): Promise<{ items: ListingCard[] }> {
+export function fetchSavedListings(options?: {
+  signal?: AbortSignal;
+}): Promise<{ items: ListingCard[] }> {
   return request<{ items: ListingCard[] }>('/listings/saved', options);
 }
 
@@ -127,8 +136,14 @@ export function toggleAlertListing(listingId: string): Promise<{ alert: boolean 
   return request(`/listings/${listingId}/alert`, { method: 'POST' });
 }
 
-export function recordLead(listingId: string, source: 'whatsapp' | 'message' | 'call'): Promise<{ success: boolean; leadId: string }> {
-  return request(`/listings/${listingId}/lead`, { method: 'POST', body: JSON.stringify({ source }) });
+export function recordLead(
+  listingId: string,
+  source: 'whatsapp' | 'message' | 'call'
+): Promise<{ success: boolean; leadId: string }> {
+  return request(`/listings/${listingId}/lead`, {
+    method: 'POST',
+    body: JSON.stringify({ source }),
+  });
 }
 
 // ---------- Image uploads ----------
@@ -273,7 +288,9 @@ export function fetchSharedSavedSearch(token: string) {
 
 // ---------- Recommendations ----------
 
-export function fetchRecommendations(options?: { signal?: AbortSignal }): Promise<{ items: ListingCard[] }> {
+export function fetchRecommendations(options?: {
+  signal?: AbortSignal;
+}): Promise<{ items: ListingCard[] }> {
   return request('/recommendations', options);
 }
 

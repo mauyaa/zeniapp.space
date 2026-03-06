@@ -1,4 +1,3 @@
-import React from 'react';
 import { ErrorBoundary, setupGlobalErrorHandling } from './components/ErrorBoundary';
 import { AppProviders } from './providers/AppProviders';
 import { RoutesIndex } from './routes';

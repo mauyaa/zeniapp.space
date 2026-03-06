@@ -1,14 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Flag, 
-  X, 
-  AlertTriangle, 
-  ShieldAlert, 
-  Ban,
-  CheckCircle,
-  Loader2 
-} from 'lucide-react';
+import { Flag, X, AlertTriangle, ShieldAlert, Ban, CheckCircle, Loader2 } from 'lucide-react';
 import { api } from '../../lib/api';
 
 /**
@@ -18,7 +10,11 @@ import { api } from '../../lib/api';
 type ReportCategory = 'scam' | 'misleading' | 'inappropriate' | 'other';
 type Severity = 'low' | 'medium' | 'high';
 
-const categories: { value: ReportCategory; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+const categories: {
+  value: ReportCategory;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
   { value: 'scam', label: 'Scam / Fraud', icon: ShieldAlert },
   { value: 'misleading', label: 'Misleading Info', icon: AlertTriangle },
   { value: 'inappropriate', label: 'Inappropriate Content', icon: Ban },
@@ -39,7 +35,7 @@ export function ReportButton({ listingId, variant = 'button' }: ReportButtonProp
 
   const handleSubmit = async () => {
     if (!category) return;
-    
+
     setStatus('submitting');
     try {
       await api.reportListing(listingId, { category, severity, message });

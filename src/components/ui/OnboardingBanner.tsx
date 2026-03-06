@@ -78,8 +78,12 @@ export function OnboardingBanner() {
       >
         <div className="flex items-start justify-between mb-5">
           <div>
-            <h2 className="text-lg font-serif font-semibold text-zeni-foreground">Welcome to Zeni</h2>
-            <p className="text-sm text-zinc-600 mt-0.5">Here's how to get started with your property search.</p>
+            <h2 className="text-lg font-serif font-semibold text-zeni-foreground">
+              Welcome to Zeni
+            </h2>
+            <p className="text-sm text-zinc-600 mt-0.5">
+              Here's how to get started with your property search.
+            </p>
           </div>
           <button
             onClick={handleDismiss}
@@ -108,13 +112,21 @@ export function OnboardingBanner() {
                   'group'
                 )}
               >
-                <div className={cn('flex h-9 w-9 items-center justify-center rounded-lg flex-shrink-0', step.color)}>
+                <div
+                  className={cn(
+                    'flex h-9 w-9 items-center justify-center rounded-lg flex-shrink-0',
+                    step.color
+                  )}
+                >
                   <Icon className="h-4 w-4" aria-hidden="true" />
                 </div>
                 <div className="min-w-0">
                   <div className="text-sm font-semibold text-zeni-foreground flex items-center gap-1">
                     {step.title}
-                    <ArrowRight className="h-3 w-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" aria-hidden="true" />
+                    <ArrowRight
+                      className="h-3 w-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all"
+                      aria-hidden="true"
+                    />
                   </div>
                   <p className="text-xs text-zinc-500 mt-0.5">{step.desc}</p>
                 </div>

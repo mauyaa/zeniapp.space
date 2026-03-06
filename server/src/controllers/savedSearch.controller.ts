@@ -8,7 +8,7 @@ import {
   updateSavedSearch,
   duplicateSavedSearch,
   shareSavedSearch,
-  getSharedSavedSearch
+  getSharedSavedSearch,
 } from '../services/savedSearch.service';
 import { objectIdSchema } from '../utils/validators';
 
@@ -16,7 +16,7 @@ const savedSearchSchema = z.object({
   name: z.string().min(1).max(80),
   params: z.record(z.any()).default({}),
   alertsEnabled: z.boolean().optional(),
-  snoozeUntil: z.coerce.date().nullable().optional()
+  snoozeUntil: z.coerce.date().nullable().optional(),
 });
 
 export async function list(req: AuthRequest, res: Response) {
@@ -40,7 +40,8 @@ export async function update(req: AuthRequest, res: Response) {
   const { id } = z.object({ id: objectIdSchema }).parse({ id: req.params.id });
   const body = savedSearchSchema.partial().parse(req.body);
   const updated = await updateSavedSearch(userId, id, body);
-  if (!updated) return res.status(404).json({ code: 'NOT_FOUND', message: 'Saved search not found' });
+  if (!updated)
+    return res.status(404).json({ code: 'NOT_FOUND', message: 'Saved search not found' });
   res.json(updated);
 }
 
@@ -74,6 +75,7 @@ export async function remove(req: AuthRequest, res: Response) {
   if (!userId) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
   const { id } = z.object({ id: objectIdSchema }).parse({ id: req.params.id });
   const deleted = await deleteSavedSearch(userId, id);
-  if (!deleted) return res.status(404).json({ code: 'NOT_FOUND', message: 'Saved search not found' });
+  if (!deleted)
+    return res.status(404).json({ code: 'NOT_FOUND', message: 'Saved search not found' });
   res.status(204).send();
 }

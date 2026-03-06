@@ -15,21 +15,21 @@ const CONNECTION_WINDOW_MS = 60000; // 1 minute
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
   const record = connectionAttempts.get(ip);
-  
+
   if (!record) {
     connectionAttempts.set(ip, { count: 1, lastAttempt: now });
     return false;
   }
-  
+
   // Reset if outside window
   if (now - record.lastAttempt > CONNECTION_WINDOW_MS) {
     connectionAttempts.set(ip, { count: 1, lastAttempt: now });
     return false;
   }
-  
+
   record.count++;
   record.lastAttempt = now;
-  
+
   return record.count > MAX_CONNECTION_ATTEMPTS;
 }
 
@@ -40,12 +40,12 @@ export function initSocket(httpServer: any): Server {
     path: '/api/socket.io',
     cors: {
       origin: corsOrigins,
-      credentials: true
+      credentials: true,
     },
     pingTimeout: 30000,
     pingInterval: 25000,
     connectTimeout: 10000,
-    maxHttpBufferSize: 1e6 // 1MB
+    maxHttpBufferSize: 1e6, // 1MB
   });
 
   // Connection rate limiting middleware
@@ -62,31 +62,39 @@ export function initSocket(httpServer: any): Server {
     const token =
       (socket.handshake.auth as any)?.token ||
       (socket.handshake.headers.authorization as string)?.replace('Bearer ', '');
-    
+    const publicKey = (socket.handshake.auth as any)?.publicKey;
+
+    // Allow public, read-only landing feed when key matches
+    if (!token && publicKey && env.publicFeedKey && publicKey === env.publicFeedKey) {
+      (socket as any).user = { id: 'public', role: 'guest' };
+      socket.join('public:listings');
+      return next();
+    }
+
     if (!token) {
       return next(new Error('Authentication required'));
     }
-    
+
     try {
       const payload = jwt.verify(token, env.jwtSecret) as { sub: string; role: string };
       const user = await UserModel.findById(payload.sub).select('_id role status').lean();
-      
+
       if (!user) {
         return next(new Error('User not found'));
       }
-      
+
       if (user.status === 'banned') {
         return next(new Error('Account is banned'));
       }
-      
+
       (socket as any).user = { id: String(user._id), role: user.role };
       socket.join(`user:${user._id}`);
       socket.join(`role:${user.role}`);
-      
+
       if (user.role === 'agent') {
         socket.join(`agent:${user._id}`);
       }
-      
+
       next();
     } catch (e) {
       const error = e as Error;
@@ -104,7 +112,7 @@ export function initSocket(httpServer: any): Server {
       if (data.conversationId) {
         socket.to(`conversation:${data.conversationId}`).emit('typing', {
           conversationId: data.conversationId,
-          from: user?.id
+          from: user?.id,
         });
       }
     });

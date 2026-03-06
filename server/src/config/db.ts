@@ -30,13 +30,20 @@ export async function connectDB(retries = MAX_RETRIES): Promise<void> {
       autoIndex: !isProd,
     });
 
-    if (!isTest) console.log('[DB] Connected successfully to', env.mongoUri.replace(/\/\/.*@/, '//<credentials>@'));
+    if (!isTest)
+      console.log(
+        '[DB] Connected successfully to',
+        env.mongoUri.replace(/\/\/.*@/, '//<credentials>@')
+      );
   } catch (error) {
     const err = error as Error;
     if (!isTest) console.error(`[DB] Connection failed: ${err.message}`);
 
     if (retries > 0) {
-      if (!isTest) console.log(`[DB] Retrying connection in ${RETRY_DELAY_MS / 1000}s... (${retries} attempts left)`);
+      if (!isTest)
+        console.log(
+          `[DB] Retrying connection in ${RETRY_DELAY_MS / 1000}s... (${retries} attempts left)`
+        );
       await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
       return connectDB(retries - 1);
     }

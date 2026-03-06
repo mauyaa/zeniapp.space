@@ -2,14 +2,15 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ShieldCheck, KeyRound, X } from 'lucide-react';
 import { Button } from '../ui/Button';
 
-const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+const FOCUSABLE_SELECTOR =
+  'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 export function AdminStepUpModal({
   open,
   loading,
   error,
   onClose,
-  onSubmit
+  onSubmit,
 }: {
   open: boolean;
   loading: boolean;
@@ -69,7 +70,11 @@ export function AdminStepUpModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-      <div ref={containerRef} onKeyDown={handleKeyDown} className="w-full max-w-md rounded-2xl border border-yellow-500/30 bg-[#0b0b0f] p-6 shadow-2xl">
+      <div
+        ref={containerRef}
+        onKeyDown={handleKeyDown}
+        className="w-full max-w-md rounded-2xl border border-yellow-500/30 bg-[#0b0b0f] p-6 shadow-2xl"
+      >
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-yellow-500/10 text-yellow-400">
@@ -77,7 +82,9 @@ export function AdminStepUpModal({
             </div>
             <div>
               <div className="text-sm font-semibold text-white">Admin Step-Up</div>
-              <div className="text-xs text-zinc-400">Confirm a sensitive action with your MFA code.</div>
+              <div className="text-xs text-zinc-400">
+                Confirm a sensitive action with your MFA code.
+              </div>
             </div>
           </div>
           <button onClick={onClose} className="text-zinc-500 hover:text-white" aria-label="Close">
@@ -102,7 +109,9 @@ export function AdminStepUpModal({
           {error && (
             <div className="rounded-lg bg-rose-900/20 border border-rose-800 px-3 py-2 text-xs text-rose-300">
               {error}
-              <p className="mt-1 text-rose-400/80">If your code expired, cancel and try the action again to be prompted for a new code.</p>
+              <p className="mt-1 text-rose-400/80">
+                If your code expired, cancel and try the action again to be prompted for a new code.
+              </p>
             </div>
           )}
         </div>

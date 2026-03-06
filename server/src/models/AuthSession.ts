@@ -18,9 +18,12 @@ const AuthSessionSchema = new Schema<AuthSessionDocument>(
     ip: String,
     lastUsedAt: Date,
     stepUpVerifiedAt: Date,
-    expiresAt: { type: Date, required: true, index: { expireAfterSeconds: 0 } }
+    expiresAt: { type: Date, required: true, index: { expireAfterSeconds: 0 } },
   },
   { timestamps: true }
 );
 
-export const AuthSessionModel = mongoose.model<AuthSessionDocument>('AuthSession', AuthSessionSchema);
+export const AuthSessionModel = mongoose.model<AuthSessionDocument>(
+  'AuthSession',
+  AuthSessionSchema
+);

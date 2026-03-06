@@ -24,7 +24,7 @@ export function publishDomainEvent(event: DomainEvent) {
     ...event,
     occurredAt: event.occurredAt || new Date().toISOString(),
     service: 'zeni-api',
-    payload: event.payload ? redactPII(event.payload) : undefined
+    payload: event.payload ? redactPII(event.payload) : undefined,
   };
 
   if (env.nodeEnv === 'development') {
@@ -46,9 +46,9 @@ export function publishDomainEvent(event: DomainEvent) {
         path: url.pathname + url.search,
         headers: {
           'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(body)
+          'Content-Length': Buffer.byteLength(body),
         },
-        timeout: 3000
+        timeout: 3000,
       },
       (res) => res.on('data', () => undefined)
     );

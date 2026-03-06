@@ -5,7 +5,7 @@ import type { AuthRequest } from '../middlewares/auth';
 
 const newsletterSchema = z.object({
   email: z.string().email(),
-  source: z.string().optional()
+  source: z.string().optional(),
 });
 
 export async function getInsights(req: Request, res: Response) {

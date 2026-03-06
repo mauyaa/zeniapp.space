@@ -67,7 +67,7 @@ export function PayLogin() {
         style={{
           backgroundImage:
             'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.05) 1px, transparent 0)',
-          backgroundSize: '18px 18px'
+          backgroundSize: '18px 18px',
         }}
       />
 
@@ -106,7 +106,9 @@ export function PayLogin() {
 
           <div className="mt-2">
             <h1 className="mb-3 text-[32px] font-light text-[#1f2933]">Secure Payment</h1>
-            <p className="mb-10 text-sm text-stone-500">Log in to view invoices and manage transactions.</p>
+            <p className="mb-10 text-sm text-stone-500">
+              Log in to view invoices and manage transactions.
+            </p>
 
             <form onSubmit={handleSubmit} className="space-y-6 max-w-[520px]" autoComplete="off">
               <div>
@@ -152,7 +154,9 @@ export function PayLogin() {
                     onChange={(e) => setRemember(e.target.checked)}
                     className="h-4 w-4 rounded border-stone-300 text-[#064e3b] focus:ring-[#064e3b]/20"
                   />
-                  <span className="text-xs text-stone-600 transition-colors hover:text-stone-900">Keep me signed in</span>
+                  <span className="text-xs text-stone-600 transition-colors hover:text-stone-900">
+                    Keep me signed in
+                  </span>
                 </label>
                 <button
                   type="button"
@@ -215,7 +219,9 @@ export function PayLogin() {
               </div>
             </div>
 
-            <p className="mt-4 text-center text-[10px] text-white/40">Authorized Access Only. All activities are monitored.</p>
+            <p className="mt-4 text-center text-[10px] text-white/40">
+              Authorized Access Only. All activities are monitored.
+            </p>
           </div>
         </div>
       </motion.div>

@@ -51,7 +51,11 @@ export function ReportsPage() {
       })
       .catch((err) => {
         logger.error('Reports export failed', {}, err instanceof Error ? err : undefined);
-        push({ title: 'Export failed', description: err?.message || errors.generic, tone: 'error' });
+        push({
+          title: 'Export failed',
+          description: err?.message || errors.generic,
+          tone: 'error',
+        });
       })
       .finally(() => setExporting(false));
   };
@@ -64,7 +68,11 @@ export function ReportsPage() {
         push({ title: 'Report updated', description: success.generic, tone: 'success' });
       })
       .catch((err) => {
-        logger.error('Resolve report failed', { id, action }, err instanceof Error ? err : undefined);
+        logger.error(
+          'Resolve report failed',
+          { id, action },
+          err instanceof Error ? err : undefined
+        );
         push({ title: 'Update failed', description: errors.generic, tone: 'error' });
       })
       .finally(() => setResolvingId(null));
@@ -75,7 +83,9 @@ export function ReportsPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-serif text-black mb-2">Reports</h1>
-          <p className="text-sm text-gray-500">Review and resolve user reports; export activity for audit.</p>
+          <p className="text-sm text-gray-500">
+            Review and resolve user reports; export activity for audit.
+          </p>
         </div>
         <Button
           onClick={handleExport}
@@ -83,7 +93,13 @@ export function ReportsPage() {
           size="sm"
           variant="admin-primary"
           className="h-9 px-4 text-xs font-medium rounded-sm shadow-sm"
-          leftIcon={exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+          leftIcon={
+            exporting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )
+          }
         >
           {exporting ? 'Exporting…' : 'Export CSV'}
         </Button>
@@ -91,14 +107,18 @@ export function ReportsPage() {
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-sm border border-gray-200 bg-white shadow-sm p-6">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Open reports</div>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+            Open reports
+          </div>
           <div className="mt-2 flex items-center gap-2 text-2xl font-semibold text-amber-700">
             <ShieldAlert className="h-5 w-5" /> {loading ? '--' : openCount}
           </div>
           <div className="mt-1 text-xs text-gray-500">Awaiting review</div>
         </div>
         <div className="rounded-sm border border-gray-200 bg-white shadow-sm p-6">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Resolved</div>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+            Resolved
+          </div>
           <div className="mt-2 flex items-center gap-2 text-2xl font-semibold text-green-700">
             <CheckCircle className="h-5 w-5" /> {loading ? '--' : resolvedCount}
           </div>
@@ -115,7 +135,9 @@ export function ReportsPage() {
 
       <div className="rounded-sm border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3 border-b border-gray-200 bg-gray-50">
-          <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Report list</h3>
+          <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+            Report list
+          </h3>
           <div className="flex flex-wrap items-center gap-2">
             {(['all', 'open', 'resolved'] as const).map((f) => (
               <button
@@ -166,7 +188,9 @@ export function ReportsPage() {
             <EmptyState
               variant="light"
               title="No reports"
-              subtitle={filter === 'all' ? 'No reports in the system yet.' : `No ${filter} reports.`}
+              subtitle={
+                filter === 'all' ? 'No reports in the system yet.' : `No ${filter} reports.`
+              }
               action={{ label: 'Refresh', onClick: load }}
             />
           </div>
@@ -185,21 +209,32 @@ export function ReportsPage() {
               </thead>
               <tbody>
                 {reports.map((r) => (
-                  <tr key={r._id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
+                  <tr
+                    key={r._id}
+                    className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
+                  >
                     <td className="py-3 px-4">
                       <span className="font-mono text-xs text-gray-700">{r.targetType}</span>
                       <span className="ml-1 text-gray-500">#{r.targetId?.slice(-6)}</span>
                     </td>
                     <td className="py-3 px-4 text-gray-700">{r.category}</td>
                     <td className="py-3 px-4">
-                      <span className={`inline-block px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border ${r.severity === 'high' ? 'bg-red-50 text-red-700 border-red-200' : r.severity === 'medium' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border ${r.severity === 'high' ? 'bg-red-50 text-red-700 border-red-200' : r.severity === 'medium' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}
+                      >
                         {r.severity}
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      <span className={`inline-block px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border ${r.status === 'resolved' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{r.status}</span>
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border ${r.status === 'resolved' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}
+                      >
+                        {r.status}
+                      </span>
                     </td>
-                    <td className="py-3 px-4 text-gray-500">{r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '--'}</td>
+                    <td className="py-3 px-4 text-gray-500">
+                      {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '--'}
+                    </td>
                     <td className="py-3 px-4 text-right space-x-2">
                       {r.status === 'open' && (
                         <>

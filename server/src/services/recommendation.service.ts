@@ -24,11 +24,7 @@ export async function recommendListings(userId: string, limit = 10) {
   } else {
     const searches = await SavedSearchModel.find({ userId }).select('params').lean();
     const cities = Array.from(
-      new Set(
-        searches
-          .map((s: any) => (s.params || {}).city)
-          .filter(Boolean)
-      )
+      new Set(searches.map((s: any) => (s.params || {}).city).filter(Boolean))
     );
     if (cities.length) filters.push({ 'location.city': { $in: cities } });
   }
@@ -37,8 +33,8 @@ export async function recommendListings(userId: string, limit = 10) {
     status: 'live',
     $or: [
       { availabilityStatus: { $exists: false } },
-      { availabilityStatus: { $in: ['available', 'under_offer'] } }
-    ]
+      { availabilityStatus: { $in: ['available', 'under_offer'] } },
+    ],
   };
   const finalFilter = filters.length ? { $and: [baseFilter, { $or: filters }] } : baseFilter;
 
@@ -58,6 +54,6 @@ export async function recommendListings(userId: string, limit = 10) {
     purpose: l.purpose,
     imageUrl: l.images?.find((img: any) => img.isPrimary)?.url || l.images?.[0]?.url || '',
     location: l.location,
-    agentId: l.agentId
+    agentId: l.agentId,
   }));
 }

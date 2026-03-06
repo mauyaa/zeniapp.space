@@ -179,12 +179,7 @@ interface ImageGalleryProps {
   className?: string;
 }
 
-export function ImageGallery({ 
-  images, 
-  title, 
-  onImageClick,
-  className = '' 
-}: ImageGalleryProps) {
+export function ImageGallery({ images, title, onImageClick, className = '' }: ImageGalleryProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   if (!images || images.length === 0) {
@@ -212,7 +207,7 @@ export function ImageGallery({
           className="w-full h-full"
           onClick={() => onImageClick?.(currentIndex)}
         />
-        
+
         {/* Image counter */}
         {images.length > 1 && (
           <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full">
@@ -230,10 +225,15 @@ export function ImageGallery({
             aria-label="Previous image"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
           </button>
-          
+
           <button
             onClick={() => setCurrentIndex((prev) => (prev + 1) % images.length)}
             className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/30 backdrop-blur-sm text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/50"
@@ -254,9 +254,7 @@ export function ImageGallery({
               key={index}
               onClick={() => setCurrentIndex(index)}
               className={`w-2 h-2 rounded-full transition-all ${
-                index === currentIndex 
-                  ? 'bg-emerald-500 w-4' 
-                  : 'bg-slate-300 hover:bg-slate-400'
+                index === currentIndex ? 'bg-emerald-500 w-4' : 'bg-slate-300 hover:bg-slate-400'
               }`}
               aria-label={`View image ${index + 1}`}
             />
@@ -281,7 +279,7 @@ export function ProgressiveImage({
   highQualitySrc,
   lowQualitySrc,
   alt,
-  className = ''
+  className = '',
 }: ProgressiveImageProps) {
   const [isHighQualityLoaded, setIsHighQualityLoaded] = useState(false);
 
@@ -296,7 +294,7 @@ export function ProgressiveImage({
         }`}
         skeleton={false}
       />
-      
+
       {/* High quality image */}
       <Image
         src={highQualitySrc}

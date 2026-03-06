@@ -38,7 +38,11 @@ const DEFAULT_LOCALE = 'en-KE';
 export function formatDate(value: string | Date | undefined | null): string {
   if (value == null) return '--';
   const date = typeof value === 'string' ? new Date(value) : value;
-  return date.toLocaleDateString(DEFAULT_LOCALE, { day: 'numeric', month: 'short', year: 'numeric' });
+  return date.toLocaleDateString(DEFAULT_LOCALE, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 /** Date + time for transaction lists; Kenya locale */

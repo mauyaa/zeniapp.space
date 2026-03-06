@@ -49,5 +49,7 @@ export function useAsyncEffect(
     return () => {
       cancelled = true;
     };
+    // This hook intentionally forwards caller-managed dependencies.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 }

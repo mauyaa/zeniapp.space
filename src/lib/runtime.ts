@@ -15,13 +15,15 @@ const isNative = Capacitor.isNativePlatform();
 
 const rawApiBase =
   (isNative
-    ? (import.meta.env.VITE_MOBILE_API_BASE_URL as string | undefined) || (import.meta.env.VITE_API_BASE_URL as string | undefined)
+    ? (import.meta.env.VITE_MOBILE_API_BASE_URL as string | undefined) ||
+      (import.meta.env.VITE_API_BASE_URL as string | undefined)
     : (import.meta.env.VITE_API_BASE_URL as string | undefined)) || '/api';
 export const API_BASE = normalizeApiBase(rawApiBase);
 
 const rawSocketUrl = (
   isNative
-    ? (import.meta.env.VITE_MOBILE_SOCKET_URL as string | undefined) || (import.meta.env.VITE_SOCKET_URL as string | undefined)
+    ? (import.meta.env.VITE_MOBILE_SOCKET_URL as string | undefined) ||
+      (import.meta.env.VITE_SOCKET_URL as string | undefined)
     : (import.meta.env.VITE_SOCKET_URL as string | undefined)
 )?.trim();
 export const SOCKET_URL = rawSocketUrl ? trimTrailingSlash(rawSocketUrl) : undefined;

@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import type { ScrollTrigger as ScrollTriggerType } from 'gsap/ScrollTrigger';
 
-type LenisInstance = import('lenis').default;
+type GsapInstance = typeof import('gsap').default;
+type ScrollTriggerInstance = typeof import('gsap/ScrollTrigger').ScrollTrigger;
+type LenisConstructor = typeof import('lenis').default;
+type LenisInstance = InstanceType<LenisConstructor>;
 
 export type MotionLibs = {
-  gsap: typeof import('gsap');
-  ScrollTrigger: ScrollTriggerType;
-  Lenis: typeof import('lenis').default;
+  gsap: GsapInstance;
+  ScrollTrigger: ScrollTriggerInstance;
+  Lenis: LenisConstructor;
 };
 
 export function useMotion() {
@@ -51,7 +53,11 @@ export function useMotion() {
         ]);
         if (!active) return;
         gsapLib.registerPlugin(ScrollTrigger);
-        setLibs({ gsap: gsapLib, ScrollTrigger, Lenis: LenisLib });
+        setLibs({
+          gsap: gsapLib as GsapInstance,
+          ScrollTrigger: ScrollTrigger as ScrollTriggerInstance,
+          Lenis: LenisLib as LenisConstructor,
+        });
       } catch (err) {
         console.error('Failed to load motion libraries', err);
         setLibs(null);
@@ -87,18 +93,19 @@ export function useMotion() {
     }
     let rafId = 0;
     let active = true;
+    const handleLenisScroll = () => ScrollTrigger.update();
     const raf = (time: number) => {
       if (!active) return;
-      lenis!.raf(time);
+      lenis?.raf(time);
       rafId = requestAnimationFrame(raf);
     };
     rafId = requestAnimationFrame(raf);
-    lenis?.on('scroll', ScrollTrigger.update);
+    lenis?.on?.('scroll', handleLenisScroll);
     return () => {
       active = false;
       cancelAnimationFrame(rafId);
-      lenis?.off('scroll', ScrollTrigger.update);
-      lenis?.destroy();
+      lenis?.off?.('scroll', handleLenisScroll);
+      lenis?.destroy?.();
       setLenisInstance(null);
       document.body.classList.remove('cursor-hidden');
     };

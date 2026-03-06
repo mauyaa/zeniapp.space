@@ -32,10 +32,10 @@ export async function getSharedShortlist(token: string) {
       verified: l.verified,
       imageUrl:
         (Array.isArray(l.images)
-          ? (l.images as Array<{ isPrimary?: boolean; url?: string }>).find((i) => i?.isPrimary)?.url ||
-            (l.images as Array<{ url?: string }>)[0]?.url
+          ? (l.images as Array<{ isPrimary?: boolean; url?: string }>).find((i) => i?.isPrimary)
+              ?.url || (l.images as Array<{ url?: string }>)[0]?.url
           : '') || '',
-      location: l.location
-    }))
+      location: l.location,
+    })),
   };
 }

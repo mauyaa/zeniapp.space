@@ -92,7 +92,12 @@ export interface PendingAgent {
   role: string;
   earbRegistrationNumber?: string;
   earbVerifiedAt?: string;
-  verificationEvidence?: Array<{ url: string; note?: string; uploadedAt?: string; createdAt?: string }>;
+  verificationEvidence?: Array<{
+    url: string;
+    note?: string;
+    uploadedAt?: string;
+    createdAt?: string;
+  }>;
   createdAt?: string;
 }
 
@@ -183,6 +188,8 @@ export interface ViewingRequest {
   viewingFeeAmount?: number;
   viewingFeeStatus?: 'pending_payment' | 'held' | 'released';
   tenantConfirmedAt?: string;
+  agentReason?: string;
+  agentMessage?: string;
   createdAt?: string;
 }
 

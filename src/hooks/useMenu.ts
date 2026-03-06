@@ -1,11 +1,18 @@
 import { useEffect, useRef } from 'react';
 
-type GSAP = typeof import('gsap');
+type GsapLike = {
+  to: (target: Element | NodeListOf<Element>, vars: Record<string, unknown>) => void;
+  fromTo: (
+    target: Element | NodeListOf<Element>,
+    fromVars: Record<string, unknown>,
+    toVars: Record<string, unknown>
+  ) => void;
+};
 
 type UseMenuOptions = {
   menuOpen: boolean;
   disableMotion: boolean;
-  gsap: GSAP | null;
+  gsap: GsapLike | null;
 };
 
 export function useMenu(options: UseMenuOptions) {

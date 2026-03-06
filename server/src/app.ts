@@ -44,19 +44,19 @@ app.use(
         connectSrc: ["'self'", 'capacitor:', ...corsOrigins, 'https:', 'wss:', 'ws:'],
         objectSrc: ["'none'"],
         frameAncestors: ["'none'"],
-        reportUri: '/csp-report'
-      }
+        reportUri: '/csp-report',
+      },
     },
     referrerPolicy: { policy: 'no-referrer' },
     hsts: env.nodeEnv === 'production',
-    crossOriginEmbedderPolicy: false
+    crossOriginEmbedderPolicy: false,
   })
 );
 
 app.use(
   cors({
     origin: corsOrigins,
-    credentials: true
+    credentials: true,
   })
 );
 
@@ -77,7 +77,9 @@ app.use(sanitize);
 app.use(requestId);
 app.use(metricsMiddleware);
 app.use(requestLogger);
-app.use(morgan('tiny'));
+if (env.nodeEnv !== 'test' || process.env.REQUEST_LOG_IN_TEST === 'true') {
+  app.use(morgan('tiny'));
+}
 
 // Global basic rate limit (APIs have tighter per-route limits too)
 app.use(
@@ -92,7 +94,7 @@ app.use(
       req.path === '/api/auth' ||
       req.path.startsWith('/api/auth/') ||
       req.path === '/api/pay/auth' ||
-      req.path.startsWith('/api/pay/auth/')
+      req.path.startsWith('/api/pay/auth/'),
   })
 );
 
@@ -114,7 +116,9 @@ app.post(
     const body = req.body as Record<string, unknown>;
     const reportCandidate = (body['csp-report'] ?? body['cspReport'] ?? body) as unknown;
     if (!reportCandidate || typeof reportCandidate !== 'object') {
-      return res.status(400).json({ code: 'INVALID_REPORT', message: 'Invalid CSP report payload' });
+      return res
+        .status(400)
+        .json({ code: 'INVALID_REPORT', message: 'Invalid CSP report payload' });
     }
     const report = reportCandidate as Record<string, unknown>;
     try {
@@ -124,7 +128,7 @@ app.post(
         action: 'csp_report',
         entityType: 'csp',
         entityId: 'violation',
-        after: report as Record<string, unknown>
+        after: report as Record<string, unknown>,
       });
     } catch (err) {
       // non-blocking
@@ -146,7 +150,7 @@ app.get('/health/ready', (_req: Request, res: Response) => {
   const dbReady = mongoose.connection.readyState === 1;
   const payload = {
     status: dbReady ? 'ready' : 'degraded',
-    dbState: mongoose.connection.readyState
+    dbState: mongoose.connection.readyState,
   };
   res.status(dbReady ? 200 : 503).json(payload);
 });
@@ -166,7 +170,7 @@ app.get('/listing/:id', async (req: Request, res: Response, next: NextFunction) 
     // Check where index.html is located
     const distPath = path.resolve(__dirname, '../../dist/index.html');
     const devPath = path.resolve(__dirname, '../../index.html');
-    const htmlPath = fs.existsSync(distPath) ? distPath : (fs.existsSync(devPath) ? devPath : null);
+    const htmlPath = fs.existsSync(distPath) ? distPath : fs.existsSync(devPath) ? devPath : null;
 
     if (!htmlPath) {
       return next();
@@ -175,15 +179,28 @@ app.get('/listing/:id', async (req: Request, res: Response, next: NextFunction) 
     let html = fs.readFileSync(htmlPath, 'utf8');
 
     const title = `${listing.title} | Zeni`;
-    const description = listing.description?.slice(0, 150) || `View this ${listing.type || 'property'} on Zeni.`;
-    const image = listing.images?.find((img) => img.isPrimary)?.url || listing.images?.[0]?.url || 'https://zeni.co.ke/default.jpg';
+    const description =
+      listing.description?.slice(0, 150) || `View this ${listing.type || 'property'} on Zeni.`;
+    const image =
+      listing.images?.find((img) => img.isPrimary)?.url ||
+      listing.images?.[0]?.url ||
+      'https://zeni.co.ke/default.jpg';
     const url = `https://zeni.co.ke/listing/${listing._id}`;
 
     // Replace generic meta tags with listing-specific ones
     html = html.replace(/<title>.*<\/title>/, `<title>${title}</title>`);
-    html = html.replace(/<meta name="description" content="[^"]*"/, `<meta name="description" content="${description.replace(/"/g, '&quot;')}"`);
-    html = html.replace(/<meta property="og:title" content="[^"]*"/, `<meta property="og:title" content="${title.replace(/"/g, '&quot;')}"`);
-    html = html.replace(/<meta property="og:description" content="[^"]*"/, `<meta property="og:description" content="${description.replace(/"/g, '&quot;')}"`);
+    html = html.replace(
+      /<meta name="description" content="[^"]*"/,
+      `<meta name="description" content="${description.replace(/"/g, '&quot;')}"`
+    );
+    html = html.replace(
+      /<meta property="og:title" content="[^"]*"/,
+      `<meta property="og:title" content="${title.replace(/"/g, '&quot;')}"`
+    );
+    html = html.replace(
+      /<meta property="og:description" content="[^"]*"/,
+      `<meta property="og:description" content="${description.replace(/"/g, '&quot;')}"`
+    );
 
     // Inject Twitter Card and other OG tags
     const extraTags = `
@@ -204,16 +221,19 @@ app.get('/listing/:id', async (req: Request, res: Response, next: NextFunction) 
 
 // Since the server will now also be responsible for falling back standard routes to the SPA if requested:
 // (Only necessary if NGINX isn't handling it, but safe to add)
-app.get(['/app/*', '/explore', '/login', '/map', '/rent/*', '/buy/*'], (req: Request, res: Response, next: NextFunction) => {
-  const distPath = path.resolve(__dirname, '../../dist/index.html');
-  const devPath = path.resolve(__dirname, '../../index.html');
-  const htmlPath = fs.existsSync(distPath) ? distPath : (fs.existsSync(devPath) ? devPath : null);
-  if (htmlPath) {
-    res.sendFile(htmlPath);
-  } else {
-    next();
+app.get(
+  ['/app/*', '/explore', '/login', '/map', '/rent/*', '/buy/*'],
+  (req: Request, res: Response, next: NextFunction) => {
+    const distPath = path.resolve(__dirname, '../../dist/index.html');
+    const devPath = path.resolve(__dirname, '../../index.html');
+    const htmlPath = fs.existsSync(distPath) ? distPath : fs.existsSync(devPath) ? devPath : null;
+    if (htmlPath) {
+      res.sendFile(htmlPath);
+    } else {
+      next();
+    }
   }
-});
+);
 
 if (sentryEnabled) {
   app.use(Sentry.Handlers.errorHandler());

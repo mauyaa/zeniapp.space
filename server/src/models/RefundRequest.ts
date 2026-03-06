@@ -18,16 +18,24 @@ export interface RefundRequestDocument extends Document {
 const RefundRequestSchema = new Schema<RefundRequestDocument>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    transactionId: { type: Schema.Types.ObjectId, ref: 'PayTransaction', required: true, index: true },
+    transactionId: {
+      type: Schema.Types.ObjectId,
+      ref: 'PayTransaction',
+      required: true,
+      index: true,
+    },
     reason: { type: String, required: true },
     status: { type: String, enum: refundRequestStatuses, default: 'pending', index: true },
     adminNotes: String,
     reviewedBy: { type: Schema.Types.ObjectId, ref: 'User' },
-    reviewedAt: Date
+    reviewedAt: Date,
   },
   { timestamps: true }
 );
 
 RefundRequestSchema.index({ status: 1, createdAt: -1 });
 
-export const RefundRequestModel = mongoose.model<RefundRequestDocument>('RefundRequest', RefundRequestSchema);
+export const RefundRequestModel = mongoose.model<RefundRequestDocument>(
+  'RefundRequest',
+  RefundRequestSchema
+);

@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import type { Message, Conversation } from '../types/chat';
+import { getToken } from '../lib/api';
 import { getSocket, disconnectSocket } from '../lib/socket';
 
 interface UseChatSocketOptions {
@@ -60,12 +61,7 @@ export function useChatSocket({
 
   useEffect(() => {
     if (!userId) return;
-    let token: string | null = null;
-    try {
-      token = localStorage.getItem('token');
-    } catch {
-      // blocked
-    }
+    const token = getToken();
     if (!token) return;
 
     const s = getSocket(token);

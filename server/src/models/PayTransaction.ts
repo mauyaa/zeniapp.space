@@ -10,7 +10,7 @@ export const payPurposes = [
   'rent',
   'service_fee',
   'property_purchase',
-  'other'
+  'other',
 ] as const;
 export type PayPurpose = (typeof payPurposes)[number];
 
@@ -19,7 +19,7 @@ export interface PayTransactionDocument extends Document {
   amount: number;
   currency: string;
   method: 'mpesa_stk' | 'card' | 'bank_transfer';
-  status: typeof txStatuses[number];
+  status: (typeof txStatuses)[number];
   ref?: string;
   receiptId?: mongoose.Types.ObjectId;
   idempotencyKey: string;
@@ -61,9 +61,9 @@ const PayTransactionSchema = new Schema<PayTransactionDocument>(
       {
         userId: { type: Schema.Types.ObjectId, ref: 'User' },
         action: String,
-        at: { type: Date, default: Date.now }
-      }
-    ]
+        at: { type: Date, default: Date.now },
+      },
+    ],
   },
   { timestamps: true }
 );
@@ -73,4 +73,7 @@ PayTransactionSchema.index({ ref: 1 }, { unique: true, sparse: true });
 PayTransactionSchema.index({ status: 1, createdAt: -1 });
 PayTransactionSchema.index({ riskLevel: 1, createdAt: -1 });
 
-export const PayTransactionModel = mongoose.model<PayTransactionDocument>('PayTransaction', PayTransactionSchema);
+export const PayTransactionModel = mongoose.model<PayTransactionDocument>(
+  'PayTransaction',
+  PayTransactionSchema
+);

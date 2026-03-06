@@ -7,7 +7,7 @@ import { NotFoundPage } from '../NotFound';
 describe('NotFoundPage', () => {
   it('renders 404 and links to Home, Explore, Login, Back', () => {
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <NotFoundPage />
       </BrowserRouter>
     );

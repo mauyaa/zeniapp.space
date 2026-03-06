@@ -31,7 +31,13 @@ function PayRequireAuth({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function PayRequireRole({ roles, children }: { roles: Array<'user' | 'agent' | 'admin' | 'finance'>; children: React.ReactNode }) {
+function PayRequireRole({
+  roles,
+  children,
+}: {
+  roles: Array<'user' | 'agent' | 'admin' | 'finance'>;
+  children: React.ReactNode;
+}) {
   const { user } = usePayAuth();
   if (!user || !roles.includes(user.role)) {
     return <Navigate to="/pay/dashboard" replace />;
@@ -74,4 +80,3 @@ export function PayRouter() {
     </PayAuthProvider>
   );
 }
-

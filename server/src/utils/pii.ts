@@ -1,7 +1,16 @@
 // Simple PII redaction helper to avoid leaking sensitive fields to external sinks.
 // This is intentionally conservative: it masks common fields and patterns.
 
-const DEFAULT_KEYS = ['email', 'phone', 'phoneNumber', 'msisdn', 'password', 'token', 'refreshToken', 'accessToken'];
+const DEFAULT_KEYS = [
+  'email',
+  'phone',
+  'phoneNumber',
+  'msisdn',
+  'password',
+  'token',
+  'refreshToken',
+  'accessToken',
+];
 
 const EMAIL_RE = /([A-Za-z0-9._%+-]+)@([A-Za-z0-9.-]+\.[A-Za-z]{2,})/g;
 const PHONE_RE = /\b(\+?\d{2,3})?[\s-]?\d{3}[\s-]?\d{3}[\s-]?\d{3,4}\b/g;

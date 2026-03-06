@@ -10,7 +10,7 @@ export async function create(req: AuthRequest, res: Response) {
     targetId: objectIdSchema,
     category: z.enum(['scam', 'abuse', 'duplicates', 'spam', 'other']),
     severity: z.enum(['low', 'medium', 'high']),
-    message: z.string().max(500).optional()
+    message: z.string().max(500).optional(),
   });
   const body = schema.parse(req.body);
   const userId = req.user?.id;
@@ -27,7 +27,7 @@ export async function adminList(req: AuthRequest, res: Response) {
     targetType: z.enum(['listing', 'user']).optional(),
     reporterId: objectIdSchema.optional(),
     targetId: objectIdSchema.optional(),
-    limit: z.coerce.number().min(1).max(100).optional()
+    limit: z.coerce.number().min(1).max(100).optional(),
   });
   const { limit = 50, ...filters } = querySchema.parse(req.query);
   const reports = await listReports(filters, limit);
@@ -38,8 +38,8 @@ export async function resolve(req: AuthRequest, res: Response) {
   const schema = z.object({
     id: objectIdSchema,
     body: z.object({
-      action: z.enum(['resolve', 'ignore', 'escalate', 'ban']).default('resolve')
-    })
+      action: z.enum(['resolve', 'ignore', 'escalate', 'ban']).default('resolve'),
+    }),
   });
   const { id, body } = schema.parse({ id: req.params.id, body: req.body });
   const updated = await resolveReport(id, body.action);

@@ -8,7 +8,7 @@ const promCounter = new Counter({
   name: 'rate_limit_hits_total',
   help: 'Rate limit hits by bucket',
   labelNames: ['bucket'],
-  registers: [registry]
+  registers: [registry],
 });
 
 export function recordRateLimit(key: MetricKey) {

@@ -14,7 +14,7 @@ import {
   adminMfaDisable,
   listSessions,
   revokeSession,
-  revokeAllSessions
+  revokeAllSessions,
 } from '../controllers/auth.controller';
 import { auth } from '../middlewares/auth';
 import { loginLimiter, refreshLimiter } from '../middlewares/rateLimit';

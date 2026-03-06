@@ -105,9 +105,7 @@ export const DrawerPropertyInfo = React.memo(function DrawerPropertyInfo({
                       <FileDown className="h-4 w-4" />
                       {plan.label}
                     </span>
-                    {plan.size && (
-                      <span className="text-[11px] text-amber-600">{plan.size}</span>
-                    )}
+                    {plan.size && <span className="text-[11px] text-amber-600">{plan.size}</span>}
                   </a>
                 )
               )}

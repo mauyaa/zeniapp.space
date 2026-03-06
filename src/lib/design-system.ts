@@ -174,17 +174,26 @@ export const buttonVariants = {
     md: 'h-11 px-4 text-sm gap-2 rounded-xl',
     lg: 'h-11 px-5 text-base gap-2.5 rounded-xl',
     xl: 'h-11 px-6 text-lg gap-3 rounded-xl',
-    'zeni-sm': 'h-9 px-3 text-[10px] font-mono font-semibold uppercase tracking-widest gap-1.5 rounded-xl',
-    'zeni-md': 'h-11 px-5 text-xs font-mono font-semibold uppercase tracking-widest gap-2 rounded-xl',
+    'zeni-sm':
+      'h-9 px-3 text-[10px] font-mono font-semibold uppercase tracking-widest gap-1.5 rounded-xl',
+    'zeni-md':
+      'h-11 px-5 text-xs font-mono font-semibold uppercase tracking-widest gap-2 rounded-xl',
   },
   variants: {
-    primary: 'bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 focus-visible:ring-emerald-500 shadow-sm shadow-emerald-900/10',
-    secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-200 active:bg-slate-300 focus-visible:ring-slate-400 border border-slate-200',
-    outline: 'border border-slate-200 text-slate-700 hover:bg-slate-50 active:bg-slate-100 focus-visible:ring-slate-400 bg-transparent',
-    ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-slate-400 bg-transparent',
-    danger: 'bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 focus-visible:ring-rose-500 shadow-sm shadow-rose-900/10',
-    'zeni-primary': 'bg-zeni-foreground text-white border border-zeni-foreground rounded transition-colors duration-200 hover:bg-white hover:text-zeni-foreground hover:border-zinc-200 focus-visible:ring-zinc-400',
-    'zeni-secondary': 'bg-white text-zeni-foreground border border-zinc-200 rounded transition-colors duration-200 hover:bg-zeni-foreground hover:text-white hover:border-zeni-foreground focus-visible:ring-zinc-400',
+    primary:
+      'bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 focus-visible:ring-emerald-500 shadow-sm shadow-emerald-900/10',
+    secondary:
+      'bg-slate-100 text-slate-900 hover:bg-slate-200 active:bg-slate-300 focus-visible:ring-slate-400 border border-slate-200',
+    outline:
+      'border border-slate-200 text-slate-700 hover:bg-slate-50 active:bg-slate-100 focus-visible:ring-slate-400 bg-transparent',
+    ghost:
+      'text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-slate-400 bg-transparent',
+    danger:
+      'bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 focus-visible:ring-rose-500 shadow-sm shadow-rose-900/10',
+    'zeni-primary':
+      'bg-zeni-foreground text-white border border-zeni-foreground rounded transition-colors duration-200 hover:bg-white hover:text-zeni-foreground hover:border-zinc-200 focus-visible:ring-zinc-400',
+    'zeni-secondary':
+      'bg-white text-zeni-foreground border border-zinc-200 rounded transition-colors duration-200 hover:bg-zeni-foreground hover:text-white hover:border-zeni-foreground focus-visible:ring-zinc-400',
   },
 } as const;
 
@@ -204,7 +213,8 @@ export const inputVariants = {
 
 export const cardVariants = {
   base: 'rounded-xl border bg-white shadow-sm transition-all duration-200 dark:border-slate-800 dark:bg-slate-900/70 dark:shadow-lg dark:shadow-slate-950/30',
-  interactive: 'hover:shadow-md hover:border-emerald-200 cursor-pointer dark:hover:border-emerald-500/40',
+  interactive:
+    'hover:shadow-md hover:border-emerald-200 cursor-pointer dark:hover:border-emerald-500/40',
   selected: 'ring-2 ring-emerald-500 border-emerald-500/50 shadow-md',
 } as const;
 
@@ -214,9 +224,12 @@ export const cardVariants = {
 export const a11y = {
   srOnly: 'absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0',
   notSrOnly: 'static w-auto h-auto p-0 m-0 overflow-visible whitespace-normal',
-  focusRing: 'focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2',
-  focusRingInset: 'focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-inset',
-  skipLink: 'sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:rounded-lg focus:shadow-lg',
+  focusRing:
+    'focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2',
+  focusRingInset:
+    'focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-inset',
+  skipLink:
+    'sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:rounded-lg focus:shadow-lg',
 } as const;
 
 // =============================================================================

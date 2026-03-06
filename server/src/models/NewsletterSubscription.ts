@@ -12,7 +12,7 @@ const NewsletterSubscriptionSchema = new Schema<NewsletterSubscriptionDocument>(
     email: { type: String, required: true, unique: true },
     source: String,
     userId: { type: Schema.Types.ObjectId, ref: 'User', index: true },
-    status: { type: String, enum: ['active', 'unsubscribed'], default: 'active' }
+    status: { type: String, enum: ['active', 'unsubscribed'], default: 'active' },
   },
   { timestamps: true }
 );

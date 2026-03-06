@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import { auth } from '../middlewares/auth';
 import { requireRole } from '../middlewares/rbac';
-import { updateViewingStatusForAgent, listViewingsForAgent, exportViewingIcs } from '../controllers/viewingAgent.controller';
+import {
+  updateViewingStatusForAgent,
+  listViewingsForAgent,
+  exportViewingIcs,
+} from '../controllers/viewingAgent.controller';
 
 const router = Router();
 

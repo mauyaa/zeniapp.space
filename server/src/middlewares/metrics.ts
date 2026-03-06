@@ -8,7 +8,7 @@ const httpRequestsTotal = new Counter({
   name: 'http_requests_total',
   help: 'HTTP requests total',
   labelNames: ['method', 'path', 'status'],
-  registers: [registry]
+  registers: [registry],
 });
 
 const httpRequestDuration = new Histogram({
@@ -16,7 +16,7 @@ const httpRequestDuration = new Histogram({
   help: 'HTTP request duration in ms',
   labelNames: ['method', 'path', 'status'],
   buckets: [50, 100, 200, 500, 1000, 2000],
-  registers: [registry]
+  registers: [registry],
 });
 
 // Generic gauges for external modules to update
@@ -51,7 +51,11 @@ export function metricsMiddleware(req: Request, res: Response, next: NextFunctio
   res.on('finish', () => {
     const duration = Date.now() - start;
     const rawPath = req.route?.path || req.path || req.originalUrl || 'unknown';
-    const labels = { method: req.method, path: sanitizePath(rawPath), status: res.statusCode.toString() };
+    const labels = {
+      method: req.method,
+      path: sanitizePath(rawPath),
+      status: res.statusCode.toString(),
+    };
     httpRequestsTotal.inc(labels);
     httpRequestDuration.observe(labels, duration);
   });

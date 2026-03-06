@@ -3,10 +3,10 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 import { adminStepUp } from '../lib/api';
 import { useToast } from './ToastContext';
 
-type PendingAction<T> = {
+type PendingAction = {
   attempt: () => void;
-  resolve: (value: T | PromiseLike<T>) => void;
-  reject: (reason?: unknown) => void;
+  resolve?: (value: unknown) => void;
+  reject?: (reason?: unknown) => void;
 };
 
 type AdminStepUpContextValue = {
@@ -37,7 +37,7 @@ export function AdminStepUpProvider({ children }: { children: React.ReactNode })
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [pending, setPending] = useState<PendingAction<unknown> | null>(null);
+  const [pending, setPending] = useState<PendingAction | null>(null);
 
   const runWithStepUp = useCallback(
     async <T,>(fn: () => Promise<T>): Promise<T> =>
@@ -48,7 +48,7 @@ export function AdminStepUpProvider({ children }: { children: React.ReactNode })
             .catch((err: unknown) => {
               const code = getErrorCode(err);
               if (code === 'STEP_UP_REQUIRED' || code === 'STEP_UP_EXPIRED') {
-                setPending({ attempt, resolve, reject });
+                setPending({ attempt });
                 setOpen(true);
                 setError('');
                 return;

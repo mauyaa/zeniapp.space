@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
 
-type GSAP = typeof import('gsap');
-
 type UseKineticRingOptions = {
   images: string[];
   reduceMotion?: boolean;
-  gsap?: GSAP | null;
+  gsap?: {
+    set: (target: Element | object, vars: Record<string, unknown>) => void;
+  } | null;
 };
 
 export function useKineticRing(options: UseKineticRingOptions) {
@@ -19,7 +19,6 @@ export function useKineticRing(options: UseKineticRingOptions) {
   const velocity = useRef(0.5);
   const isDragging = useRef(false);
   const startX = useRef(0);
-  const ringItemFrontRef = useRef<boolean[]>([]);
 
   useEffect(() => {
     const ring = ringRef.current;
@@ -44,25 +43,35 @@ export function useKineticRing(options: UseKineticRingOptions) {
       }
 
       const items = ring.querySelectorAll('.ring-item');
-      items.forEach((item, index) => {
-        const angle = (rotationY.current + index * 45) % 360;
-        const normAngle = Math.abs(angle < 0 ? angle + 360 : angle);
-        const isFront = normAngle < 35 || normAngle > 325;
-        const prevFront = ringItemFrontRef.current[index];
-        if (prevFront === isFront) return;
+      items.forEach((item: Element, index: number) => {
+        let angle = (rotationY.current + index * 45) % 360;
+        if (angle < 0) angle += 360;
 
-        ringItemFrontRef.current[index] = isFront;
+        // Normalize angle so 0 is front-center, and it goes from -180 to 180
+        let normAngle = angle;
+        if (normAngle > 180) normAngle -= 360;
+        const absAngle = Math.abs(normAngle);
+
+        // progress: 1 is front, 0 is back
+        const progress = 1 - absAngle / 180;
+
+        // Continuous smooth values
+        // Keep rear cards readable while still preserving depth.
+        const scale = 0.93 + progress * 0.07;
+        const opacity = 0.72 + progress * 0.28;
+        const blur = (1 - progress) * 1.1;
+        const brightness = 0.82 + progress * 0.24;
+        const saturation = 0.98 + progress * 0.22;
+        const contrast = 0.96 + progress * 0.12;
+        const zIndex = Math.round(progress * 100);
+
         const element = item as HTMLElement;
-        if (isFront) {
-          element.style.filter = 'blur(0) brightness(1.02)';
-          element.style.opacity = '1';
-          element.style.zIndex = '30';
-          if (element.children[0]) (element.children[0] as HTMLElement).style.transform = 'scale(1.02)';
-        } else {
-          element.style.filter = 'blur(0) brightness(0.9)';
-          element.style.opacity = '0.85';
-          element.style.zIndex = '1';
-          if (element.children[0]) (element.children[0] as HTMLElement).style.transform = 'scale(1)';
+        element.style.filter = `blur(${blur}px) brightness(${brightness}) saturate(${saturation}) contrast(${contrast})`;
+        element.style.opacity = opacity.toString();
+        element.style.zIndex = zIndex.toString();
+
+        if (element.children[0]) {
+          (element.children[0] as HTMLElement).style.transform = `scale(${scale})`;
         }
       });
 

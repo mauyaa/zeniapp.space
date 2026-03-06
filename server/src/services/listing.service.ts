@@ -1,13 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { FilterQuery } from 'mongoose';
 import { ListingModel, ListingDocument } from '../models/Listing';
+import { UserModel } from '../models/User';
 import { SavedListingModel } from '../models/SavedListing';
 import { LeadModel } from '../models/Lead';
 import { buildPagination, PaginationQuery } from '../utils/paginate';
 import { getIO } from '../socket';
-import { get as cacheGet, set as cacheSet, cacheKey, invalidatePrefix } from '../utils/listingCache';
+import {
+  get as cacheGet,
+  set as cacheSet,
+  cacheKey,
+  invalidatePrefix,
+} from '../utils/listingCache';
 import { LISTING_MAX_IMAGES } from '../utils/constants';
 import { triggerAdminDashboard, triggerAgentDashboard } from './dashboard.service';
+import { createNotification } from './notification.service';
+
+const DEFAULT_CENTER: [number, number] = [-1.2921, 36.8219]; // Nairobi CBD fallback
 
 export interface ListingSearchQuery extends PaginationQuery {
   purpose?: 'rent' | 'buy';
@@ -24,6 +33,7 @@ export interface ListingSearchQuery extends PaginationQuery {
   verifiedOnly?: boolean | string;
   availabilityOnly?: boolean | string;
   amenities?: string;
+  noCache?: boolean | string;
   lng?: string | number;
   lat?: string | number;
   radiusKm?: string | number;
@@ -81,27 +91,56 @@ function geocodeKenya(area?: string): [number, number] | null {
   if (!area) return null;
   const key = area.trim().toLowerCase();
   const table: Record<string, [number, number]> = {
-    'ngong': [-1.353, 36.669],
+    ngong: [-1.353, 36.669],
     'ngong road': [-1.3, 36.78],
-    'karen': [-1.3367, 36.7189],
-    'kajiado': [-1.8537, 36.7766],
-    'westlands': [-1.2667, 36.8117],
-    'kilimani': [-1.2921, 36.7842],
-    'lavington': [-1.2812, 36.7754],
-    'riverside': [-1.275, 36.8],
+    karen: [-1.3367, 36.7189],
+    kajiado: [-1.8537, 36.7766],
+    westlands: [-1.2667, 36.8117],
+    kilimani: [-1.2921, 36.7842],
+    lavington: [-1.2812, 36.7754],
+    riverside: [-1.275, 36.8],
     'upper hill': [-1.3004, 36.812],
-    'parklands': [-1.2648, 36.8147],
-    'runda': [-1.2185, 36.811],
-    'nairobi': [-1.2921, 36.8219]
+    parklands: [-1.2648, 36.8147],
+    runda: [-1.2185, 36.811],
+    nairobi: [-1.2921, 36.8219],
+    // Coast & other major towns
+    lamu: [-2.2717, 40.902],
+    'lamu county': [-2.2717, 40.902],
+    'lamu town': [-2.2717, 40.902],
+    malindi: [-3.2239, 40.1313],
+    kilifi: [-3.6333, 39.85],
+    watamu: [-3.3525, 40.0144],
+    diani: [-4.2793, 39.592],
+    mombasa: [-4.0435, 39.6682],
+    kisumu: [-0.0917, 34.768],
+    nakuru: [-0.3031, 36.08],
+    eldoret: [0.5143, 35.2698],
+    naivasha: [-0.7167, 36.431],
+    thika: [-1.0381, 37.0738],
+    machakos: [-1.5177, 37.2634],
+    nyeri: [-0.4167, 36.95],
   };
   return table[key] || null;
+}
+
+function haversineKm(a: [number, number], b: [number, number]): number {
+  const R = 6371; // Earth radius km
+  const toRad = (v: number) => (v * Math.PI) / 180;
+  const dLat = toRad(b[0] - a[0]);
+  const dLng = toRad(b[1] - a[1]);
+  const lat1 = toRad(a[0]);
+  const lat2 = toRad(b[0]);
+  const h = Math.sin(dLat / 2) ** 2 + Math.sin(dLng / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
+  return 2 * R * Math.asin(Math.sqrt(h));
 }
 
 function normalizeLocation(
   location?: Partial<ListingDocument['location']>
 ): ListingDocument['location'] | undefined {
   if (!location) return location as ListingDocument['location'] | undefined;
-  const coords = Array.isArray(location.coordinates) ? location.coordinates.slice(0, 2) : [];
+  const coords = Array.isArray(location.coordinates)
+    ? location.coordinates.slice(0, 2).map((c: any) => (typeof c === 'number' ? c : Number(c)))
+    : [];
   let lng = coords?.[0];
   let lat = coords?.[1];
 
@@ -116,17 +155,29 @@ function normalizeLocation(
   const hasValid = isValidCoordinate(lat, lng) && isWithinKenya(lat as number, lng as number);
   const fallback =
     !hasValid &&
-    geocodeKenya(location.area || location.city || (location as any).subCounty || (location as any).county);
+    geocodeKenya(
+      location.area || location.city || (location as any).subCounty || (location as any).county
+    );
 
   const finalLat = hasValid ? lat : fallback ? fallback[0] : undefined;
   const finalLng = hasValid ? lng : fallback ? fallback[1] : undefined;
+
+  // If coordinates exist but are far from the geocoded hint, snap to the hint (helps fix mis-keyed Lamu vs Nairobi).
+  if (hasValid && fallback) {
+    const dist = haversineKm([lat as number, lng as number], [fallback[0], fallback[1]]);
+    if (dist > 100) {
+      // more than 100 km away from expected area: trust text hint
+      lat = fallback[0];
+      lng = fallback[1];
+    }
+  }
 
   const coordinates =
     isValidCoordinate(finalLat, finalLng) && isWithinKenya(finalLat as number, finalLng as number)
       ? [finalLng as number, finalLat as number]
       : coords && coords.length === 2
         ? [coords[0], coords[1]]
-        : undefined;
+        : ([DEFAULT_CENTER[1], DEFAULT_CENTER[0]] as [number, number]); // fallback keeps listing mappable (lng, lat)
 
   return {
     type: 'Point',
@@ -135,7 +186,7 @@ function normalizeLocation(
     city: location.city,
     area: location.area,
     county: (location as any).county,
-    subCounty: (location as any).subCounty
+    subCounty: (location as any).subCounty,
   } as ListingDocument['location'];
 }
 
@@ -143,7 +194,9 @@ function mapListingDocument(
   listing: ListingDocument & { agentId?: { _id: string; name?: string } },
   extras?: Partial<Pick<ListingSearchResult, 'saved'>>
 ): ListingSearchResult {
-  const coords = Array.isArray(listing.location?.coordinates) ? listing.location.coordinates : [];
+  const coords = Array.isArray(listing.location?.coordinates)
+    ? listing.location.coordinates.map((c: any) => (typeof c === 'number' ? c : Number(c)))
+    : [];
   let lat = coords?.[1];
   let lng = coords?.[0];
 
@@ -172,10 +225,31 @@ function mapListingDocument(
     }
   }
 
-  if (!isValidCoordinate(lat, lng)) {
-    lat = undefined as any;
-    lng = undefined as any;
+  // If stored coords are valid but far from the text-based geocode hint, snap to the hint.
+  const hint = geocodeKenya(
+    listing.location?.area ||
+    listing.location?.city ||
+    (listing as any).location?.subCounty ||
+    (listing as any).location?.county
+  );
+  if (hint && isValidCoordinate(lat, lng) && isWithinKenya(lat as number, lng as number)) {
+    const dist = haversineKm([lat as number, lng as number], hint);
+    if (dist > 100) {
+      lat = hint[0];
+      lng = hint[1];
+    }
   }
+
+  if (!isValidCoordinate(lat, lng) || !isWithinKenya(lat as number, lng as number)) {
+    // Last-resort fallback so listings without precise geo still appear on the map.
+    lat = DEFAULT_CENTER[0];
+    lng = DEFAULT_CENTER[1];
+  }
+
+  const primaryImage =
+    listing.images?.find((img) => img.isPrimary)?.url ||
+    listing.images?.[0]?.url ||
+    'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=60';
 
   return {
     id: String(listing._id),
@@ -198,20 +272,34 @@ function mapListingDocument(
       neighborhood: listing.location?.area,
       city: listing.location?.city,
       lat,
-      lng
+      lng,
     },
-    imageUrl: listing.images?.find((img) => img.isPrimary)?.url || listing.images?.[0]?.url,
-    images: listing.images,
-    agent: listing.agentId ? { id: String((listing as any).agentId?._id || listing.agentId), name: (listing as any).agentId?.name } : undefined,
-    ...extras
+    imageUrl: primaryImage,
+    images: (listing.images && listing.images.length > 0
+      ? listing.images
+      : [{ url: primaryImage }]) as any,
+    agent: listing.agentId
+      ? {
+        id: String((listing as any).agentId?._id || listing.agentId),
+        name: (listing as any).agentId?.name,
+      }
+      : undefined,
+    ...extras,
   };
 }
+
+// Exported for scripts/tests
+export { geocodeKenya, normalizeLocation };
 
 const LISTING_SEARCH_CACHE_PREFIX = 'listing:search';
 
 export async function searchListings(query: ListingSearchQuery) {
+  const noCache =
+    typeof query.noCache === 'string' ? query.noCache === 'true' : query.noCache === true;
   const key = cacheKey(LISTING_SEARCH_CACHE_PREFIX, query as unknown as Record<string, unknown>);
-  const cached = cacheGet<{ items: ListingSearchResult[]; total: number; page: number; limit: number }>(key);
+  const cached = !noCache
+    ? cacheGet<{ items: ListingSearchResult[]; total: number; page: number; limit: number }>(key)
+    : undefined;
   if (cached) return cached;
 
   const { page, limit, skip } = buildPagination(query);
@@ -222,8 +310,8 @@ export async function searchListings(query: ListingSearchQuery) {
     // Exclude sold/let so they don't appear in listings — they show under "Already bought" / "Already let"
     $or: [
       { availabilityStatus: { $exists: false } },
-      { availabilityStatus: { $in: ['available', 'under_offer'] } }
-    ]
+      { availabilityStatus: { $in: ['available', 'under_offer'] } },
+    ],
   };
 
   if (query.q) {
@@ -236,7 +324,9 @@ export async function searchListings(query: ListingSearchQuery) {
   if (query.county) filter['location.county'] = query.county;
   if (query.subCounty) filter['location.subCounty'] = query.subCounty;
   const availabilityOnly =
-    typeof query.availabilityOnly === 'string' ? query.availabilityOnly === 'true' : query.availabilityOnly === true;
+    typeof query.availabilityOnly === 'string'
+      ? query.availabilityOnly === 'true'
+      : query.availabilityOnly === true;
   if (availabilityOnly) {
     filter.$or = [{ availabilityStatus: { $exists: false } }, { availabilityStatus: 'available' }];
   }
@@ -260,16 +350,16 @@ export async function searchListings(query: ListingSearchQuery) {
   if (query.lng && query.lat && query.radiusKm) {
     filter.location = {
       $geoWithin: {
-        $centerSphere: [[Number(query.lng), Number(query.lat)], Number(query.radiusKm) / 6378.1]
-      }
+        $centerSphere: [[Number(query.lng), Number(query.lat)], Number(query.radiusKm) / 6378.1],
+      },
     } as any;
   } else if (query.commuteLat && query.commuteLng && query.commuteMins) {
     const avgSpeedKmh = 30; // rough city speed
     const radiusKm = (Number(query.commuteMins) / 60) * avgSpeedKmh;
     filter.location = {
       $geoWithin: {
-        $centerSphere: [[Number(query.commuteLng), Number(query.commuteLat)], radiusKm / 6378.1]
-      }
+        $centerSphere: [[Number(query.commuteLng), Number(query.commuteLat)], radiusKm / 6378.1],
+      },
     } as any;
   } else if (
     query.minLng != null &&
@@ -283,8 +373,11 @@ export async function searchListings(query: ListingSearchQuery) {
     const maxLat = Number(query.maxLat);
     filter.location = {
       $geoWithin: {
-        $box: [[minLng, minLat], [maxLng, maxLat]]
-      }
+        $box: [
+          [minLng, minLat],
+          [maxLng, maxLat],
+        ],
+      },
     } as any;
   }
 
@@ -307,7 +400,7 @@ export async function searchListings(query: ListingSearchQuery) {
     location: 1,
     images: 1,
     agentId: 1,
-    createdAt: 1
+    createdAt: 1,
   };
 
   const [items, total] = await Promise.all([
@@ -317,34 +410,35 @@ export async function searchListings(query: ListingSearchQuery) {
       .limit(limit)
       .populate('agentId', 'name')
       .lean(),
-    ListingModel.countDocuments(filter)
+    ListingModel.countDocuments(filter),
   ]);
 
   const mapped: ListingSearchResult[] = items.map((l) =>
-    mapListingDocument(l as unknown as ListingDocument & { agentId?: { _id: string; name?: string } })
+    mapListingDocument(
+      l as unknown as ListingDocument & { agentId?: { _id: string; name?: string } }
+    )
   );
 
   const result = { items: mapped, total, page, limit };
-  cacheSet(key, result);
+  if (!noCache) cacheSet(key, result);
   return result;
 }
 
 export function getListing(id: string) {
-  return ListingModel.findById(id)
-    .populate('agentId', 'name role')
-    .lean();
+  return ListingModel.findById(id).populate('agentId', 'name role').lean();
 }
 
 export async function getListingResponse(id: string, userId?: string) {
-  const listing = await ListingModel.findById(id)
-    .populate('agentId', 'name role')
-    .lean();
+  const listing = await ListingModel.findById(id).populate('agentId', 'name role').lean();
   if (!listing) return null;
   let saved = false;
   if (userId) {
     saved = Boolean(await SavedListingModel.exists({ userId, listingId: listing._id }));
   }
-  return mapListingDocument(listing as unknown as ListingDocument & { agentId?: { _id: string; name?: string } }, { saved });
+  return mapListingDocument(
+    listing as unknown as ListingDocument & { agentId?: { _id: string; name?: string } },
+    { saved }
+  );
 }
 
 /** Detect possible duplicate listings (same agent or across agents). Returns list of similar listing ids. */
@@ -360,20 +454,24 @@ export async function checkSimilarListings(
     status: { $in: ['draft', 'pending_review', 'live'] },
     $or: [
       { title: new RegExp(escapeRegex(normalizedTitle.slice(0, 30)), 'i') },
-      { 'location.city': location.city, 'location.area': location.area }
-    ]
+      { 'location.city': location.city, 'location.area': location.area },
+    ],
   };
   if (excludeId) filterSameAgent._id = { $ne: excludeId };
-  const sameAgent = await ListingModel.find(filterSameAgent).distinct('_id').then((ids) => ids.map(String));
+  const sameAgent = await ListingModel.find(filterSameAgent)
+    .distinct('_id')
+    .then((ids) => ids.map(String));
   const filterCrossAgent: FilterQuery<ListingDocument> = {
     status: 'live',
     $or: [
       { title: new RegExp(escapeRegex(normalizedTitle.slice(0, 30)), 'i') },
-      { 'location.city': location.city, 'location.area': location.area }
-    ]
+      { 'location.city': location.city, 'location.area': location.area },
+    ],
   };
   if (excludeId) filterCrossAgent._id = { $ne: excludeId };
-  const crossAgent = await ListingModel.find(filterCrossAgent).distinct('_id').then((ids) => ids.map(String));
+  const crossAgent = await ListingModel.find(filterCrossAgent)
+    .distinct('_id')
+    .then((ids) => ids.map(String));
   return { sameAgent, crossAgent };
 }
 
@@ -384,10 +482,32 @@ function escapeRegex(s: string) {
 export function createListing(agentId: string, data: Partial<ListingDocument>) {
   const images = (data.images || []).slice(0, LISTING_MAX_IMAGES);
   const location = normalizeLocation(data.location);
-  return ListingModel.create({ ...data, location, images, agentId }).then((listing) => {
+  return ListingModel.create({ ...data, location, images, agentId }).then(async (listing) => {
     invalidatePrefix(LISTING_SEARCH_CACHE_PREFIX);
     triggerAgentDashboard(agentId);
     triggerAdminDashboard();
+
+    // Email agent: listing created
+    try {
+      const agent = await UserModel.findById(agentId).select('emailOrPhone name').lean();
+      const email = agent?.emailOrPhone?.includes('@') ? agent.emailOrPhone : null;
+      if (email) {
+        const { sendMail, renderBrandEmail } = await import('./email.service');
+        const firstName = (agent?.name || '').split(' ')[0] || 'there';
+        const area = listing.location?.area || listing.location?.city || '';
+        await sendMail(
+          email,
+          'Listing created — ZENI.',
+          renderBrandEmail({
+            title: 'Listing created',
+            body: `Hi ${firstName},<br/>Your listing <strong>${listing.title}</strong>${area ? ` in ${area}` : ''} has been created successfully and is now ${listing.status === 'live' ? 'live' : 'pending review'}.`,
+            ctaLabel: 'View my listings',
+            ctaHref: (process.env.APP_URL || 'http://localhost:5173') + '/agent/listings',
+          })
+        );
+      }
+    } catch { /* don't block on email failure */ }
+
     return listing;
   });
 }
@@ -406,7 +526,9 @@ export async function updateListing(agentId: string, id: string, data: Partial<L
     const priceChanged = before && data.price !== undefined && data.price !== before.price;
     const statusChanged = before && data.status && data.status !== before.status;
     if (priceChanged || statusChanged) {
-      const watchers = await SavedListingModel.find({ listingId: listing._id, alert: true }).select('userId').lean();
+      const watchers = await SavedListingModel.find({ listingId: listing._id, alert: true })
+        .select('userId')
+        .lean();
       if (watchers.length) {
         const { createNotification } = await import('./notification.service');
         await Promise.all(
@@ -414,10 +536,38 @@ export async function updateListing(agentId: string, id: string, data: Partial<L
             createNotification(String(w.userId), {
               title: priceChanged ? 'Price changed' : 'Status changed',
               description: `${listing.title} is now ${priceChanged ? listing.price : listing.status}`,
-              type: 'listing'
+              type: 'listing',
             })
           )
         );
+
+        // Email watchers about the change
+        try {
+          const { sendMail, renderBrandEmail } = await import('./email.service');
+          const watcherUsers = await UserModel.find({ _id: { $in: watchers.map((w) => w.userId) } })
+            .select('emailOrPhone name')
+            .lean();
+          const changeText = priceChanged
+            ? `The price changed to <strong>KES ${listing.price}</strong>`
+            : `The status changed to <strong>${listing.status}</strong>`;
+          await Promise.all(
+            watcherUsers
+              .filter((u) => u.emailOrPhone?.includes('@'))
+              .map((u) => {
+                const firstName = (u.name || '').split(' ')[0] || 'there';
+                return sendMail(
+                  u.emailOrPhone,
+                  `Update on ${listing.title} — ZENI.`,
+                  renderBrandEmail({
+                    title: priceChanged ? 'Price update' : 'Status update',
+                    body: `Hi ${firstName},<br/>A listing you're watching has been updated.<br/><strong>${listing.title}</strong>: ${changeText}.`,
+                    ctaLabel: 'View listing',
+                    ctaHref: (process.env.APP_URL || 'http://localhost:5173') + `/listing/${listing._id}`,
+                  })
+                ).catch(() => { });
+              })
+          );
+        } catch { /* don't block on email failure */ }
       }
     }
   }
@@ -425,7 +575,11 @@ export async function updateListing(agentId: string, id: string, data: Partial<L
 }
 
 export function deleteListing(agentId: string, id: string) {
-  return ListingModel.findOneAndUpdate({ _id: id, agentId }, { status: 'archived' }, { new: true }).then((listing) => {
+  return ListingModel.findOneAndUpdate(
+    { _id: id, agentId },
+    { status: 'archived' },
+    { new: true }
+  ).then((listing) => {
     if (listing) {
       invalidatePrefix(LISTING_SEARCH_CACHE_PREFIX);
       triggerAgentDashboard(agentId);
@@ -446,16 +600,22 @@ export async function getAgentListing(agentId: string, id: string) {
 }
 
 export async function listSavedListings(userId: string): Promise<ListingSearchResult[]> {
-  const saved = await SavedListingModel.find({ userId }).select('listingId').sort({ createdAt: -1 }).lean();
+  const saved = await SavedListingModel.find({ userId })
+    .select('listingId')
+    .sort({ createdAt: -1 })
+    .lean();
   if (!saved.length) return [];
   const ids = saved.map((s) => s.listingId);
   const listings = await ListingModel.find({
-    _id: { $in: ids }
+    _id: { $in: ids },
   })
     .populate('agentId', 'name')
     .lean();
   return listings.map((l) =>
-    mapListingDocument(l as unknown as ListingDocument & { agentId?: { _id: string; name?: string } }, { saved: true })
+    mapListingDocument(
+      l as unknown as ListingDocument & { agentId?: { _id: string; name?: string } },
+      { saved: true }
+    )
   );
 }
 
@@ -473,17 +633,77 @@ export async function saveListing(userId: string, listingId: string) {
   return { saved: true };
 }
 
+/** Nightly geo sanity sweep: snap obviously wrong listing coordinates to their area/city geocode. */
+export async function runGeoSanitySweep(thresholdKm = 120) {
+  const listings = await ListingModel.find({ status: 'live' })
+    .select('_id title location area city subCounty county agentId')
+    .lean();
+  let fixed = 0;
+  for (const l of listings) {
+    const hint = geocodeKenya(
+      (l as any).location?.area ||
+      (l as any).area ||
+      (l as any).city ||
+      (l as any).subCounty ||
+      (l as any).county
+    );
+    if (!hint) continue;
+    const coords = Array.isArray((l as any).location?.coordinates)
+      ? (l as any).location.coordinates
+      : [];
+    const lat = coords?.[1];
+    const lng = coords?.[0];
+    const hasValid = isValidCoordinate(lat, lng) && isWithinKenya(lat as number, lng as number);
+    const dist = hasValid ? haversineKm([lat as number, lng as number], hint) : Infinity;
+    if (!hasValid || dist > thresholdKm) {
+      await ListingModel.findByIdAndUpdate(l._id, {
+        $set: { 'location.coordinates': [hint[1], hint[0]] },
+      });
+      fixed += 1;
+      try {
+        await createNotification(String((l as any).agentId), {
+          title: 'Location corrected',
+          description: `We aligned "${(l as any).title || 'Listing'}" to ${hint[0].toFixed(3)}, ${hint[1].toFixed(3)} based on its area.`,
+          type: 'listing',
+        });
+      } catch {
+        /* ignore notification failures */
+      }
+    }
+  }
+  if (fixed) invalidatePrefix(LISTING_SEARCH_CACHE_PREFIX);
+
+  // Notify admins daily with a summary if anything changed
+  if (fixed) {
+    const admins = await UserModel.find({ role: 'admin' }).select('_id').lean();
+    const summary = `Geo sanity sweep corrected ${fixed} of ${listings.length} live listings.`;
+    await Promise.all(
+      admins.map((admin) =>
+        createNotification(String(admin._id), {
+          title: 'Geo sanity sweep',
+          description: summary,
+          type: 'system',
+        }).catch(() => undefined)
+      )
+    );
+  }
+
+  return { scanned: listings.length, fixed };
+}
+
 export async function toggleAlert(userId: string, listingId: string) {
   // Use findOneAndUpdate with aggregation pipeline for atomic toggle
   const result = await SavedListingModel.findOneAndUpdate(
     { userId, listingId },
-    [{
-      $set: {
-        alert: { $not: { $ifNull: ['$alert', false] } },
-        userId: userId,
-        listingId: listingId
-      }
-    }],
+    [
+      {
+        $set: {
+          alert: { $not: { $ifNull: ['$alert', false] } },
+          userId: userId,
+          listingId: listingId,
+        },
+      },
+    ],
     { upsert: true, new: true }
   );
 
@@ -492,16 +712,47 @@ export async function toggleAlert(userId: string, listingId: string) {
   return { alert: result.alert };
 }
 
-export async function recordListingLead(listingId: string, source: 'whatsapp' | 'message' | 'call', userId?: string) {
-  const listing = await ListingModel.findById(listingId).select('agentId').lean();
-  if (!listing) throw new Error('Listing not found');
+export async function recordListingLead(
+  listingId: string,
+  source: 'whatsapp' | 'message' | 'call',
+  userId?: string
+) {
+  const fullListing = await ListingModel.findById(listingId).select('agentId title location').lean();
+  if (!fullListing) throw new Error('Listing not found');
 
   const lead = await LeadModel.create({
     listingId,
-    agentId: listing.agentId,
+    agentId: fullListing.agentId,
     source,
-    userId
+    userId,
   });
+
+  // Email agent about new inquiry
+  try {
+    const { sendMail, renderBrandEmail } = await import('./email.service');
+    const agent = await UserModel.findById(fullListing.agentId).select('emailOrPhone name').lean();
+    const email = agent?.emailOrPhone?.includes('@') ? agent.emailOrPhone : null;
+    if (email) {
+      const firstName = (agent?.name || '').split(' ')[0] || 'there';
+      const sourceLabel = source === 'whatsapp' ? 'WhatsApp' : source === 'call' ? 'phone call' : 'message';
+      let inquirerInfo = 'A potential client';
+      if (userId) {
+        const inquirer = await UserModel.findById(userId).select('name').lean();
+        if (inquirer?.name) inquirerInfo = `<strong>${inquirer.name}</strong>`;
+      }
+      await sendMail(
+        email,
+        `New inquiry on ${(fullListing as any).title || 'your listing'} — ZENI.`,
+        renderBrandEmail({
+          title: 'New lead',
+          body: `Hi ${firstName},<br/>${inquirerInfo} is interested in <strong>${(fullListing as any).title || 'your listing'}</strong> via ${sourceLabel}. Respond quickly to increase your chances!`,
+          ctaLabel: 'View leads',
+          ctaHref: (process.env.APP_URL || 'http://localhost:5173') + '/agent/leads',
+        })
+      );
+    }
+  } catch { /* don't block on email failure */ }
+
   return String(lead._id);
 }
 

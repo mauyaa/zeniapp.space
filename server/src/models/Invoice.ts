@@ -8,7 +8,7 @@ export interface InvoiceDocument extends Document {
   purpose: 'booking_fee' | 'deposit' | 'subscription' | 'boost' | 'rent' | 'service_fee';
   amount: number;
   currency: string;
-  status: typeof payStatuses[number];
+  status: (typeof payStatuses)[number];
   dueDate: Date;
   lineItems: { label: string; amount: number }[];
   metadata?: Record<string, unknown>;
@@ -24,7 +24,7 @@ const InvoiceSchema = new Schema<InvoiceDocument>(
     status: { type: String, enum: payStatuses, default: 'unpaid', index: true },
     dueDate: { type: Date, required: true },
     lineItems: [{ label: String, amount: Number }],
-    metadata: Object
+    metadata: Object,
   },
   { timestamps: true }
 );

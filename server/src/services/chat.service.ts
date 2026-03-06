@@ -11,14 +11,28 @@ import { env } from '../config/env';
 import { triggerAgentDashboard, triggerUserDashboard } from './dashboard.service';
 import { createNotification } from './notification.service';
 
+const chatLogsInTest =
+  process.env.CHAT_DEBUG_IN_TEST === 'true' || process.env.REQUEST_LOG_IN_TEST === 'true';
+const shouldLogChat = env.nodeEnv !== 'test' || chatLogsInTest;
+
+const chatLog = (...args: unknown[]) => {
+  if (!shouldLogChat) return;
+  console.log(...args);
+};
+
+const chatError = (...args: unknown[]) => {
+  if (!shouldLogChat) return;
+  console.error(...args);
+};
+
 const isValidObjectId = (value: string): boolean => mongoose.Types.ObjectId.isValid(value);
 
 async function isBlocked(blockerId: string, blockedId: string): Promise<boolean> {
   const exists = await BlockedUserModel.exists({
     $or: [
       { blockerId, blockedId },
-      { blockerId: blockedId, blockedId: blockerId }
-    ]
+      { blockerId: blockedId, blockedId: blockerId },
+    ],
   });
   return Boolean(exists);
 }
@@ -33,7 +47,7 @@ export async function getOrCreateConversation(
 ): Promise<ConversationDocument> {
   const [user, agent] = await Promise.all([
     UserModel.findById(userId, 'role name').lean(),
-    UserModel.findById(agentId, 'role name').lean()
+    UserModel.findById(agentId, 'role name').lean(),
   ]);
   if (!user || !agent) {
     const error = new Error('User or agent not found');
@@ -89,10 +103,7 @@ function buildListingSnapshot(listing?: ListingDocument | null) {
   const fallbackImage =
     'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=600&q=60';
   const locationText =
-    listing?.location?.area ||
-    listing?.location?.city ||
-    listing?.location?.address ||
-    'Location';
+    listing?.location?.area || listing?.location?.city || listing?.location?.address || 'Location';
   const images = listing?.images || [];
   const primary = images.find((img) => img.isPrimary)?.url || images[0]?.url || fallbackImage;
 
@@ -100,7 +111,7 @@ function buildListingSnapshot(listing?: ListingDocument | null) {
     title: listing?.title || 'Listing',
     price: formatPrice(listing?.price, listing?.currency),
     locationText,
-    thumbUrl: primary
+    thumbUrl: primary,
   };
 }
 
@@ -109,7 +120,7 @@ function buildAgentSnapshot(agent: UserDocument | null | undefined, agentId: str
     id: agentId,
     name: agent?.name || 'Agent',
     avatarUrl: '',
-    verified: agent?.agentVerification === 'verified'
+    verified: agent?.agentVerification === 'verified',
   };
 }
 
@@ -118,7 +129,7 @@ function buildUserSnapshot(user: UserDocument | null | undefined, userId: string
     id: userId,
     name: user?.name || 'Buyer',
     avatarUrl: '',
-    role: user?.role || 'user'
+    role: user?.role || 'user',
   };
 }
 
@@ -142,29 +153,23 @@ function isMuted(mutedBy: any, userId: string): boolean {
   return Boolean(mutedBy[userId]);
 }
 
-let _cachedAgentIds: string[] | null = null;
-let _agentIdsCachedAt = 0;
-const AGENT_IDS_TTL = 60_000;
-
-async function getCachedAgentIds(): Promise<string[]> {
-  const now = Date.now();
-  if (_cachedAgentIds && now - _agentIdsCachedAt < AGENT_IDS_TTL) return _cachedAgentIds;
-  const users = await UserModel.find({ role: 'agent' }).select('_id').lean();
-  _cachedAgentIds = users.map((u) => String(u._id));
-  _agentIdsCachedAt = now;
-  return _cachedAgentIds;
+function logChatSideEffectError(scope: string, err: unknown): void {
+  if (env.nodeEnv === 'test') {
+    const message = err instanceof Error ? err.message : String(err ?? '');
+    if (message.includes('MongoClientClosedError') || message.includes('client was closed')) {
+      return;
+    }
+  }
+  console.error(`[chat] ${scope}`, err);
 }
 
 export async function listConversations(userId: string, role?: string) {
   let query: any;
   if (role === 'agent') {
-    try {
-      const allAgentIds = await getCachedAgentIds();
-      const ids = allAgentIds.includes(userId) ? allAgentIds : [...allAgentIds, userId];
-      query = { $or: [{ agentId: { $in: ids } }, { userId }] };
-    } catch {
-      query = { $or: [{ agentId: userId }, { userId }] };
-    }
+    // Agents should only see threads they participate in (as the agent or as the user when
+    // talking to support/admin). Including every agent's conversations was causing duplicate
+    // buyers to appear in the inbox and dashboard widgets.
+    query = { $or: [{ agentId: userId }, { userId }] };
   } else if (role === 'user') {
     query = { userId };
   } else if (role === 'admin') {
@@ -183,7 +188,12 @@ export async function listConversations(userId: string, role?: string) {
   const roleFiltered = items.filter((conv: any) => {
     if (role === 'agent') {
       const userRole = conv.userId?.role;
-      return !userRole || userRole === 'user' || userRole === 'admin' || (userRole === 'agent' && normalizeId(conv.userId) === userId);
+      return (
+        !userRole ||
+        userRole === 'user' ||
+        userRole === 'admin' ||
+        (userRole === 'agent' && normalizeId(conv.userId) === userId)
+      );
     }
     if (role === 'user') {
       const agentRole = conv.agentId?.role;
@@ -210,7 +220,9 @@ export async function listConversations(userId: string, role?: string) {
     }
   });
 
-  const formatted = Array.from(deduped.values()).map((conv: any) => formatConversation(conv, userId));
+  const formatted = Array.from(deduped.values()).map((conv: any) =>
+    formatConversation(conv, userId)
+  );
 
   // Attach last message preview to each conversation in a single bulk query
   try {
@@ -219,15 +231,25 @@ export async function listConversations(userId: string, role?: string) {
       const lastMessages = await MessageModel.aggregate([
         { $match: { conversationId: { $in: convIds } } },
         { $sort: { createdAt: -1 } },
-        { $group: { _id: '$conversationId', content: { $first: '$content' }, type: { $first: '$type' }, senderType: { $first: '$senderType' } } }
+        {
+          $group: {
+            _id: '$conversationId',
+            content: { $first: '$content' },
+            type: { $first: '$type' },
+            senderType: { $first: '$senderType' },
+          },
+        },
       ]);
       const previewMap = new Map(lastMessages.map((m: any) => [String(m._id), m]));
       formatted.forEach((conv) => {
         const msg = previewMap.get(conv.id);
         if (msg) {
-          (conv as any).lastMessagePreview = msg.type === 'text' && typeof msg.content === 'string'
-            ? msg.content.slice(0, 80)
-            : msg.type === 'attachment' ? 'Sent an attachment' : msg.type;
+          (conv as any).lastMessagePreview =
+            msg.type === 'text' && typeof msg.content === 'string'
+              ? msg.content.slice(0, 80)
+              : msg.type === 'attachment'
+                ? 'Sent an attachment'
+                : msg.type;
         }
       });
     }
@@ -259,7 +281,9 @@ export function formatConversation(conv: any, forUserId: string) {
     userId,
     status: conv.status,
     leadStage: conv.leadStage,
-    lastMessageAt: conv.lastMessageAt ? new Date(conv.lastMessageAt).toISOString() : new Date().toISOString(),
+    lastMessageAt: conv.lastMessageAt
+      ? new Date(conv.lastMessageAt).toISOString()
+      : new Date().toISOString(),
     unreadCount: getUnreadCount(conv.unreadCountBy, forUserId),
     pinned: isPinned(conv.pinnedBy, forUserId),
     muted: isMuted(conv.mutedBy, forUserId),
@@ -267,7 +291,7 @@ export function formatConversation(conv: any, forUserId: string) {
     responseDueAt: buildResponseDue(conv, forUserId),
     listingSnapshot: listing ? buildListingSnapshot(listing) : null,
     agentSnapshot: buildAgentSnapshot(agent, agentId),
-    userSnapshot: buildUserSnapshot(user, userId)
+    userSnapshot: buildUserSnapshot(user, userId),
   };
 }
 
@@ -295,7 +319,10 @@ export async function listMessages(
     (error as any).status = 403;
     throw error;
   }
-  const msgs = await MessageModel.find({ conversationId }).sort({ createdAt: 1 }).skip(skip).limit(limit);
+  const msgs = await MessageModel.find({ conversationId })
+    .sort({ createdAt: 1 })
+    .skip(skip)
+    .limit(limit);
   return msgs.map(formatMessage);
 }
 
@@ -312,7 +339,7 @@ export async function sendMessage(
     (error as any).status = 404;
     throw error;
   }
-  
+
   const conv = await ConversationModel.findById(conversationId);
   if (!conv) {
     const error = new Error('Conversation not found');
@@ -332,16 +359,15 @@ export async function sendMessage(
 
   const isUserActor = actorId === userIdStr;
   const isAgentActor = actorId === agentIdStr;
-  const isStaffOverride = !isUserActor && !isAgentActor && ['admin', 'agent'].includes(actorRole);
-  const senderType = (isAgentActor || (isStaffOverride && actorRole !== 'user')) ? 'agent' : 'user';
-
-  if (!isUserActor && !isAgentActor && !isStaffOverride) {
+  if (!isUserActor && !isAgentActor) {
     const error = new Error('Caller is not part of this conversation');
     (error as any).status = 403;
     (error as any).code = 'FORBIDDEN';
     throw error;
   }
-  
+
+  const senderType = isAgentActor ? 'agent' : 'user';
+
   if (clientTempId) {
     const existing = await MessageModel.findOne({ conversationId, clientTempId });
     if (existing) return existing;
@@ -353,7 +379,7 @@ export async function sendMessage(
     type,
     content,
     status: 'sent',
-    ...(clientTempId ? { clientTempId } : {})
+    ...(clientTempId ? { clientTempId } : {}),
   });
 
   // Side effects — never let these block or fail the message send
@@ -361,9 +387,9 @@ export async function sendMessage(
     const otherId = isUserActor ? agentIdStr : userIdStr;
     await ConversationModel.findByIdAndUpdate(conversationId, {
       $set: { lastMessageAt: new Date() },
-      $inc: { [`unreadCountBy.${otherId}`]: 1 }
+      $inc: { [`unreadCountBy.${otherId}`]: 1 },
     });
-    
+
     const io = getIO();
     if (io) {
       const targets = [`user:${conv.userId.toString()}`, `user:${conv.agentId.toString()}`];
@@ -373,14 +399,16 @@ export async function sendMessage(
       createNotification(otherId, {
         title: 'New message',
         description: type === 'text' ? String(content).slice(0, 80) : type,
-        type: 'message'
-      }).catch((err) => console.error('[chat] notification failed', err));
+        type: 'message',
+      }).catch((err) => logChatSideEffectError('notification failed', err));
     }
-    emitConversationUpdate(String(conv._id)).catch(() => {});
+    emitConversationUpdate(String(conv._id)).catch((err) =>
+      logChatSideEffectError('emitConversationUpdate failed', err)
+    );
     triggerUserDashboard(conv.userId.toString());
     triggerAgentDashboard(conv.agentId.toString());
   } catch (err) {
-    console.error('[chat] sendMessage side effects failed', err);
+    logChatSideEffectError('sendMessage side effects failed', err);
   }
 
   return msg;
@@ -391,8 +419,8 @@ export async function markRead(conversationId: string, userId: string): Promise<
   await ConversationModel.findByIdAndUpdate(conversationId, {
     $set: {
       [`unreadCountBy.${userId}`]: 0,
-      [`lastReadAtBy.${userId}`]: now
-    }
+      [`lastReadAtBy.${userId}`]: now,
+    },
   });
 }
 
@@ -437,7 +465,7 @@ export async function updateConversation(
   if (typeof data.pinned === 'boolean') {
     update[`pinnedBy.${actorId}`] = data.pinned;
   }
-   if (typeof data.muted === 'boolean') {
+  if (typeof data.muted === 'boolean') {
     update[`mutedBy.${actorId}`] = data.muted;
   }
   if (!Object.keys(update).length) return formatConversation(conv, actorId);
@@ -460,7 +488,7 @@ export function formatMessage(msg: MessageDocument | any) {
     type: msg.type,
     content: msg.content,
     createdAt: msg.createdAt ? new Date(msg.createdAt).toISOString() : new Date().toISOString(),
-    status: msg.status
+    status: msg.status,
   };
 }
 
@@ -503,8 +531,8 @@ async function ensureSystemAgentAccount(
       { emailOrPhone: preferredEmail },
       { email: preferredEmail },
       { emailOrPhone: fallbackEmail },
-      { email: fallbackEmail }
-    ]
+      { email: fallbackEmail },
+    ],
   }).select('_id');
   if (existing) return;
 
@@ -516,13 +544,13 @@ async function ensureSystemAgentAccount(
       password: DEFAULT_AGENT_PASSWORD,
       role: 'agent',
       status: 'active',
-      agentVerification: 'verified'
+      agentVerification: 'verified',
     });
   };
 
   try {
     await createWithEmail(preferredEmail);
-    console.log(`[chat] Created ${name} user`);
+    chatLog(`[chat] Created ${name} user`);
     return;
   } catch (err: any) {
     if (err?.code !== 11000) throw err;
@@ -531,7 +559,7 @@ async function ensureSystemAgentAccount(
   if (fallbackEmail && fallbackEmail !== preferredEmail) {
     try {
       await createWithEmail(fallbackEmail);
-      console.log(`[chat] Created ${name} user (fallback email)`);
+      chatLog(`[chat] Created ${name} user (fallback email)`);
       return;
     } catch (err: any) {
       if (err?.code !== 11000) throw err;
@@ -542,7 +570,7 @@ async function ensureSystemAgentAccount(
   const slug = name.toLowerCase().replace(/\s+/g, '-');
   const systemEmail = `${slug}-system-${Date.now()}@zeni.test`;
   await createWithEmail(systemEmail);
-  console.log(`[chat] Created ${name} user (system email fallback)`);
+  chatLog(`[chat] Created ${name} user (system email fallback)`);
 }
 
 /**
@@ -560,9 +588,9 @@ export async function ensureWelcomeAgentsInDb(): Promise<void> {
     await ensureSystemAgentAccount('Zeni Admin', adminEmail, 'admin@zeni.test');
   } catch (err: any) {
     if (err?.code === 11000) {
-      console.log('[chat] Zeni Support/Agent/Admin users already exist (duplicate key)');
+      chatLog('[chat] Zeni Support/Agent/Admin users already exist (duplicate key)');
     } else {
-      console.error('[chat] ensureWelcomeAgentsInDb failed', err);
+      chatError('[chat] ensureWelcomeAgentsInDb failed', err);
     }
   }
 }
@@ -571,12 +599,14 @@ async function findZeniSupportAgent(): Promise<{ _id: any; role: string } | null
   const supportEmail = env.zeniSupportEmail || 'support@zeni.test';
   let u = await UserModel.findOne({
     role: 'agent',
-    $or: [{ emailOrPhone: supportEmail }, { email: supportEmail }]
+    $or: [{ emailOrPhone: supportEmail }, { email: supportEmail }],
   })
     .select('_id role')
     .lean();
   if (u) return u as { _id: any; role: string };
-  u = await UserModel.findOne({ name: /^Zeni Support$/i, role: 'agent' }).select('_id role').lean();
+  u = await UserModel.findOne({ name: /^Zeni Support$/i, role: 'agent' })
+    .select('_id role')
+    .lean();
   return u as { _id: any; role: string } | null;
 }
 
@@ -584,50 +614,40 @@ async function findZeniMainAgent(): Promise<{ _id: any; role: string } | null> {
   const agentEmail = env.zeniAgentEmail || 'zeniagent.ke@gmail.com';
   let u = await UserModel.findOne({
     role: 'agent',
-    $or: [
-      { emailOrPhone: agentEmail },
-      { email: agentEmail },
-      { emailOrPhone: 'agent@zeni.test' }
-    ]
+    $or: [{ emailOrPhone: agentEmail }, { email: agentEmail }, { emailOrPhone: 'agent@zeni.test' }],
   })
     .select('_id role')
     .lean();
   if (u) return u as { _id: any; role: string };
-  u = await UserModel.findOne({ name: /^Zeni Agent$/i, role: 'agent' }).select('_id role').lean();
+  u = await UserModel.findOne({ name: /^Zeni Agent$/i, role: 'agent' })
+    .select('_id role')
+    .lean();
   if (u) return u as { _id: any; role: string };
-  u = await UserModel.findOne({ role: 'agent', agentVerification: 'verified' }).select('_id role').sort({ createdAt: 1 }).lean();
+  u = await UserModel.findOne({ role: 'agent', agentVerification: 'verified' })
+    .select('_id role')
+    .sort({ createdAt: 1 })
+    .lean();
   if (u) return u as { _id: any; role: string };
   u = await UserModel.findOne({ role: 'agent' }).select('_id role').sort({ createdAt: 1 }).lean();
   return u as { _id: any; role: string } | null;
 }
 
-async function getSystemAgentIds(): Promise<string[]> {
-  const [support, agent, admin] = await Promise.all([
-    findZeniSupportAgent(),
-    findZeniMainAgent(),
-    findZeniAdminAgent()
-  ]);
-  const ids = new Set<string>();
-  if (support) ids.add(String(support._id));
-  if (agent) ids.add(String(agent._id));
-  if (admin) ids.add(String(admin._id));
-  return Array.from(ids);
-}
-
-async function findZeniAdminAgent(): Promise<{ _id: any; role: string } | null> {
+async function findZeniAdminAccount(): Promise<{ id: string; name: string } | null> {
   const adminEmail = env.zeniAdminEmail || 'admin@zeni.test';
+  // Try to find the specific system admin account first
   let u = await UserModel.findOne({
-    role: 'agent',
-    $or: [
-      { emailOrPhone: adminEmail },
-      { email: adminEmail }
-    ]
+    $or: [{ emailOrPhone: adminEmail }, { email: adminEmail }, { name: /^Zeni Admin$/i }],
   })
-    .select('_id role')
+    .select('_id name')
     .lean();
-  if (u) return u as { _id: any; role: string };
-  u = await UserModel.findOne({ name: /^Zeni Admin$/i, role: 'agent' }).select('_id role').lean();
-  return u as { _id: any; role: string } | null;
+
+  if (u) return { id: String(u._id), name: String(u.name) };
+
+  // Fallback to any admin if system one isn't found
+  u = await UserModel.findOne({ role: 'admin' }).select('_id name').sort({ createdAt: 1 }).lean();
+  if (u) return { id: String(u._id), name: String(u.name) };
+
+  return null;
 }
 
 /**
@@ -635,30 +655,45 @@ async function findZeniAdminAgent(): Promise<{ _id: any; role: string } | null> 
  * Called after user registration. Safe to call multiple times (idempotent via getOrCreateConversation).
  */
 export async function ensureWelcomeConversations(userId: string): Promise<void> {
-  const [agentUser, adminAgent] = await Promise.all([
+  const [user, agentUser, adminAccount] = await Promise.all([
+    UserModel.findById(userId).select('name role'),
     findZeniMainAgent(),
-    findZeniAdminAgent()
+    findZeniAdminAccount(),
   ]);
 
-  if (!agentUser && !adminAgent) {
-    console.warn('[chat] No Zeni Agent or Zeni Admin users in DB. Run seed to create them.');
-    return;
+  if (!user) return;
+
+  const firstName = user.name.split(' ')[0];
+
+  // 1. Zeni Agent Welcome
+  if (agentUser) {
+    const aid = String(agentUser._id);
+    const conv = await getOrCreateConversation(null, userId, aid);
+    const hasMessages = await MessageModel.exists({ conversationId: conv._id });
+    if (!hasMessages) {
+      await sendMessage(
+        String(conv._id),
+        aid,
+        'agent',
+        'text',
+        `Jambo ${firstName}! I'm your Zeni Agent. I'll be helping you find and verify the best properties across Kenya. Feel free to ask me anything about our listings!`
+      );
+    }
   }
 
-  const createdIds = new Set<string>();
-
-  // Zeni Agent conversation
-  if (agentUser && agentUser.role === 'agent') {
-    const id = String(agentUser._id);
-    await getOrCreateConversation(null, userId, id);
-    createdIds.add(id);
-  }
-
-  // Zeni Admin conversation (skip if same account as Zeni Agent)
-  if (adminAgent && adminAgent.role === 'agent') {
-    const id = String(adminAgent._id);
-    if (!createdIds.has(id)) {
-      await getOrCreateConversation(null, userId, id);
+  // 2. Zeni Admin Welcome
+  if (adminAccount) {
+    const aid = adminAccount.id;
+    const conv = await getOrCreateConversation(null, userId, aid);
+    const hasMessages = await MessageModel.exists({ conversationId: conv._id });
+    if (!hasMessages) {
+      await sendMessage(
+        String(conv._id),
+        aid,
+        'admin',
+        'text',
+        `Welcome to ZENI, ${firstName}. I'm the Zeni Admin. I'm here to ensure your experience is secure and professional. If you have any feedback or reported issues, you can reach me here directly.`
+      );
     }
   }
 }
@@ -667,9 +702,9 @@ export async function ensureWelcomeConversations(userId: string): Promise<void> 
  * Ensure agent has conversations with Zeni Support and Zeni Admin so they can message them.
  */
 export async function ensureAgentSupportConversation(agentUserId: string): Promise<void> {
-  const [supportUser, adminAgent] = await Promise.all([
+  const [supportUser, adminAccount] = await Promise.all([
     findZeniSupportAgent(),
-    findZeniAdminAgent()
+    findZeniAdminAccount(),
   ]);
   const createdIds = new Set<string>();
   if (supportUser && supportUser.role === 'agent') {
@@ -679,8 +714,8 @@ export async function ensureAgentSupportConversation(agentUserId: string): Promi
       createdIds.add(id);
     }
   }
-  if (adminAgent && adminAgent.role === 'agent') {
-    const id = String(adminAgent._id);
+  if (adminAccount) {
+    const id = adminAccount.id;
     if (id !== agentUserId && !createdIds.has(id)) {
       await getOrCreateConversation(null, agentUserId, id);
     }
@@ -691,9 +726,9 @@ export async function ensureAgentSupportConversation(agentUserId: string): Promi
  * Ensure admin has conversations with Zeni Agent and Zeni Admin (support channel).
  */
 export async function ensureAdminZeniAgentConversation(adminUserId: string): Promise<void> {
-  const [mainAgent, adminAgent] = await Promise.all([
+  const [mainAgent, adminAccount] = await Promise.all([
     findZeniMainAgent(),
-    findZeniAdminAgent()
+    findZeniAdminAccount(),
   ]);
   const createdIds = new Set<string>();
   if (mainAgent && mainAgent.role === 'agent') {
@@ -701,8 +736,8 @@ export async function ensureAdminZeniAgentConversation(adminUserId: string): Pro
     await getOrCreateConversation(null, adminUserId, id);
     createdIds.add(id);
   }
-  if (adminAgent && adminAgent.role === 'agent') {
-    const id = String(adminAgent._id);
+  if (adminAccount) {
+    const id = adminAccount.id;
     if (!createdIds.has(id)) {
       await getOrCreateConversation(null, adminUserId, id);
     }

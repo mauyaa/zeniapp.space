@@ -5,8 +5,8 @@ export interface ConversationDocument extends Document {
   listingId?: mongoose.Types.ObjectId | null;
   userId: mongoose.Types.ObjectId;
   agentId: mongoose.Types.ObjectId;
-  status: typeof conversationStatuses[number];
-  leadStage: typeof leadStages[number];
+  status: (typeof conversationStatuses)[number];
+  leadStage: (typeof leadStages)[number];
   lastMessageAt: Date;
   unreadCountBy: Record<string, number>;
   pinnedBy: Record<string, boolean>;
@@ -26,7 +26,7 @@ const ConversationSchema = new Schema<ConversationDocument>(
     unreadCountBy: { type: Map, of: Number, default: {} },
     pinnedBy: { type: Map, of: Boolean, default: {} },
     mutedBy: { type: Map, of: Boolean, default: {} },
-    lastReadAtBy: { type: Map, of: Date, default: {} }
+    lastReadAtBy: { type: Map, of: Date, default: {} },
   },
   { timestamps: true }
 );
@@ -38,5 +38,7 @@ ConversationSchema.index({ agentId: 1, lastMessageAt: -1 });
 ConversationSchema.index({ status: 1, lastMessageAt: -1 });
 ConversationSchema.index({ agentId: 1, status: 1 });
 
-export const ConversationModel = mongoose.model<ConversationDocument>('Conversation', ConversationSchema);
-
+export const ConversationModel = mongoose.model<ConversationDocument>(
+  'Conversation',
+  ConversationSchema
+);

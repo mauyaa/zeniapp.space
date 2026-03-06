@@ -5,7 +5,7 @@ import { Conversation, Message, LeadStage, ConversationStatus } from '../types/c
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([
     promise,
-    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
   ]);
 }
 
@@ -13,7 +13,7 @@ export async function safeFetchConversations(): Promise<Conversation[]> {
   try {
     return await withTimeout(api.fetchConversations(), 8000, []);
   } catch (error) {
-    logger.warn('Failed to load conversations', error);
+    logger.warn('Failed to load conversations', { error: error as Error });
     return [];
   }
 }
@@ -23,7 +23,7 @@ export async function safeBootstrapConversations(): Promise<Conversation[]> {
   try {
     return await withTimeout(api.bootstrapConversations(), 10000, []);
   } catch (error) {
-    logger.warn('Bootstrap conversations failed', error);
+    logger.warn('Bootstrap conversations failed', { error: error as Error });
     return [];
   }
 }
@@ -32,7 +32,7 @@ export async function safeFetchMessages(conversationId: string): Promise<Message
   try {
     return await withTimeout(api.fetchMessages(conversationId), 6000, []);
   } catch (error) {
-    logger.warn('Failed to load messages', error);
+    logger.warn('Failed to load messages', { error: error as Error });
     return [];
   }
 }
@@ -56,15 +56,12 @@ export function formatSummary(answers: Record<string, string>): string {
     answers.budget ? `budget ${answers.budget}` : null,
     answers.moveIn ? `move-in ${answers.moveIn}` : null,
     answers.viewing ? `prefers ${answers.viewing} viewing` : null,
-    answers.mustHaves ? `needs ${answers.mustHaves}` : null
+    answers.mustHaves ? `needs ${answers.mustHaves}` : null,
   ].filter(Boolean);
   return `Interested in listing: ${parts.join(', ')}.`;
 }
 
-export async function startConversation(
-  listingId: string,
-  agentId: string
-): Promise<Conversation> {
+export async function startConversation(listingId: string, agentId: string): Promise<Conversation> {
   // API should handle reuse; front-end just calls create and trusts backend to return existing
   return safeCreateConversation(listingId, agentId);
 }
@@ -81,7 +78,7 @@ export async function updateLeadStage(
   try {
     return await api.updateConversation(id, data);
   } catch (error) {
-    logger.warn('Lead stage update failed', error);
+    logger.warn('Lead stage update failed', { error: error as Error });
     return { id, ...data } as Conversation;
   }
 }

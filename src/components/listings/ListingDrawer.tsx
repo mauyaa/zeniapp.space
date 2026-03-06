@@ -131,6 +131,11 @@ export function ListingDrawer({
   const locationLabel = [property.location.neighborhood, property.location.city]
     .filter(Boolean)
     .join(', ');
+  const isRent =
+    property.purpose === 'rent' ||
+    (property.currency || '').toLowerCase().includes('mo') ||
+    (property.category || '').toLowerCase().includes('rent');
+  const priceLabel = `${formatCurrency(property.price, property.currency)}${isRent ? ' per month' : ''}`;
 
   return (
     <AnimatePresence>
@@ -156,7 +161,9 @@ export function ListingDrawer({
             initial={{ x: '100%', opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '100%', opacity: 0 }}
-            transition={reduceMotion ? { duration: 0 } : { type: 'spring', damping: 30, stiffness: 300 }}
+            transition={
+              reduceMotion ? { duration: 0 } : { type: 'spring', damping: 30, stiffness: 300 }
+            }
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.12}
@@ -166,7 +173,11 @@ export function ListingDrawer({
           >
             <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <div className="relative">
-                <img className="h-[260px] sm:h-[220px] w-full object-cover bg-zinc-100" src={heroImage} alt={property.title} />
+                <img
+                  className="h-[260px] sm:h-[220px] w-full object-cover bg-zinc-100"
+                  src={heroImage}
+                  alt={property.title}
+                />
                 <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between p-5">
                   <button
                     type="button"
@@ -192,7 +203,10 @@ export function ListingDrawer({
                 <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.1em] text-emerald-700">
                   {categoryLabel}
                 </span>
-                <h2 id="drawer-title" className="text-[22px] leading-tight font-semibold tracking-[-0.02em] text-zinc-900">
+                <h2
+                  id="drawer-title"
+                  className="text-[22px] leading-tight font-semibold tracking-[-0.02em] text-zinc-900"
+                >
                   {property.title}
                 </h2>
                 <div className="mt-2 mb-5 flex items-center gap-1.5 text-sm text-zinc-500">
@@ -200,8 +214,11 @@ export function ListingDrawer({
                   <span>{locationLabel || 'Kenya'}</span>
                 </div>
 
-                <div className="mb-5 text-[20px] font-bold text-zinc-900">
-                  {formatCurrency(property.price, property.currency)}
+                <div className="mb-5">
+                  <div className="text-[20px] font-bold text-zinc-900">{priceLabel}</div>
+                  <div className="text-[11px] font-mono uppercase tracking-[0.18em] text-emerald-600 mt-1">
+                    {isRent ? 'Monthly rent' : 'Sale price'}
+                  </div>
                 </div>
 
                 <div className="mb-5 flex items-center justify-between border-y border-zinc-100 py-4">
@@ -230,7 +247,9 @@ export function ListingDrawer({
                     type="button"
                     onClick={() => setActiveTab('description')}
                     className={`text-sm font-semibold transition-colors ${
-                      activeTab === 'description' ? 'text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'
+                      activeTab === 'description'
+                        ? 'text-zinc-900'
+                        : 'text-zinc-500 hover:text-zinc-700'
                     }`}
                   >
                     Description
@@ -239,7 +258,9 @@ export function ListingDrawer({
                     type="button"
                     onClick={() => setActiveTab('features')}
                     className={`text-sm font-semibold transition-colors ${
-                      activeTab === 'features' ? 'text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'
+                      activeTab === 'features'
+                        ? 'text-zinc-900'
+                        : 'text-zinc-500 hover:text-zinc-700'
                     }`}
                   >
                     Features
@@ -287,10 +308,16 @@ export function ListingDrawer({
                   <div className="mb-6">
                     {mapReady ? (
                       <div className="h-48 overflow-hidden rounded-2xl border border-zinc-200">
-                        <PropertyMap properties={mapItems} selectedId={property.id} onSelect={() => null} />
+                        <PropertyMap
+                          properties={mapItems}
+                          selectedId={property.id}
+                          onSelect={() => null}
+                        />
                       </div>
                     ) : (
-                      <p className="text-sm text-zinc-500">Map coordinates are not available for this listing yet.</p>
+                      <p className="text-sm text-zinc-500">
+                        Map coordinates are not available for this listing yet.
+                      </p>
                     )}
                   </div>
                 )}

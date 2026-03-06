@@ -9,8 +9,18 @@ import { triggerAgentDashboard, triggerAdminDashboard } from './dashboard.servic
 import { createNotification } from './notification.service';
 
 const MONTH_LABELS: Record<number, string> = {
-  1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
-  7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
+  1: 'Jan',
+  2: 'Feb',
+  3: 'Mar',
+  4: 'Apr',
+  5: 'May',
+  6: 'Jun',
+  7: 'Jul',
+  8: 'Aug',
+  9: 'Sep',
+  10: 'Oct',
+  11: 'Nov',
+  12: 'Dec',
 };
 
 export async function getAgentStats(agentId: string) {
@@ -26,32 +36,40 @@ export async function getAgentStats(agentId: string) {
     allLeads,
     leadStageCounts,
     staleListings,
-    monthlyLeads
+    monthlyLeads,
   ] = await Promise.all([
     ListingModel.countDocuments({ agentId, status: 'live' }),
     ViewingRequestModel.countDocuments({ agentId }),
     ViewingRequestModel.countDocuments({ agentId, status: 'requested' }),
     ConversationModel.countDocuments({
       agentId: agentId,
-      lastMessageAt: { $gte: since7d }
+      lastMessageAt: { $gte: since7d },
     }),
     ConversationModel.countDocuments({ agentId }),
     ConversationModel.aggregate([
       { $match: { agentId: new mongoose.Types.ObjectId(agentId) } },
-      { $group: { _id: '$leadStage', count: { $sum: 1 } } }
+      { $group: { _id: '$leadStage', count: { $sum: 1 } } },
     ]),
     ListingModel.countDocuments({ agentId, status: 'live', createdAt: { $lte: cutoffStale } }),
     ConversationModel.aggregate([
       { $match: { agentId: new mongoose.Types.ObjectId(agentId), createdAt: { $gte: since12m } } },
-      { $group: { _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } }, count: { $sum: 1 } } },
-      { $sort: { '_id.year': 1, '_id.month': 1 } }
-    ])
+      {
+        $group: {
+          _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1 } },
+    ]),
   ]);
 
-  const leadStageMap = leadStageCounts.reduce<Record<string, number>>((acc, cur: { _id: string; count: number }) => {
-    acc[cur._id] = cur.count || 0;
-    return acc;
-  }, {});
+  const leadStageMap = leadStageCounts.reduce<Record<string, number>>(
+    (acc, cur: { _id: string; count: number }) => {
+      acc[cur._id] = cur.count || 0;
+      return acc;
+    },
+    {}
+  );
 
   const viewings = totalViewings;
   const offers = leadStageMap.offer || 0;
@@ -74,7 +92,7 @@ export async function getAgentStats(agentId: string) {
     trendMonths.push({
       month: key,
       label: MONTH_LABELS[month] || key,
-      count: found ? found.count : 0
+      count: found ? found.count : 0,
     });
   }
 
@@ -85,22 +103,34 @@ export async function getAgentStats(agentId: string) {
     kpis: [
       { label: 'New Leads', value: String(newLeads), tone: 'emerald' },
       { label: 'Pending Viewings', value: String(pendingViewings), tone: 'amber' },
-      { label: 'Active Listings', value: String(activeListings), tone: 'purple' }
+      { label: 'Active Listings', value: String(activeListings), tone: 'purple' },
     ],
     pipeline: [
       { stage: 'New', count: leadStageMap.new ?? 0 },
       { stage: 'Contacted', count: leadStageMap.contacted || 0 },
       { stage: 'Viewing', count: totalViewings },
       { stage: 'Offer', count: offers },
-      { stage: 'Closed', count: closed }
+      { stage: 'Closed', count: closed },
     ],
     insights: [
-      { label: 'Lead → Viewing', value: `${leadToViewing}%`, hint: `${viewings}/${allLeads || 1} leads` },
-      { label: 'Viewing → Offer', value: `${viewingToOffer || 0}%`, hint: `${offers}/${viewings || 1} viewings` },
-      { label: 'Offer → Close', value: `${offerToClose || 0}%`, hint: `${closed}/${offers || 1} offers` },
-      { label: 'Stale listings', value: String(staleListings), hint: 'Live >30 days' }
+      {
+        label: 'Lead → Viewing',
+        value: `${leadToViewing}%`,
+        hint: `${viewings}/${allLeads || 1} leads`,
+      },
+      {
+        label: 'Viewing → Offer',
+        value: `${viewingToOffer || 0}%`,
+        hint: `${offers}/${viewings || 1} viewings`,
+      },
+      {
+        label: 'Offer → Close',
+        value: `${offerToClose || 0}%`,
+        hint: `${closed}/${offers || 1} offers`,
+      },
+      { label: 'Stale listings', value: String(staleListings), hint: 'Live >30 days' },
     ],
-    trend: trendMonths
+    trend: trendMonths,
   };
 }
 
@@ -115,7 +145,8 @@ export async function getAgentAvailability(agentId: string) {
  */
 export async function setAgentAvailability(agentId: string, availability: 'active' | 'paused') {
   const user = await UserModel.findById(agentId);
-  if (!user || user.role !== 'agent') throw Object.assign(new Error('Agent not found'), { status: 404 });
+  if (!user || user.role !== 'agent')
+    throw Object.assign(new Error('Agent not found'), { status: 404 });
 
   if (availability === user.availability) return user;
 
@@ -143,7 +174,7 @@ export async function setAgentAvailability(agentId: string, availability: 'activ
     action: availability === 'paused' ? 'agent_pause' : 'agent_resume',
     entityType: 'user',
     entityId: agentId,
-    after: { availability }
+    after: { availability },
   });
 
   const io = getIO();
@@ -159,13 +190,14 @@ export async function setAgentAvailability(agentId: string, availability: 'activ
 export async function getPayoutChecklist(agentId: string) {
   const user = await UserModel.findById(agentId).select('agentVerification verificationEvidence');
   if (!user) throw Object.assign(new Error('Agent not found'), { status: 404 });
-  const hasKyc = user.agentVerification === 'verified' || (user.verificationEvidence || []).length > 0;
+  const hasKyc =
+    user.agentVerification === 'verified' || (user.verificationEvidence || []).length > 0;
   return {
     items: [
       { id: 'kyc', label: 'Upload KYC/ID documents', done: hasKyc },
       { id: 'bank', label: 'Add payout bank account', done: false },
-      { id: 'test', label: 'Run test payout (sandbox)', done: false }
-    ]
+      { id: 'test', label: 'Run test payout (sandbox)', done: false },
+    ],
   };
 }
 
@@ -177,12 +209,12 @@ export async function runTestPayout(agentId: string) {
     action: 'payout_test',
     entityType: 'payout',
     entityId: ref,
-    after: { amount: 1, currency: 'USD', status: 'simulated' }
+    after: { amount: 1, currency: 'USD', status: 'simulated' },
   });
   await createNotification(agentId, {
     title: 'Test payout simulated',
     description: `Reference ${ref}`,
-    type: 'payout'
+    type: 'payout',
   });
   return { status: 'simulated', reference: ref, amount: 1, currency: 'USD' };
 }

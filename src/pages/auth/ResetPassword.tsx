@@ -23,10 +23,11 @@ export function ResetPasswordPage() {
   const strengthBars = [
     strength >= 2 ? 'bg-emerald-500' : 'bg-slate-200',
     strength >= 4 ? 'bg-emerald-500' : 'bg-slate-200',
-    strength >= 5 ? 'bg-emerald-500' : 'bg-slate-200'
+    strength >= 5 ? 'bg-emerald-500' : 'bg-slate-200',
   ];
   const canSubmit = useMemo(
-    () => !passwordError && !confirmError && password === confirm && password.length >= 8 && !!token,
+    () =>
+      !passwordError && !confirmError && password === confirm && password.length >= 8 && !!token,
     [passwordError, confirmError, password, confirm, token]
   );
 
@@ -63,7 +64,9 @@ export function ResetPasswordPage() {
             Secure Reset
           </div>
           <h1 className="text-3xl font-light tracking-tight">Set a new password</h1>
-          <p className="text-sm text-slate-500 leading-relaxed">Use at least 8 characters with a mix of letters and numbers.</p>
+          <p className="text-sm text-slate-500 leading-relaxed">
+            Use at least 8 characters with a mix of letters and numbers.
+          </p>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-5">
@@ -78,7 +81,9 @@ export function ResetPasswordPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className={`w-full rounded-2xl border px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-100 outline-none ${
-                passwordError ? 'border-rose-300 focus:border-rose-500' : 'border-slate-200 focus:border-emerald-500'
+                passwordError
+                  ? 'border-rose-300 focus:border-rose-500'
+                  : 'border-slate-200 focus:border-emerald-500'
               }`}
               placeholder="At least 8 characters, mix of letters and numbers"
               minLength={8}
@@ -108,7 +113,9 @@ export function ResetPasswordPage() {
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               className={`w-full rounded-2xl border px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-100 outline-none ${
-                confirmError ? 'border-rose-300 focus:border-rose-500' : 'border-slate-200 focus:border-emerald-500'
+                confirmError
+                  ? 'border-rose-300 focus:border-rose-500'
+                  : 'border-slate-200 focus:border-emerald-500'
               }`}
               placeholder="********"
               minLength={8}
@@ -118,7 +125,9 @@ export function ResetPasswordPage() {
           </label>
 
           <label className="space-y-2 text-sm text-slate-700">
-            <span className="inline-flex items-center gap-2 text-slate-900 font-semibold">Reset token</span>
+            <span className="inline-flex items-center gap-2 text-slate-900 font-semibold">
+              Reset token
+            </span>
             <input
               type="text"
               required

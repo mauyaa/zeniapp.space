@@ -14,16 +14,20 @@ export async function listSavedSearches(userId: string) {
     shareToken: item.shareToken,
     shareTokenExpiresAt: item.shareTokenExpiresAt,
     createdAt: item.createdAt,
-    updatedAt: item.updatedAt
+    updatedAt: item.updatedAt,
   }));
 }
 
-export async function createSavedSearch(userId: string, name: string, params: Record<string, unknown>) {
+export async function createSavedSearch(
+  userId: string,
+  name: string,
+  params: Record<string, unknown>
+) {
   const saved = await SavedSearchModel.create({
     userId,
     name,
     params,
-    alertsEnabled: true
+    alertsEnabled: true,
   });
   return {
     id: String(saved._id),
@@ -34,7 +38,7 @@ export async function createSavedSearch(userId: string, name: string, params: Re
     shareToken: saved.shareToken,
     shareTokenExpiresAt: saved.shareTokenExpiresAt,
     createdAt: saved.createdAt,
-    updatedAt: saved.updatedAt
+    updatedAt: saved.updatedAt,
   };
 }
 
@@ -46,7 +50,12 @@ export async function deleteSavedSearch(userId: string, id: string) {
 export async function updateSavedSearch(
   userId: string,
   id: string,
-  data: Partial<{ name: string; params: Record<string, unknown>; alertsEnabled: boolean; snoozeUntil: Date | null }>
+  data: Partial<{
+    name: string;
+    params: Record<string, unknown>;
+    alertsEnabled: boolean;
+    snoozeUntil: Date | null;
+  }>
 ) {
   const update: Partial<{
     name: string;
@@ -71,7 +80,7 @@ export async function updateSavedSearch(
     shareToken: saved.shareToken,
     shareTokenExpiresAt: saved.shareTokenExpiresAt,
     createdAt: saved.createdAt,
-    updatedAt: saved.updatedAt
+    updatedAt: saved.updatedAt,
   };
 }
 
@@ -83,7 +92,7 @@ export async function duplicateSavedSearch(userId: string, id: string) {
     name: `${original.name} (copy)`,
     params: original.params,
     alertsEnabled: original.alertsEnabled,
-    snoozeUntil: original.snoozeUntil
+    snoozeUntil: original.snoozeUntil,
   });
   return {
     id: String(copy._id),
@@ -94,7 +103,7 @@ export async function duplicateSavedSearch(userId: string, id: string) {
     shareToken: copy.shareToken,
     shareTokenExpiresAt: copy.shareTokenExpiresAt,
     createdAt: copy.createdAt,
-    updatedAt: copy.updatedAt
+    updatedAt: copy.updatedAt,
   };
 }
 
@@ -111,19 +120,22 @@ export async function shareSavedSearch(userId: string, id: string) {
       );
       if (!updated) return null;
       return token;
-    } catch (error: any) {
-      if (error?.code !== 11000) throw error;
+    } catch (error: unknown) {
+      if ((error as { code?: number })?.code !== 11000) throw error;
     }
   }
 
-  throw Object.assign(new Error('Unable to allocate a unique share token'), { status: 500, code: 'SHARE_TOKEN_FAILED' });
+  throw Object.assign(new Error('Unable to allocate a unique share token'), {
+    status: 500,
+    code: 'SHARE_TOKEN_FAILED',
+  });
 }
 
 export async function getSharedSavedSearch(token: string) {
   const now = new Date();
   const doc = await SavedSearchModel.findOne({
     shareToken: token,
-    $or: [{ shareTokenExpiresAt: null }, { shareTokenExpiresAt: { $gt: now } }]
+    $or: [{ shareTokenExpiresAt: null }, { shareTokenExpiresAt: { $gt: now } }],
   }).lean();
   if (!doc) return null;
   return {
@@ -134,6 +146,6 @@ export async function getSharedSavedSearch(token: string) {
     snoozeUntil: doc.snoozeUntil,
     shareTokenExpiresAt: doc.shareTokenExpiresAt,
     createdAt: doc.createdAt,
-    updatedAt: doc.updatedAt
+    updatedAt: doc.updatedAt,
   };
 }

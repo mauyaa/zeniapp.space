@@ -5,43 +5,32 @@
 
 import { ApiError } from '../../types/api';
 import type { Role } from '../../types/api';
+import {
+  clearStoredAuthSession,
+  getStoredRefreshToken,
+  getStoredToken,
+  isSessionBackedAuth,
+  persistAuthSession,
+} from '../authStorage';
 import { apiUrl } from '../runtime';
 
 // ---------- Token helpers ----------
 
 export function getToken(): string | null {
-  try {
-    return localStorage.getItem('token');
-  } catch {
-    return null;
-  }
+  return getStoredToken();
 }
 
 export function getRefreshToken(): string | null {
-  try {
-    return localStorage.getItem('refresh_token');
-  } catch {
-    return null;
-  }
+  return getStoredRefreshToken();
 }
 
 export function setTokens(token?: string | null, refreshToken?: string | null): void {
-  try {
-    if (token) localStorage.setItem('token', token);
-    if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
-  } catch {
-    // Quota exceeded or blocked — ignore gracefully
-  }
+  if (!token) return;
+  persistAuthSession({ token, refreshToken: refreshToken ?? undefined }, !isSessionBackedAuth());
 }
 
 export function clearTokens(): void {
-  try {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('auth_user');
-  } catch {
-    // ignore
-  }
+  clearStoredAuthSession();
 }
 
 // ---------- Abort / deduplication ----------
@@ -275,13 +264,16 @@ async function refreshSession(): Promise<boolean> {
       refreshToken?: string;
       user?: { id: string; name: string; role: Role };
     };
-    if (data.token) setTokens(data.token, data.refreshToken || refreshToken);
-    if (data.user) {
-      try {
-        localStorage.setItem('auth_user', JSON.stringify(data.user));
-      } catch {
-        // ignore
-      }
+    if (data.token) {
+      const rememberMe = !isSessionBackedAuth();
+      persistAuthSession(
+        {
+          token: data.token,
+          refreshToken: data.refreshToken || refreshToken || undefined,
+          user: data.user,
+        },
+        rememberMe
+      );
     }
     return true;
   } catch {

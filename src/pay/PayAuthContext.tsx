@@ -67,7 +67,7 @@ export function PayAuthProvider({ children }: { children: React.ReactNode }) {
       loading,
       isAuthed: Boolean(user && accessToken),
       login,
-      logout
+      logout,
     }),
     [user, accessToken, loading]
   );
@@ -77,6 +77,20 @@ export function PayAuthProvider({ children }: { children: React.ReactNode }) {
 
 export function usePayAuth() {
   const ctx = useContext(PayAuthContext);
-  if (!ctx) throw new Error('usePayAuth must be used within PayAuthProvider');
+  if (!ctx) {
+    // Fallback: return a safe anon context instead of crashing the pay portal
+    return {
+      user: null,
+      accessToken: null,
+      loading: false,
+      isAuthed: false,
+      login: async () => {
+        throw new Error('Pay auth unavailable');
+      },
+      logout: async () => {
+        clearStoredPayAuth();
+      },
+    };
+  }
   return ctx;
 }

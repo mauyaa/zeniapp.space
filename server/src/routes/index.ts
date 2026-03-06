@@ -53,6 +53,12 @@ router.use('/', uploadRoutes);
 router.use('/', notificationRoutes);
 router.use('/', healthRoutes);
 router.use('/', canaryRoutes);
-router.get('/metrics', auth, requireRole(['admin']), requirePrivilegedNetworkAccess('admin'), metricsHandler);
+router.get(
+  '/metrics',
+  auth,
+  requireRole(['admin']),
+  requirePrivilegedNetworkAccess('admin'),
+  metricsHandler
+);
 
 export default router;

@@ -13,9 +13,10 @@ import {
   saveListing,
   toggleAlert,
   ListingSearchQuery,
-  recordListingLead
+  recordListingLead,
 } from '../services/listing.service';
 import { paginationSchema } from '../utils/validators';
+import { ListingDocument } from '../models/Listing';
 
 export async function search(req: AuthRequest, res: Response) {
   const querySchema = z
@@ -34,13 +35,14 @@ export async function search(req: AuthRequest, res: Response) {
       verifiedOnly: z.coerce.boolean().optional(),
       availabilityOnly: z.coerce.boolean().optional(),
       amenities: z.string().optional(),
+      noCache: z.coerce.boolean().optional(),
       lng: z.coerce.number().optional(),
       lat: z.coerce.number().optional(),
       radiusKm: z.coerce.number().positive().optional(),
       minLng: z.coerce.number().optional(),
       minLat: z.coerce.number().optional(),
       maxLng: z.coerce.number().optional(),
-      maxLat: z.coerce.number().optional()
+      maxLat: z.coerce.number().optional(),
     })
     .merge(paginationSchema);
 
@@ -93,43 +95,65 @@ const listingBody = z.object({
       z.object({
         label: z.string(),
         url: z.string().url(),
-        sizeBytes: z.number().optional()
+        sizeBytes: z.number().optional(),
       })
     )
     .optional(),
   catalogueUrl: z.string().url().optional(),
   location: z.object({
     type: z.literal('Point').default('Point'),
-    coordinates: z.tuple([z.number(), z.number()]),
+    coordinates: z.tuple([z.number(), z.number()]).optional(), // optional: we auto-geocode if missing
     address: z.string().optional(),
     city: z.string().optional(),
     area: z.string().optional(),
     county: z.string().optional(),
-    subCounty: z.string().optional()
+    subCounty: z.string().optional(),
   }),
   images: z
     .array(z.object({ url: z.string(), isPrimary: z.boolean().optional() }))
     .max(15)
     .optional(),
-  availabilityStatus: z.enum(['available', 'under_offer', 'sold', 'let']).optional()
+  availabilityStatus: z.enum(['available', 'under_offer', 'sold', 'let']).optional(),
 });
 
 export async function createAgentListing(req: AuthRequest, res: Response) {
   const body = listingBody.parse(req.body);
+  const payload: Partial<ListingDocument> = {
+    ...body,
+    location: {
+      ...body.location,
+      coordinates: body.location.coordinates ?? [36.8219, -1.2921],
+    },
+  };
   const userId = req.user?.id;
   if (req.user?.agentVerification !== 'verified') {
-    return res.status(403).json({ code: 'AGENT_UNVERIFIED', message: 'Agent verification required to create listings' });
+    return res
+      .status(403)
+      .json({
+        code: 'AGENT_UNVERIFIED',
+        message: 'Agent verification required to create listings',
+      });
   }
   if (!userId) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
-  const listing = await createListing(userId, body);
+  const listing = await createListing(userId, payload);
   res.status(201).json(listing);
 }
 
 export async function updateAgentListing(req: AuthRequest, res: Response) {
   const body = listingBody.partial().parse(req.body);
+  const location: ListingDocument['location'] | undefined = body.location
+    ? {
+        ...body.location,
+        coordinates: (body.location.coordinates ?? [36.8219, -1.2921]) as [number, number],
+      }
+    : undefined;
+  const payload = {
+    ...body,
+    ...(location ? { location } : {}),
+  } as Partial<ListingDocument>;
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
-  const listing = await updateListing(userId, req.params.id, body);
+  const listing = await updateListing(userId, req.params.id, payload);
   if (!listing) return res.status(404).json({ code: 'NOT_FOUND', message: 'Listing not found' });
   res.json(listing);
 }
@@ -145,7 +169,12 @@ export async function deleteAgentListing(req: AuthRequest, res: Response) {
 export async function submitAgentListing(req: AuthRequest, res: Response) {
   const userId = req.user?.id;
   if (req.user?.agentVerification !== 'verified') {
-    return res.status(403).json({ code: 'AGENT_UNVERIFIED', message: 'Agent verification required to submit listings' });
+    return res
+      .status(403)
+      .json({
+        code: 'AGENT_UNVERIFIED',
+        message: 'Agent verification required to submit listings',
+      });
   }
   if (!userId) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
   const listing = await updateListing(userId, req.params.id, { status: 'pending_review' });
@@ -163,22 +192,26 @@ export async function listAgent(req: AuthRequest, res: Response) {
 export async function getAgent(req: AuthRequest, res: Response) {
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
-  const { id } = z.object({ id: z.string().regex(/^[a-f\d]{24}$/i, 'Invalid id') }).parse({ id: req.params.id });
+  const { id } = z
+    .object({ id: z.string().regex(/^[a-f\d]{24}$/i, 'Invalid id') })
+    .parse({ id: req.params.id });
   const item = await getAgentListing(userId, id);
   if (!item) return res.status(404).json({ code: 'NOT_FOUND', message: 'Listing not found' });
   res.json(item);
 }
 
 export async function recordLead(req: AuthRequest, res: Response) {
-  const { id } = z.object({ id: z.string().regex(/^[a-f\d]{24}$/i, 'Invalid id') }).parse({ id: req.params.id });
+  const { id } = z
+    .object({ id: z.string().regex(/^[a-f\d]{24}$/i, 'Invalid id') })
+    .parse({ id: req.params.id });
   const { source } = z.object({ source: z.enum(['whatsapp', 'message', 'call']) }).parse(req.body);
   const userId = req.user?.id; // Optional
 
   try {
     const leadId = await recordListingLead(id, source, userId);
     res.status(201).json({ success: true, leadId });
-  } catch (err: any) {
-    if (err.message === 'Listing not found') {
+  } catch (err: unknown) {
+    if ((err as { message?: string }).message === 'Listing not found') {
       return res.status(404).json({ code: 'NOT_FOUND', message: 'Listing not found' });
     }
     throw err;

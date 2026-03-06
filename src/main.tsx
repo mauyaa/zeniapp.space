@@ -9,7 +9,9 @@ validateEnv();
 if (import.meta.env.PROD) {
   initSentry();
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => { /* ignore */ });
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      /* ignore */
+    });
   }
 }
 

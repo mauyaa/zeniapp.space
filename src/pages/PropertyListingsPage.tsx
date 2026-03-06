@@ -38,7 +38,7 @@ export function PropertyListingsPage() {
       if (element) {
         element.scrollIntoView({
           behavior: 'smooth',
-          block: 'center'
+          block: 'center',
         });
       }
     }
@@ -81,13 +81,12 @@ export function PropertyListingsPage() {
               <div className="h-4 w-px bg-gray-300 mx-2" />
               <button
                 onClick={() => navigate('/agentlogin')}
-                className="text-sm font-medium text-emerald-600 hover:text-emerald-700">
+                className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
+              >
                 List Property
               </button>
               <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden border border-gray-300">
-                <img
-                  src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
-                  alt="User" />
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User" />
               </div>
             </div>
           ) : (
@@ -114,32 +113,28 @@ export function PropertyListingsPage() {
         {/* Map Container - Left Side (Desktop) / Top (Mobile) */}
         <div
           className={`
-          absolute inset-0 z-0 md:relative md:w-[45%] lg:w-[50%] xl:w-[55%]
-          transition-all duration-300 ease-in-out
-          ${isMapOpen ? 'z-30' : 'z-0 md:z-auto'}
-        `}>
-
+            relative w-full h-[50vh] md:h-auto md:w-[45%] lg:w-[50%] xl:w-[55%]
+            transition-all duration-300 ease-in-out
+            ${isMapOpen ? 'h-[70vh] z-30' : 'h-[40vh] md:h-auto'}
+          `}
+        >
           <PropertyMap
             properties={displayProperties}
             selectedId={selectedId}
-            onSelect={setSelectedId} />
-
+            onSelect={setSelectedId}
+          />
 
           {/* Floating Search Bar */}
           <div className="absolute top-4 left-4 right-4 md:left-8 md:right-auto md:w-96 z-[1000]">
-            <SearchBar onSearch={handleSearch} onFilter={(_filters) => handleFilter()} />
+            <SearchBar onSearch={handleSearch} onFilter={handleFilter} />
           </div>
 
           {/* Mobile Map Toggle */}
           <button
             onClick={() => setIsMapOpen(!isMapOpen)}
-            className="md:hidden absolute bottom-6 right-4 z-[1000] bg-gray-900 text-white px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2 font-medium">
-
-            {isMapOpen ?
-              <List className="w-4 h-4" /> :
-
-              <MapIcon className="w-4 h-4" />
-            }
+            className="md:hidden absolute bottom-6 right-4 z-[1000] bg-gray-900 text-white px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2 font-medium"
+          >
+            {isMapOpen ? <List className="w-4 h-4" /> : <MapIcon className="w-4 h-4" />}
             {isMapOpen ? 'Show List' : 'Show Map'}
           </button>
         </div>
@@ -147,17 +142,15 @@ export function PropertyListingsPage() {
         {/* Listings Container - Right Side (Desktop) / Bottom (Mobile) */}
         <div
           className={`
-          absolute inset-0 bg-gray-50 md:relative md:w-[55%] lg:w-[50%] xl:w-[45%]
-          overflow-y-auto scroll-smooth
-          ${isMapOpen ? 'hidden md:block' : 'block'}
-        `}>
-
+            flex-1 bg-gray-50 md:relative md:w-[55%] lg:w-[50%] xl:w-[45%]
+            overflow-y-auto scroll-smooth
+            ${isMapOpen ? 'hidden md:block' : 'block'}
+          `}
+        >
           <div className="p-4 md:p-6 lg:p-8 max-w-3xl mx-auto">
             <div className="mb-6 flex items-baseline justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-1">
-                  Properties in Kenya
-                </h1>
+                <h1 className="text-2xl font-bold text-gray-900 mb-1">Properties in Kenya</h1>
                 <p className="text-gray-500 text-sm">
                   {displayProperties.length} listings found {isAuthed ? '' : '(preview)'}
                 </p>
@@ -172,51 +165,50 @@ export function PropertyListingsPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {displayProperties.map((property, index) =>
+              {displayProperties.map((property, index) => (
                 <motion.div
                   key={property.id}
                   id={`card-${property.id}`}
                   initial={{
                     opacity: 0,
-                    y: 20
+                    y: 20,
                   }}
                   animate={{
                     opacity: 1,
-                    y: 0
+                    y: 0,
                   }}
                   transition={{
                     duration: 0.3,
-                    delay: index * 0.05
-                  }}>
-
+                    delay: index * 0.05,
+                  }}
+                >
                   <PropertyCard
                     property={property}
                     isSelected={selectedId === property.id}
-                    onClick={() => setSelectedId(property.id)} />
-
+                    onClick={() => setSelectedId(property.id)}
+                  />
                 </motion.div>
-              )}
+              ))}
             </div>
 
-            {displayProperties.length === 0 &&
+            {displayProperties.length === 0 && (
               <div className="text-center py-20">
                 <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                   <MapIcon className="w-8 h-8 text-gray-400" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900">
-                  No properties found
-                </h3>
-                <p className="text-gray-500 mt-1">
-                  Try adjusting your search or filters
-                </p>
+                <h3 className="text-lg font-medium text-gray-900">No properties found</h3>
+                <p className="text-gray-500 mt-1">Try adjusting your search or filters</p>
               </div>
-            }
+            )}
 
             {!isAuthed && (
               <div className="mt-10 rounded-xl border border-gray-200 bg-white p-6 text-center shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Unlock full map & listings</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Unlock full map & listings
+                </h3>
                 <p className="text-gray-600 text-sm mb-4">
-                  Create an account or log in to view all properties, save listings, and use advanced filters.
+                  Create an account or log in to view all properties, save listings, and use
+                  advanced filters.
                 </p>
                 <div className="flex justify-center gap-3">
                   <button
@@ -237,6 +229,6 @@ export function PropertyListingsPage() {
           </div>
         </div>
       </main>
-    </div>);
-
+    </div>
+  );
 }

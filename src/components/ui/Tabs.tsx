@@ -66,8 +66,10 @@ export function Tabs({ tabs, value, onChange, ariaLabel = 'Tabs', theme = 'auto'
   };
 
   const getUnselectedStyle = () => {
-    if (theme === 'dark') return 'border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700';
-    if (theme === 'light') return 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:text-zinc-900';
+    if (theme === 'dark')
+      return 'border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700';
+    if (theme === 'light')
+      return 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:text-zinc-900';
     return 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:border-slate-700';
   };
 
@@ -95,7 +97,9 @@ export function Tabs({ tabs, value, onChange, ariaLabel = 'Tabs', theme = 'auto'
             className={cn(
               'rounded-xl border px-3 py-2 text-xs font-semibold transition-all duration-200',
               'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
-              theme === 'dark' ? 'focus-visible:ring-emerald-400' : 'focus-visible:ring-zeni-foreground',
+              theme === 'dark'
+                ? 'focus-visible:ring-emerald-400'
+                : 'focus-visible:ring-zeni-foreground',
               isSelected ? getSelectedStyle() : getUnselectedStyle()
             )}
           >

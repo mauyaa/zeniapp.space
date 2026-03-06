@@ -1,31 +1,39 @@
+import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCallback } from 'react';
-import {
-  Home,
-  Calendar,
-  MessageCircle,
-  Plus,
-  Activity,
-  Tag,
-  ChevronRight,
-} from 'lucide-react';
+import { Home, MessageCircle, Plus, BarChart3 } from 'lucide-react';
+import { Button } from '../../components/ui/Button';
 import { ListingDrawer } from '../../components/listings/ListingDrawer';
 import { useHomeData } from '../../hooks/useHomeData';
 import { useChat } from '../../context/ChatContext';
-import { OnboardingBanner } from '../../components/ui/OnboardingBanner';
+import { resolveUserContactLabel, getAgentOtherPartyKey } from '../messages/contactLabels';
+import type { Conversation } from '../../types/chat';
 
 export function HomePage() {
   const navigate = useNavigate();
   const { conversations } = useChat();
-  const unreadMessages = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+  const dedupedConversations = useMemo(() => {
+    const map = new Map<string, Conversation>();
+    const sorted = [...conversations].sort(
+      (a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
+    );
+    sorted.forEach((c) => {
+      let key = resolveUserContactLabel(c.agentSnapshot?.name);
+      if (c.userSnapshot?.role === 'admin') key = 'zeni-admin';
+      if (c.userSnapshot?.role === 'agent') key = getAgentOtherPartyKey(c);
+      if (!map.has(key)) map.set(key, c);
+    });
+    return Array.from(map.values());
+  }, [conversations]);
+  const unreadMessages = dedupedConversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
   const {
     loading,
+    refreshing,
     setSelectedId,
     selectedDetail,
-    upcomingViewings,
     displayName,
     timeGreeting,
     savedCount,
+    newMatchesCount,
     activityFeed,
     handleViewing,
     handleMessage,
@@ -39,7 +47,7 @@ export function HomePage() {
       const params = new URLSearchParams({
         purpose,
         referenceId: property.id,
-        amount: String(Math.round(property.price))
+        amount: String(Math.round(property.price)),
       });
       navigate(`/pay/payments?${params.toString()}`);
     },
@@ -51,133 +59,92 @@ export function HomePage() {
     month: 'short',
     day: 'numeric',
   });
-  const pendingViewings = upcomingViewings.length;
-  const subtitle =
-    pendingViewings > 0
-      ? `Your property command center is active. You have ${pendingViewings} viewing request${pendingViewings !== 1 ? 's' : ''} pending.`
-      : 'Your property command center is active.';
 
   return (
-    <div className="fade-in max-w-7xl mx-auto">
-      <OnboardingBanner />
-
-      {/* Header: date pill, greeting, CTA */}
-      <div className="mb-12 flex flex-col md:flex-row justify-between items-end border-b border-gray-200 pb-8">
+    <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+      <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-200 bg-white mb-4">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{dateLabel}</span>
-          </div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl text-black mb-3 leading-tight font-serif">
-            Good {timeGreeting},{' '}
-            <span className="italic text-green-500">{displayName}.</span>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-gray-500">
+            {dateLabel}
+          </p>
+          <h1 className="mt-2 text-4xl md:text-5xl font-serif font-semibold text-gray-900">
+            Good {timeGreeting}, {displayName}.
           </h1>
-          <p className="text-sm text-gray-500 max-w-md">{subtitle}</p>
         </div>
-        <button
-  type="button"
-  onClick={() => navigate('/app/viewings')}
-  className="mt-6 md:mt-0 bg-green-500 text-white px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-green-600 transition-all flex items-center gap-2 shadow-lg"
->
-  <Plus className="w-4 h-4" aria-hidden="true" />
-  Schedule Viewing
-</button>
-      </div>
+        <div className="flex items-center gap-3">
+          {refreshing && <span className="text-xs font-mono text-emerald-600">Live updating…</span>}
+          <Button
+            type="button"
+            size="zeni-md"
+            variant="zeni-primary"
+            className="rounded-full px-5"
+            onClick={() => navigate('/app/viewings')}
+          >
+            <Plus className="w-4 h-4 mr-2" /> Schedule Viewing
+          </Button>
+        </div>
+      </header>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <button
-          type="button"
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <StatCard
+          icon={<Home className="w-5 h-5 text-emerald-600" />}
+          label="Saved"
+          value={loading ? '—' : savedCount}
+          helper={savedCount > 0 ? '+ new' : ''}
           onClick={() => navigate('/app/saved')}
-          className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover-lift text-left"
-        >
-          <div className="flex justify-between items-start mb-4">
-            <Home className="w-5 h-5 text-gray-400" aria-hidden="true" />
-            {savedCount > 0 && (
-              <span className="text-xs font-mono text-green-600 bg-green-50 px-2 py-1 rounded">+{savedCount}</span>
-            )}
-          </div>
-          <p className="text-2xl font-serif font-bold">{loading ? '—' : savedCount}</p>
-          <p className="text-[10px] uppercase tracking-widest text-gray-400">Saved Listings</p>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => navigate('/app/viewings')}
-          className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover-lift text-left"
-        >
-          <div className="flex justify-between items-start mb-4">
-            <Calendar className="w-5 h-5 text-gray-400" aria-hidden="true" />
-            <span className="text-xs font-mono text-gray-400 bg-gray-50 px-2 py-1 rounded">0</span>
-          </div>
-          <p className="text-2xl font-serif font-bold">{loading ? '—' : upcomingViewings.length}</p>
-          <p className="text-[10px] uppercase tracking-widest text-gray-400">Upcoming Visits</p>
-        </button>
-
-        <button
-          type="button"
+        />
+        <StatCard
+          icon={<MessageCircle className="w-5 h-5 text-blue-600" />}
+          label="Active Chats"
+          value={unreadMessages > 0 ? `${unreadMessages} new` : dedupedConversations.length || '0'}
+          helper="Live"
           onClick={() => navigate('/app/messages')}
-          className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover-lift text-left"
-        >
-          <div className="flex justify-between items-start mb-4">
-            <MessageCircle className="w-5 h-5 text-gray-400" aria-hidden="true" />
-            {unreadMessages > 0 && (
-              <span className="text-xs font-mono text-green-600 bg-green-50 px-2 py-1 rounded">New</span>
-            )}
-          </div>
-          <p className="text-2xl font-serif font-bold">{unreadMessages}</p>
-          <p className="text-[10px] uppercase tracking-widest text-gray-400">Unread Chats</p>
-        </button>
-
-        <button
-          type="button"
+        />
+        <StatCard
+          icon={<BarChart3 className="w-5 h-5 text-fuchsia-600" />}
+          label="Matches"
+          value={loading ? '—' : newMatchesCount}
+          helper="Based on filters"
           onClick={() => navigate('/app/explore')}
-          className="bg-black text-white p-6 rounded-xl shadow-lg relative overflow-hidden group cursor-pointer block text-left w-full"
-        >
-          <div className="absolute top-0 right-0 w-20 h-20 bg-gray-800 rounded-bl-full -mr-4 -mt-4 opacity-50 group-hover:scale-110 transition-transform" aria-hidden="true" />
-          <h3 className="font-serif text-xl mb-1 relative z-10">Premium Access</h3>
-          <p className="text-xs text-gray-400 mb-4 relative z-10">Upgrade for concierge support.</p>
-          <span className="text-[10px] font-bold uppercase tracking-widest border-b border-white pb-1 relative z-10 inline-block">
-            View Plans
-          </span>
-        </button>
+        />
+        <MarketPulseCard />
       </div>
 
-      {/* Live Activity */}
-      <div>
-        <h2 className="text-sm font-bold uppercase tracking-widest text-gray-900 mb-6 flex items-center gap-2">
-          <Activity className="w-4 h-4" aria-hidden="true" />
-          Live Activity
-        </h2>
-        <div className="space-y-3">
-          {activityFeed.length === 0 ? (
-            <div className="bg-white p-4 rounded-xl border border-gray-100 text-sm text-gray-500">
-              No recent activity. Start exploring or messaging agents.
-            </div>
-          ) : (
-            activityFeed.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => item.href && navigate(item.href)}
-                className="w-full bg-white p-4 rounded-xl border border-gray-100 flex items-center justify-between hover:border-black transition-colors cursor-pointer group text-left"
-              >
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 group-hover:bg-black group-hover:text-white transition-colors flex-shrink-0">
-                    {item.type === 'message' ? (
-                      <MessageCircle className="w-4 h-4" aria-hidden="true" />
-                    ) : (
-                      <Tag className="w-4 h-4" aria-hidden="true" />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-black truncate">{item.title}</p>
-                    <p className="text-xs text-gray-500 truncate">{item.desc || item.time}</p>
-                  </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div className="lg:col-span-2 bg-white border border-gray-100 rounded-3xl shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">Schedule your first viewing</h2>
+            <Button variant="outline" size="zeni-sm" onClick={() => navigate('/app/explore')}>
+              Browse listings
+            </Button>
+          </div>
+          <p className="mt-2 text-sm text-gray-600">
+            Once you book a tour, your live command will appear here with agent details and
+            real-time status updates.
+          </p>
+          <div className="mt-4 text-xs text-gray-500">Join 200+ users booking today</div>
+        </div>
+
+        <div className="bg-white border border-gray-100 rounded-3xl shadow-sm p-6">
+          <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-gray-700 mb-3">
+            Activity
+          </h3>
+          <ul className="space-y-3 text-sm text-gray-700">
+            {activityFeed.slice(0, 4).map((item) => (
+              <li key={item.id} className="flex items-start gap-2">
+                <span
+                  className={`mt-1 h-2 w-2 rounded-full ${item.type === 'message' ? 'bg-blue-500' : 'bg-emerald-500'}`}
+                />
+                <div>
+                  <p className="font-semibold">{item.title}</p>
+                  <p className="text-xs text-gray-500">{item.desc || item.time}</p>
                 </div>
-                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-black flex-shrink-0" aria-hidden="true" />
-              </button>
-            ))
-          )}
+              </li>
+            ))}
+            {activityFeed.length === 0 && (
+              <li className="text-gray-500 text-xs">No recent activity.</li>
+            )}
+          </ul>
         </div>
       </div>
 
@@ -192,6 +159,62 @@ export function HomePage() {
         onBuy={handleBuy}
         isSaved={selectedDetail?.saved}
       />
+    </div>
+  );
+}
+
+function StatCard({
+  icon,
+  label,
+  value,
+  helper,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+  helper?: string;
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-left bg-white border border-gray-100 rounded-2xl shadow-sm px-5 py-4 hover:border-gray-200 transition-colors"
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-gray-700">{icon}</span>
+        {helper ? (
+          <span className="text-[11px] font-semibold text-emerald-600">{helper}</span>
+        ) : null}
+      </div>
+      <p className="mt-4 text-3xl font-serif font-semibold text-gray-900">{value}</p>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-500 mt-1">
+        {label}
+      </p>
+    </button>
+  );
+}
+
+function MarketPulseCard() {
+  return (
+    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm px-5 py-4">
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-500">
+          Market Pulse
+        </p>
+        <span className="text-xs font-semibold text-emerald-600">+4.2%</span>
+      </div>
+      <div className="mt-3 flex items-end gap-2 h-14">
+        <div className="w-8 h-3 bg-gray-200 rounded-sm" />
+        <div className="w-8 h-6 bg-gray-200 rounded-sm" />
+        <div className="w-8 h-8 bg-gray-200 rounded-sm" />
+        <div className="w-8 h-12 bg-emerald-400 rounded-sm" />
+        <div className="w-8 h-5 bg-gray-200 rounded-sm" />
+      </div>
+      <p className="mt-3 text-xs text-gray-600">
+        Prices in your saved area are trending upward. It might be time to book a viewing.
+      </p>
     </div>
   );
 }

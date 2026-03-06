@@ -22,7 +22,9 @@ export async function createRefundRequest(userId: string, transactionId: string,
 }
 
 export function listRefundRequestsByUser(userId: string) {
-  return RefundRequestModel.find({ userId }).sort({ createdAt: -1 }).populate('transactionId', 'amount currency status purpose createdAt');
+  return RefundRequestModel.find({ userId })
+    .sort({ createdAt: -1 })
+    .populate('transactionId', 'amount currency status purpose createdAt');
 }
 
 /**
@@ -36,24 +38,36 @@ export async function getEligibleTransactionsForRefund(userId: string) {
   const txs = await PayTransactionModel.find({
     userId: new mongoose.Types.ObjectId(userId),
     status: 'paid',
-    _id: { $nin: existingRefundTxIds }
+    _id: { $nin: existingRefundTxIds },
   })
     .sort({ createdAt: -1 })
     .limit(50)
     .lean();
-  return txs.map((t: { _id: mongoose.Types.ObjectId; amount: number; currency: string; purpose?: string; referenceId?: string; createdAt?: Date }) => ({
-    _id: t._id,
-    amount: t.amount,
-    currency: t.currency,
-    purpose: t.purpose,
-    referenceId: t.referenceId,
-    createdAt: t.createdAt
-  }));
+  return txs.map(
+    (t: {
+      _id: mongoose.Types.ObjectId;
+      amount: number;
+      currency: string;
+      purpose?: string;
+      referenceId?: string;
+      createdAt?: Date;
+    }) => ({
+      _id: t._id,
+      amount: t.amount,
+      currency: t.currency,
+      purpose: t.purpose,
+      referenceId: t.referenceId,
+      createdAt: t.createdAt,
+    })
+  );
 }
 
 export function listRefundRequestsAdmin(status?: string) {
   const filter = status ? { status } : {};
-  return RefundRequestModel.find(filter).sort({ createdAt: -1 }).populate('userId', 'name emailOrPhone').populate('transactionId', 'amount currency status purpose referenceId createdAt');
+  return RefundRequestModel.find(filter)
+    .sort({ createdAt: -1 })
+    .populate('userId', 'name emailOrPhone')
+    .populate('transactionId', 'amount currency status purpose referenceId createdAt');
 }
 
 export async function resolveRefundRequest(
@@ -82,7 +96,7 @@ export async function resolveRefundRequest(
         action: `refund_request_${decision}`,
         entityType: 'RefundRequest',
         entityId: requestId,
-        after: { status: refReq.status, adminNotes: refReq.adminNotes }
+        after: { status: refReq.status, adminNotes: refReq.adminNotes },
       },
       req
     );
@@ -103,7 +117,7 @@ export async function resolveRefundRequest(
             action: 'pay_refund_via_request',
             entityType: 'PayTransaction',
             entityId: String(tx.id),
-            after: { status: 'reversed', refundRequestId: requestId }
+            after: { status: 'reversed', refundRequestId: requestId },
           },
           req
         );

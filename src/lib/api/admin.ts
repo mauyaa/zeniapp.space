@@ -104,6 +104,10 @@ export function verifyListing(
   });
 }
 
+export function deleteAdminListing(id: string): Promise<void> {
+  return request<void>(`/admin/verification/listings/${id}`, { method: 'DELETE' });
+}
+
 /** Unified moderation queue (Agent Verify, New Listing, KYC Verify, Business Verify). */
 export function fetchModerationQueue(): Promise<ModerationQueueItem[]> {
   return request('/admin/moderation/queue');
@@ -116,7 +120,10 @@ export function resolveUserKyc(userId: string, decision: 'approve' | 'reject') {
   });
 }
 
-export function resolveBusinessVerify(agentId: string, decision: 'approve' | 'reject'): Promise<unknown> {
+export function resolveBusinessVerify(
+  agentId: string,
+  decision: 'approve' | 'reject'
+): Promise<unknown> {
   return request(`/admin/verification/business/${agentId}`, {
     method: 'PATCH',
     body: JSON.stringify({ decision }),
@@ -134,9 +141,7 @@ export type AdminReportsParams = {
 };
 
 export function fetchAdminReports(params?: AdminReportsParams): Promise<AdminReport[]> {
-  return request<AdminReport[]>(
-    `/admin/reports${buildQuery(params as Record<string, unknown>)}`
-  );
+  return request<AdminReport[]>(`/admin/reports${buildQuery(params as Record<string, unknown>)}`);
 }
 
 export function resolveReport(

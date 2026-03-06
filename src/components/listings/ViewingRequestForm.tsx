@@ -67,10 +67,10 @@ export function ViewingRequestForm({ onSubmit, listingTitle }: ViewingRequestFor
           <CalendarClock className="h-4 w-4 text-amber-600" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-slate-800 font-display tracking-wide">Schedule a Viewing</h3>
-          {listingTitle && (
-            <p className="text-xs text-slate-500 line-clamp-1">{listingTitle}</p>
-          )}
+          <h3 className="text-sm font-semibold text-slate-800 font-display tracking-wide">
+            Schedule a Viewing
+          </h3>
+          {listingTitle && <p className="text-xs text-slate-500 line-clamp-1">{listingTitle}</p>}
         </div>
       </div>
 
@@ -156,9 +156,7 @@ export function ViewingRequestForm({ onSubmit, listingTitle }: ViewingRequestFor
                 placeholder="Any specific requests or questions?"
                 maxLength={500}
               />
-              <p className="text-right text-[10px] text-slate-400">
-                {note.length}/500
-              </p>
+              <p className="text-right text-[10px] text-slate-400">{note.length}/500</p>
             </div>
 
             {/* Submit button */}

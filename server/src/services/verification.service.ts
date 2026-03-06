@@ -1,7 +1,9 @@
 import { UserModel } from '../models/User';
 import { AuditLogModel } from '../models/AuditLog';
 import { getIO } from '../socket';
-import { sendMail } from './email.service';
+import { env } from '../config/env';
+import { logger } from '../utils/logger';
+import { renderBrandEmail, sendMail } from './email.service';
 
 export async function addVerificationEvidence(
   userId: string,
@@ -14,10 +16,10 @@ export async function addVerificationEvidence(
         verificationEvidence: {
           url: payload.url,
           note: payload.note,
-          uploadedAt: new Date()
-        }
+          uploadedAt: new Date(),
+        },
       },
-      $set: { agentVerification: 'pending' }
+      $set: { agentVerification: 'pending' },
     },
     { new: true }
   ).select('agentVerification verificationEvidence name emailOrPhone');
@@ -29,7 +31,7 @@ export async function addVerificationEvidence(
       action: 'agent_verification_upload',
       entityType: 'user',
       entityId: userId,
-      after: updated.toObject()
+      after: updated.toObject(),
     });
     const io = getIO();
     if (io) io.to('role:admin').emit('agent:verification', { agentId: userId });
@@ -37,7 +39,7 @@ export async function addVerificationEvidence(
     await createNotification(userId, {
       title: 'Evidence received',
       description: 'We received your verification documents. Await approval.',
-      type: 'system'
+      type: 'system',
     });
     if (updated.emailOrPhone?.includes('@')) {
       await sendMail(
@@ -55,21 +57,30 @@ export async function listVerificationEvidence(userId: string) {
   const user = await UserModel.findById(userId).select(
     'agentVerification verificationEvidence earbRegistrationNumber earbVerifiedAt businessVerifyStatus businessVerifyEvidence'
   );
-  if (!user) throw Object.assign(new Error('User not found'), { status: 404 });
+  if (!user) throw Object.assign(new Error('User not found'), { status: 404 as number });
+  const biz = user as unknown as {
+    businessVerifyStatus?: string;
+    businessVerifyEvidence?: unknown[];
+  };
   return {
     status: user.agentVerification,
     evidence: user.verificationEvidence || [],
     earbRegistrationNumber: user.earbRegistrationNumber,
     earbVerifiedAt: user.earbVerifiedAt,
-    businessVerifyStatus: (user as any).businessVerifyStatus || 'none',
-    businessVerifyEvidence: (user as any).businessVerifyEvidence || []
+    businessVerifyStatus: biz.businessVerifyStatus || 'none',
+    businessVerifyEvidence: biz.businessVerifyEvidence || [],
   };
 }
 
 export async function updateEarbNumber(userId: string, earbRegistrationNumber: string) {
   const updated = await UserModel.findByIdAndUpdate(
     userId,
-    { $set: { earbRegistrationNumber: earbRegistrationNumber.trim() || undefined, earbVerifiedAt: undefined } },
+    {
+      $set: {
+        earbRegistrationNumber: earbRegistrationNumber.trim() || undefined,
+        earbVerifiedAt: undefined,
+      },
+    },
     { new: true }
   ).select('earbRegistrationNumber earbVerifiedAt agentVerification');
   if (!updated) throw Object.assign(new Error('User not found'), { status: 404 });
@@ -78,6 +89,12 @@ export async function updateEarbNumber(userId: string, earbRegistrationNumber: s
 
 /** User KYC: any user can submit identity documents for verification. */
 export async function submitUserKyc(userId: string, payload: { url: string; note?: string }) {
+  if (!payload.url || !payload.url.trim()) {
+    throw Object.assign(new Error('Document URL missing'), {
+      status: 400,
+      code: 'INVALID_KYC_URL',
+    });
+  }
   const updated = await UserModel.findByIdAndUpdate(
     userId,
     {
@@ -85,10 +102,10 @@ export async function submitUserKyc(userId: string, payload: { url: string; note
         kycEvidence: {
           url: payload.url,
           note: payload.note,
-          uploadedAt: new Date()
-        }
+          uploadedAt: new Date(),
+        },
       },
-      $set: { kycStatus: 'pending', kycSubmittedAt: new Date() }
+      $set: { kycStatus: 'pending', kycSubmittedAt: new Date() },
     },
     { new: true }
   ).select('kycStatus kycEvidence kycSubmittedAt name emailOrPhone');
@@ -100,10 +117,32 @@ export async function submitUserKyc(userId: string, payload: { url: string; note
       action: 'user_kyc_submitted',
       entityType: 'user',
       entityId: userId,
-      after: updated.toObject()
+      after: updated.toObject(),
     });
     const io = getIO();
     if (io) io.to('role:admin').emit('moderation:queue');
+    const email = updated.emailOrPhone?.includes('@') ? updated.emailOrPhone : null;
+    if (email) {
+      const firstName = (updated.name || '').split(' ')[0] || 'there';
+      sendMail(
+        email,
+        'KYC submitted',
+        renderBrandEmail({
+          title: 'We received your KYC',
+          body: `Hi ${firstName},<br/>Thanks for submitting your KYC documents. Our team is reviewing them now. You'll get an update as soon as we finish the review.`,
+        })
+      ).catch((err) => logger.warn('[kyc] user email failed', err));
+    }
+    if (env.zeniAdminEmail?.includes('@')) {
+      sendMail(
+        env.zeniAdminEmail,
+        'New KYC submission',
+        renderBrandEmail({
+          title: 'New KYC submission',
+          body: `User ${updated.name || userId} submitted KYC evidence at ${updated.kycSubmittedAt?.toISOString() || new Date().toISOString()}.`,
+        })
+      ).catch((err) => logger.warn('[kyc] admin email failed', err));
+    }
   }
   return updated;
 }
@@ -115,14 +154,18 @@ export async function listUserKyc(userId: string) {
   return {
     status: user.kycStatus || 'none',
     evidence: user.kycEvidence || [],
-    submittedAt: user.kycSubmittedAt
+    submittedAt: user.kycSubmittedAt,
   };
 }
 
 /** Agent business verification: submit company/entity documents. */
-export async function submitBusinessVerify(agentId: string, payload: { url: string; note?: string }) {
+export async function submitBusinessVerify(
+  agentId: string,
+  payload: { url: string; note?: string }
+) {
   const user = await UserModel.findById(agentId);
-  if (!user || user.role !== 'agent') throw Object.assign(new Error('Agent not found'), { status: 404 });
+  if (!user || user.role !== 'agent')
+    throw Object.assign(new Error('Agent not found'), { status: 404 });
 
   const updated = await UserModel.findByIdAndUpdate(
     agentId,
@@ -131,13 +174,15 @@ export async function submitBusinessVerify(agentId: string, payload: { url: stri
         businessVerifyEvidence: {
           url: payload.url,
           note: payload.note,
-          uploadedAt: new Date()
-        }
+          uploadedAt: new Date(),
+        },
       },
-      $set: { businessVerifyStatus: 'pending', businessVerifySubmittedAt: new Date() }
+      $set: { businessVerifyStatus: 'pending', businessVerifySubmittedAt: new Date() },
     },
     { new: true }
-  ).select('businessVerifyStatus businessVerifyEvidence businessVerifySubmittedAt name emailOrPhone');
+  ).select(
+    'businessVerifyStatus businessVerifyEvidence businessVerifySubmittedAt name emailOrPhone'
+  );
 
   if (updated) {
     await AuditLogModel.create({
@@ -146,7 +191,7 @@ export async function submitBusinessVerify(agentId: string, payload: { url: stri
       action: 'business_verify_submitted',
       entityType: 'user',
       entityId: agentId,
-      after: updated.toObject()
+      after: updated.toObject(),
     });
     const io = getIO();
     if (io) io.to('role:admin').emit('moderation:queue');

@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  formatKnownContactLabel,
-  resolveUserContactLabel
-} from '../contactLabels';
+import { formatKnownContactLabel, resolveUserContactLabel } from '../contactLabels';
 
 describe('formatKnownContactLabel', () => {
   it('returns Zeni Admin for support/admin labels', () => {

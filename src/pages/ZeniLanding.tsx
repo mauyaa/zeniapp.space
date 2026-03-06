@@ -5,6 +5,7 @@ import type { ListingCard } from '../lib/api';
 import { PropertyMap } from '../components/PropertyMap';
 import { SERVICES, FAQS, MARQUEE_ITEMS, CTA_LINK_CLASSES } from './constants';
 import { getFallbackHomeImage } from '../constants/images';
+import { getPublicSocket, disconnectPublicSocket } from '../lib/publicSocket';
 import { useAsyncEffect } from '../hooks/useAsyncEffect';
 import { useMotion } from '../hooks/useMotion';
 import { useKineticRing } from '../hooks/useKineticRing';
@@ -14,6 +15,30 @@ import type { Property } from '../utils/mockData';
 import type { Project, InsightItem } from '../types/landing';
 
 const SUPPORT_TITLE_REGEX = /^Zeni Support$/i;
+const PLACEHOLDER_TEXT = 'ZENI';
+
+function hashColor(str: string) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = (hash << 5) - hash + str.charCodeAt(i);
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 55%, 62%)`;
+}
+
+function placeholderFromId(id: string, title?: string) {
+  const color = hashColor(id);
+  const bg2 = hashColor(title || `${id}-alt`);
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='600'>
+    <defs>
+      <linearGradient id='g' x1='0%' x2='100%' y1='0%' y2='100%'>
+        <stop offset='0%' stop-color='${color}' stop-opacity='0.85'/>
+        <stop offset='100%' stop-color='${bg2}' stop-opacity='0.85'/>
+      </linearGradient>
+    </defs>
+    <rect width='800' height='600' fill='url(#g)'/>
+    <text x='50%' y='50%' fill='white' font-family='Inter,Arial,sans-serif' font-size='48' font-weight='700' dominant-baseline='middle' text-anchor='middle'>${(title || PLACEHOLDER_TEXT).slice(0, 18)}</text>
+  </svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
 
 /**
  * Returns whether the given values are valid WGS84 coordinates for map display.
@@ -23,7 +48,12 @@ const SUPPORT_TITLE_REGEX = /^Zeni Support$/i;
  * @remarks Rejects (0, 0) to avoid default/empty coordinates; map pins need real locations.
  */
 function isValidCoord(lat?: number, lng?: number): boolean {
-  if (typeof lat !== 'number' || typeof lng !== 'number' || !Number.isFinite(lat) || !Number.isFinite(lng)) {
+  if (
+    typeof lat !== 'number' ||
+    typeof lng !== 'number' ||
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng)
+  ) {
     return false;
   }
   if (Math.abs(lat) > 90 || Math.abs(lng) > 180 || (lat === 0 && lng === 0)) {
@@ -38,10 +68,15 @@ function isValidCoord(lat?: number, lng?: number): boolean {
  * @returns Property with id, location, price, image, etc., or null when lat/lng are missing/invalid.
  */
 function listingToPropertyForMap(listing: ListingCard): Property | null {
-  const lat = listing.location?.lat;
-  const lng = listing.location?.lng;
-  if (!isValidCoord(lat, lng)) return null;
   const fallbackImage = getFallbackHomeImage();
+  const lat = isValidCoord(listing.location?.lat, listing.location?.lng)
+    ? (listing.location?.lat as number)
+    : -1.2921; // Nairobi CBD fallback
+  const lng = isValidCoord(listing.location?.lat, listing.location?.lng)
+    ? (listing.location?.lng as number)
+    : 36.8219;
+  const primaryImg = listing.imageUrl || listing.images?.[0]?.url || listing.agent?.image;
+  const image = primaryImg || placeholderFromId(listing.id, listing.title);
   return {
     id: listing.id,
     title: listing.title ?? 'Property',
@@ -59,10 +94,13 @@ function listingToPropertyForMap(listing: ListingCard): Property | null {
     },
     features: { bedrooms: listing.beds ?? 0, bathrooms: listing.baths ?? 0, sqm: listing.sqm ?? 0 },
     isVerified: Boolean(listing.verified),
-    imageUrl: listing.imageUrl ?? listing.agent?.image ?? fallbackImage,
+    imageUrl: image,
     agent: { name: listing.agent?.name ?? 'Agent', image: listing.agent?.image ?? fallbackImage },
   };
 }
+
+const ensureRingImages = (images: string[]): string[] =>
+  images.length ? images : [getFallbackHomeImage()];
 
 /** GSAP-like API used for animations (avoids depending on package export shape). */
 type GsapApi = {
@@ -110,7 +148,9 @@ export type NewsletterSubmissionResult = {
  * @param apiResponse - Success payload from subscribeNewsletter (status: created | exists | reactivated).
  * @returns { status, message } for setting newsletter state. 'exists' = already subscribed; 'success' for created/reactivated.
  */
-function getNewsletterSuccessResult(apiResponse: NewsletterApiResponse): NewsletterSubmissionResult {
+function getNewsletterSuccessResult(
+  apiResponse: NewsletterApiResponse
+): NewsletterSubmissionResult {
   if (apiResponse.status === 'exists') {
     return { status: 'exists', message: 'You are already subscribed.' };
   }
@@ -129,11 +169,7 @@ function getNewsletterErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Could not subscribe.';
 }
 
-const RING_PLACEHOLDER =
-  'data:image/svg+xml,' +
-  encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600"><rect fill="%23f0f0f0" width="800" height="600"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%23999" font-family="sans-serif" font-size="24">Zeni</text></svg>'
-  );
+const RING_PLACEHOLDER = getFallbackHomeImage();
 
 /** Section IDs observed for nav scroll-spy. */
 const NAV_SECTION_IDS = ['projects', 'neighborhoods', 'insights'] as const;
@@ -155,17 +191,60 @@ const MAP_EXPLORE_PATH = '/map';
 /** Number of images shown on the kinetic ring in the hero. */
 const RING_IMAGE_COUNT = 8;
 /** How many map listings to fetch for the neighborhoods section. */
-const MAP_LISTINGS_LIMIT = 50;
+const MAP_LISTINGS_LIMIT = 32;
 /** How many insight items to fetch for the Data section. */
 const INSIGHTS_LIMIT = 3;
 /** Interval (ms) for cycling the hero status text (Verified, Pending, …). */
 const HERO_STATUS_CYCLE_MS = 800;
 /** Scroll offset when navigating to a section (e.g. for fixed header). */
 const SCROLL_OFFSET_PX = -80;
+/** Interval for background refresh of landing data (map + featured + stats). */
+const LANDING_REFRESH_MS = 3000;
+
+/** Distinct fallback images so empty listings don't visually duplicate. */
+const FALLBACK_RING_IMAGES = Array.from({ length: RING_IMAGE_COUNT }).map((_, i) =>
+  placeholderFromId(`ring-fallback-${i}`, `Zeni ${i + 1}`)
+);
+const PUBLIC_FEED_KEY =
+  (import.meta.env.VITE_PUBLIC_FEED_KEY as string | undefined) || 'public-demo-key';
+
+function isPlaceholder(url?: string) {
+  return Boolean(url && url.startsWith('data:image/svg+xml'));
+}
+
+function preloadImages(urls: string[]): Promise<void> {
+  const unique = Array.from(new Set(urls.filter(Boolean)));
+  return Promise.all(
+    unique.map(
+      (url) =>
+        new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+          img.src = url;
+        })
+    )
+  ).then(() => undefined);
+}
+
+function arraysEqual(a: string[], b: string[]) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
 
 /** Labels cycled in the hero status indicator (DOM-updated via ref). */
 const HERO_STATUS_LABELS = [
-  'Verified', 'Pending', 'Syncing', 'Locked', 'Alert', 'Processing', 'Valuing', 'Encrypting',
+  'Verified',
+  'Pending',
+  'Syncing',
+  'Locked',
+  'Alert',
+  'Processing',
+  'Valuing',
+  'Encrypting',
 ];
 
 /**
@@ -174,18 +253,26 @@ const HERO_STATUS_LABELS = [
  * @param index - Zero-based index; used for Project.id (display order).
  * @returns Project with title, location, type, formatted price, image. Rental detection: purpose === 'rent' or category/type contains "rent".
  */
-function listingCardToProject(item: ListingCard, index: number): Project {
+function listingCardToProject(item: ListingCard): Project {
   const isRental =
     (item as { purpose?: string }).purpose === 'rent' ||
-    String(item.category || item.type || '').toLowerCase().includes('rent');
+    String(item.category || item.type || '')
+      .toLowerCase()
+      .includes('rent');
+
+  const primaryImg = item.images?.find((i) => i.isPrimary)?.url;
+  const anyImg = item.images?.[0]?.url;
+  const fallbackImg = getFallbackHomeImage();
+  const indexedItem = item as ListingCard & { _idx?: number };
+
   return {
-    id: index + 1,
+    id: indexedItem._idx ?? 0,
     listingId: item.id,
     title: item.title || 'Property',
     location: (item.location?.neighborhood || item.location?.city || 'Kenya').toUpperCase(),
     type: (item.type || item.category || 'PROPERTY').toUpperCase(),
     price: formatKesPrice(item.price, isRental),
-    image: item.imageUrl || RING_PLACEHOLDER,
+    image: primaryImg || anyImg || item.imageUrl || fallbackImg,
     alt: item.title || 'Property image',
   };
 }
@@ -196,11 +283,17 @@ function listingCardToProject(item: ListingCard, index: number): Project {
  * @returns Array of exactly RING_IMAGE_COUNT URLs; fills missing slots with RING_PLACEHOLDER.
  */
 function buildRingImagesFromProjects(projects: Project[]): string[] {
-  const imageUrls = projects.map((p) => p.image).filter(Boolean);
-  if (imageUrls.length >= RING_IMAGE_COUNT) {
-    return imageUrls.slice(0, RING_IMAGE_COUNT);
-  }
-  return [...imageUrls, ...Array(RING_IMAGE_COUNT - imageUrls.length).fill(RING_PLACEHOLDER)];
+  const slice = projects.slice(0, RING_IMAGE_COUNT);
+  const seen = new Set<string>();
+  const images: string[] = [];
+  slice.forEach((p) => {
+    const img = p.image;
+    if (img && !seen.has(img)) {
+      seen.add(img);
+      images.push(img);
+    }
+  });
+  return [...images, ...FALLBACK_RING_IMAGES].slice(0, RING_IMAGE_COUNT);
 }
 
 /**
@@ -223,13 +316,7 @@ function MapFallbackBlock({ message, linkText }: { message: string; linkText: st
  * Wraps a project row in a Link (to listing detail) when listingId is set; otherwise a plain div.
  * Ensures rows without a listing ID still render (e.g. placeholder or error state).
  */
-function ProjectRowWrapper({
-  project,
-  children,
-}: {
-  project: Project;
-  children: React.ReactNode;
-}) {
+function ProjectRowWrapper({ project, children }: { project: Project; children: React.ReactNode }) {
   if (project.listingId) {
     return <Link to={`/listing/${project.listingId}`}>{children}</Link>;
   }
@@ -246,13 +333,19 @@ export function ZeniLanding() {
   const [insights, setInsights] = useState<InsightItem[]>([]);
   const [insightsStatus, setInsightsStatus] = useState<'idle' | 'loading' | 'error'>('loading');
   const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [newsletterStatus, setNewsletterStatus] = useState<'idle' | 'loading' | 'success' | 'error' | 'exists'>('idle');
+  const [newsletterStatus, setNewsletterStatus] = useState<
+    'idle' | 'loading' | 'success' | 'error' | 'exists'
+  >('idle');
   const [newsletterMessage, setNewsletterMessage] = useState('');
-  const [listingStats, setListingStats] = useState<{ total: number; verified: number } | null>(null);
+  const [listingStats, setListingStats] = useState<{ total: number; verified: number } | null>(
+    null
+  );
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
   const [featuredListingsLoading, setFeaturedListingsLoading] = useState(true);
   const [featuredListingsError, setFeaturedListingsError] = useState(false);
-  const [ringImages, setRingImages] = useState<string[]>(() => Array(RING_IMAGE_COUNT).fill(RING_PLACEHOLDER));
+  const [ringImages, setRingImages] = useState<string[]>(() =>
+    Array(RING_IMAGE_COUNT).fill(RING_PLACEHOLDER)
+  );
   const [mapListings, setMapListings] = useState<Property[]>([]);
   const [mapListingsLoading, setMapListingsLoading] = useState(true);
   /** Section ID in view for nav highlight; null = hero/top (Log in green). */
@@ -297,12 +390,13 @@ export function ZeniLanding() {
         entries.forEach((entry) => {
           sectionVisibilityRatios[entry.target.id] = entry.intersectionRatio;
         });
-        const sectionWithEnoughVisibility = NAV_SECTION_IDS.find(
-          (id) => (sectionVisibilityRatios[id] ?? 0) > SCROLL_SPY_VISIBILITY_THRESHOLD
-        ) ?? NAV_SECTION_IDS.reduce(
-          (a, b) =>
+        const sectionWithEnoughVisibility =
+          NAV_SECTION_IDS.find(
+            (id) => (sectionVisibilityRatios[id] ?? 0) > SCROLL_SPY_VISIBILITY_THRESHOLD
+          ) ??
+          NAV_SECTION_IDS.reduce((a, b) =>
             (sectionVisibilityRatios[a] ?? 0) >= (sectionVisibilityRatios[b] ?? 0) ? a : b
-        );
+          );
         const activeSection =
           (sectionVisibilityRatios[sectionWithEnoughVisibility] ?? 0) > SCROLL_SPY_MIN_RATIO
             ? sectionWithEnoughVisibility
@@ -319,23 +413,84 @@ export function ZeniLanding() {
   }, []);
 
   // Map section: fetch listings; only those with valid coordinates are shown on the map
-  useAsyncEffect(async (signal) => {
-    setMapListingsLoading(true);
+  const fetchMapListings = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setMapListingsLoading(true);
     try {
-      const res = await searchListings({ limit: MAP_LISTINGS_LIMIT });
-      if (signal.cancelled) return;
+      const res = await searchListings({
+        limit: MAP_LISTINGS_LIMIT,
+        availabilityOnly: true,
+        verifiedOnly: true,
+        noCache: true,
+      });
       const raw = (res.items ?? []).filter((item) => !SUPPORT_TITLE_REGEX.test(item.title ?? ''));
-      const uniqueItems = dedupeListingsByContent(dedupeById(raw));
-      const propertiesWithCoords = uniqueItems
+      // Keep all distinct IDs; don't drop recent approvals just because content is similar.
+      const byId = new Map<string, ListingCard>();
+      raw.forEach((item) => {
+        if (!byId.has(item.id)) byId.set(item.id, item);
+      });
+
+      const propertiesWithCoords = Array.from(byId.values())
         .map(listingToPropertyForMap)
         .filter((p): p is Property => p !== null);
       setMapListings(propertiesWithCoords);
     } catch {
-      if (!signal.cancelled) setMapListings([]);
+      setMapListings([]);
     } finally {
-      if (!signal.cancelled) setMapListingsLoading(false);
+      if (!opts?.silent) setMapListingsLoading(false);
     }
   }, []);
+
+  useAsyncEffect(
+    async (signal) => {
+      if (signal.cancelled) return;
+      await fetchMapListings();
+    },
+    [fetchMapListings]
+  );
+
+  // Build ring images combining featured projects first, then map listings, then fallbacks (zero-latency via sockets)
+  useEffect(() => {
+    const fromFeatured = featuredProjects
+      .slice(0, RING_IMAGE_COUNT * 2) // small buffer
+      .map((p) => p.image)
+      .filter((url): url is string => Boolean(url) && !isPlaceholder(url));
+
+    const fromMap = mapListings
+      .slice(0, MAP_LISTINGS_LIMIT)
+      .map((p) => p.imageUrl)
+      .filter((url): url is string => Boolean(url) && !isPlaceholder(url));
+
+    const seen = new Set<string>();
+    const combined: string[] = [];
+    const pushUnique = (urls: string[]) => {
+      urls.forEach((url) => {
+        if (seen.has(url) || combined.length >= RING_IMAGE_COUNT) return;
+        seen.add(url);
+        combined.push(url);
+      });
+    };
+
+    pushUnique(fromFeatured);
+    pushUnique(fromMap);
+
+    while (combined.length < RING_IMAGE_COUNT) {
+      combined.push(FALLBACK_RING_IMAGES[combined.length % FALLBACK_RING_IMAGES.length]);
+    }
+
+    const nextImages = combined.slice(0, RING_IMAGE_COUNT);
+    let cancelled = false;
+    (async () => {
+      if (arraysEqual(nextImages, ringImages)) return;
+      await preloadImages(nextImages);
+      if (!cancelled) {
+        setRingImages(nextImages);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [featuredProjects, mapListings, ringImages]);
 
   // Kinetic ring hook
   const { stageRef, ringRef, ballRef, onPointerDown, onPointerMove, onPointerUp } = useKineticRing({
@@ -343,6 +498,17 @@ export function ZeniLanding() {
     reduceMotion,
     gsap,
   });
+
+  // Remove aggressive fade-in to avoid visible blinking when images swap
+  useEffect(() => {
+    const ring = ringRef.current;
+    if (!ring) return;
+    const imgs = ring.querySelectorAll('.ring-item img');
+    imgs.forEach((img) => {
+      (img as HTMLImageElement).style.transition = 'opacity 0.25s ease';
+      (img as HTMLImageElement).style.opacity = '1';
+    });
+  }, [ringImages, ringRef]);
 
   /** Scrolls to the element matching the hash (e.g. #projects). Uses Lenis if available, else native smooth scroll. */
   const scrollToSection = useCallback(
@@ -384,21 +550,34 @@ export function ZeniLanding() {
     }
   }, []);
 
-  // One-time fetch: (1) total + verified counts for stats, (2) featured listings for table + hero ring. Each request is independent; failures don't block the others.
-  useAsyncEffect(async (signal) => {
-    setFeaturedListingsLoading(true);
-    setFeaturedListingsError(false);
+  const refreshFeaturedAndStats = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) {
+      setFeaturedListingsLoading(true);
+      setFeaturedListingsError(false);
+    }
     const limitOne = 1;
     const limitFeatured = 6;
     try {
       const [totalCountResult, verifiedCountResult, featuredListingsResult] = await Promise.all([
-        searchListings({ limit: limitOne }).catch(() => null),
-        searchListings({ verifiedOnly: true, limit: limitOne }).catch(() => null),
-        searchListings({ limit: limitFeatured }).catch(() => null),
+        searchListings({ limit: limitOne, availabilityOnly: true, noCache: true }).catch(
+          () => null
+        ),
+        searchListings({
+          verifiedOnly: true,
+          availabilityOnly: true,
+          limit: limitOne,
+          noCache: true,
+        }).catch(() => null),
+        searchListings({
+          limit: limitFeatured,
+          availabilityOnly: true,
+          verifiedOnly: true,
+          noCache: true,
+        }).catch(() => null),
       ]);
-      if (signal.cancelled) return;
 
-      setFeaturedListingsLoading(false);
+      if (!opts?.silent) setFeaturedListingsLoading(false);
+
       if (totalCountResult && verifiedCountResult) {
         setListingStats({
           total: totalCountResult.total ?? 0,
@@ -407,21 +586,67 @@ export function ZeniLanding() {
       }
       setFeaturedListingsError(!featuredListingsResult);
       if (featuredListingsResult?.items?.length) {
-        const uniqueItems = dedupeListingsByContent(dedupeById(featuredListingsResult.items));
-        const projects = uniqueItems.map((item, index) => listingCardToProject(item, index));
+        const uniqueItems = dedupeListingsByContent(dedupeById(featuredListingsResult.items)).map(
+          (item, idx) => ({ ...item, _idx: idx })
+        );
+        const projects = uniqueItems.map((item) => listingCardToProject(item));
         setFeaturedProjects(projects);
         setRingImages(buildRingImagesFromProjects(projects));
-      } else {
+      } else if (!opts?.silent) {
         setFeaturedProjects([]);
-        setRingImages(Array(RING_IMAGE_COUNT).fill(RING_PLACEHOLDER));
+        setRingImages(ensureRingImages([]));
       }
     } catch {
-      if (!signal.cancelled) {
+      if (!opts?.silent) {
         setFeaturedListingsLoading(false);
         setFeaturedListingsError(true);
       }
     }
   }, []);
+
+  // Poll for new listings and refresh ring/map + featured stats (keeps newest, pushes out older)
+  useEffect(() => {
+    const tick = () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      fetchMapListings({ silent: true });
+      refreshFeaturedAndStats({ silent: true });
+    };
+    const id = window.setInterval(tick, LANDING_REFRESH_MS);
+    window.addEventListener('focus', tick);
+    document.addEventListener('visibilitychange', tick);
+    window.addEventListener('online', tick);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener('focus', tick);
+      document.removeEventListener('visibilitychange', tick);
+      window.removeEventListener('online', tick);
+    };
+  }, [fetchMapListings, refreshFeaturedAndStats]);
+
+  // Zero-latency updates via public socket feed (no auth)
+  useEffect(() => {
+    const socket = getPublicSocket(PUBLIC_FEED_KEY);
+    const onChange = () => {
+      fetchMapListings({ silent: true });
+      refreshFeaturedAndStats({ silent: true });
+    };
+    socket.on('listing:changed', onChange);
+    socket.on('listing:deleted', onChange);
+    return () => {
+      socket.off('listing:changed', onChange);
+      socket.off('listing:deleted', onChange);
+      disconnectPublicSocket();
+    };
+  }, [fetchMapListings, refreshFeaturedAndStats]);
+
+  // Initial fetch for stats and featured inventory
+  useAsyncEffect(
+    async (signal) => {
+      await refreshFeaturedAndStats();
+      if (signal.cancelled) return;
+    },
+    [refreshFeaturedAndStats]
+  );
 
   /** Validates email, calls subscribeNewsletter, then updates status/message from getNewsletterSuccessResult or getNewsletterErrorMessage. Clears email only on success. */
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
@@ -451,17 +676,23 @@ export function ZeniLanding() {
     const gsapApi = gsap as GsapApi | null;
     if (!gsapApi) return;
 
-    const hasPreviewElements = Boolean(previewImg.current && previewContainer.current);
-    const shouldShowPreview = Boolean(imageUrl && hasPreviewElements);
+    const imageElement = previewImg.current;
+    const container = previewContainer.current;
+    const shouldShowPreview = Boolean(imageUrl && imageElement && container);
 
-    if (shouldShowPreview) {
-      previewImg.current!.src = imageUrl!;
-      gsapApi.to(previewContainer.current, { opacity: 1, scale: 1, duration: 0.4, ease: 'power2.out' });
+    if (shouldShowPreview && imageElement && container && imageUrl) {
+      imageElement.src = imageUrl;
+      gsapApi.to(container, {
+        opacity: 1,
+        scale: 1,
+        duration: 0.4,
+        ease: 'power2.out',
+      });
       return;
     }
 
-    if (hasPreviewElements) {
-      gsapApi.to(previewContainer.current, { opacity: 0, scale: 0.8, duration: 0.3 });
+    if (container) {
+      gsapApi.to(container, { opacity: 0, scale: 0.8, duration: 0.3 });
     }
   };
 
@@ -497,7 +728,7 @@ export function ZeniLanding() {
           scrollTrigger: { trigger: el, start: 'top 85%' },
         });
       });
-    }, rootRef);
+    }, rootRef.current || undefined);
     return () => ctx.revert();
   }, [disableMotion, gsap, ScrollTrigger]);
 
@@ -505,14 +736,21 @@ export function ZeniLanding() {
   useEffect(() => {
     const gsapApi = gsap as GsapApi | null;
     if (disableMotion || !gsapApi) return;
-    const magneticElements = Array.from(rootRef.current?.querySelectorAll<HTMLElement>('.magnetic') ?? []);
+    const magneticElements = Array.from(
+      rootRef.current?.querySelectorAll<HTMLElement>('.magnetic') ?? []
+    );
     const cleanups: Array<() => void> = [];
     magneticElements.forEach((element) => {
       const onMouseMove = (e: MouseEvent) => {
         const rect = element.getBoundingClientRect();
         const offsetX = e.clientX - rect.left - rect.width / 2;
         const offsetY = e.clientY - rect.top - rect.height / 2;
-        gsapApi.to(element, { x: offsetX * 0.3, y: offsetY * 0.3, duration: 0.3, ease: 'power2.out' });
+        gsapApi.to(element, {
+          x: offsetX * 0.3,
+          y: offsetY * 0.3,
+          duration: 0.3,
+          ease: 'power2.out',
+        });
         document.body.classList.add('sticking');
       };
       const onMouseLeave = () => {
@@ -612,8 +850,8 @@ export function ZeniLanding() {
         }
         .stage-3d { perspective: 1500px; transform-style: preserve-3d; }
         .ring-3d { transform-style: preserve-3d; }
-        .ring-item { position: absolute; width: 100%; height: 100%; transform-style: preserve-3d; will-change: transform, filter; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-        .ring-item img { backface-visibility: hidden; -webkit-backface-visibility: hidden; transform: translateZ(0.01px); will-change: transform; }
+        .ring-item { position: absolute; width: 100%; height: 100%; transform-style: preserve-3d; will-change: transform, filter; transition: transform 0.6s ease, opacity 0.6s ease, filter 0.6s ease; }
+        .ring-item img { transform: translateZ(0.01px); will-change: transform, opacity; transition: transform 0.6s ease, opacity 0.6s ease; }
         @media (prefers-reduced-motion: reduce) {
           .kinetic-engine { animation: none; }
           .kinetic-ball-inner { animation: none; }
@@ -643,16 +881,27 @@ export function ZeniLanding() {
       {!disableMotion && <div className="grain-overlay" aria-hidden="true" />}
 
       {/* Fixed frames — deep green top & bottom borders, white side margins */}
-      <div className="fixed top-0 left-0 w-full h-3 bg-[var(--zeni-green)] z-[60]" aria-hidden="true" />
+      <div
+        className="fixed top-0 left-0 w-full h-3 bg-[var(--zeni-green)] z-[60]"
+        aria-hidden="true"
+      />
       <div
         className="fixed bottom-0 left-0 w-full h-3 bg-[var(--zeni-green)] z-[60] flex justify-between px-6 items-center pointer-events-none"
         aria-hidden="true"
       >
         <span className="text-[11px] font-mono uppercase tracking-widest text-white/80">Kenya</span>
-        <span className="text-[11px] font-mono uppercase tracking-widest text-white/80">Est. 2026 · KES</span>
+        <span className="text-[11px] font-mono uppercase tracking-widest text-white/80">
+          Est. 2026 · KES
+        </span>
       </div>
-      <div className="fixed top-0 left-0 w-3 h-full bg-[var(--zeni-white)] z-[60]" aria-hidden="true" />
-      <div className="fixed top-0 right-0 w-3 h-full bg-[var(--zeni-white)] z-[60]" aria-hidden="true" />
+      <div
+        className="fixed top-0 left-0 w-3 h-full bg-[var(--zeni-white)] z-[60]"
+        aria-hidden="true"
+      />
+      <div
+        className="fixed top-0 right-0 w-3 h-full bg-[var(--zeni-white)] z-[60]"
+        aria-hidden="true"
+      />
 
       {/* Navbar */}
       <header className="fixed top-6 left-6 right-6 z-50 py-4 px-6 flex justify-between items-center bg-[var(--zeni-white)]/90 backdrop-blur-xl shadow-sm rounded-lg border border-[var(--zeni-black)]/5">
@@ -712,7 +961,10 @@ export function ZeniLanding() {
 
       <main className="pt-32 kinetic-engine px-4 md:px-8 border-l border-r border-transparent">
         {/* Hero Section */}
-        <section id="hero" className="relative min-h-[90vh] flex items-center border-b border-[var(--zeni-black)]/10 pb-20">
+        <section
+          id="hero"
+          className="relative min-h-[90vh] flex items-center border-b border-[var(--zeni-black)]/10 pb-20"
+        >
           <div className="w-full max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 px-4 md:px-12">
             <div className="col-span-12 md:col-span-5 z-10 flex flex-col justify-center">
               <p
@@ -722,13 +974,12 @@ export function ZeniLanding() {
                 D . I . S . C . O . V . E . R . &nbsp; Y . O . U . R . &nbsp; P . L . A . C . E
               </p>
               <h1 className="zeni-display font-sans text-[clamp(2.5rem,8vw,5.5rem)] leading-[0.9] tracking-tighter text-[var(--zeni-black)] uppercase mb-6 md:mb-8">
-                <span className="font-light">Where</span>{' '}
-                <span className="font-bold">Kenya</span>{' '}
+                <span className="font-light">Where</span> <span className="font-bold">Kenya</span>{' '}
                 <span className="font-light">Lives.</span>
               </h1>
               <p className="max-w-md text-base md:text-lg text-[var(--zeni-black)]/75 leading-relaxed mb-10 font-normal">
-                We design the search experience. Verified listings, intelligent mapping, and architectural precision for
-                the modern buyer.
+                We design the search experience. Verified listings, intelligent mapping, and
+                architectural precision for the modern buyer.
               </p>
               <a
                 href="#projects"
@@ -778,7 +1029,10 @@ export function ZeniLanding() {
         </section>
 
         {/* Marquee */}
-        <div className="py-5 border-y border-[var(--zeni-black)]/5 overflow-hidden bg-[var(--zeni-white)]" aria-hidden="true">
+        <div
+          className="py-5 border-y border-[var(--zeni-black)]/5 overflow-hidden bg-[var(--zeni-white)]"
+          aria-hidden="true"
+        >
           <div className="flex gap-16 font-mono text-xs uppercase tracking-widest text-[var(--zeni-black)]/65 whitespace-nowrap animate-[marquee_25s_linear_infinite]">
             {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].flatMap((item, i, arr) => {
               const text =
@@ -786,25 +1040,35 @@ export function ZeniLanding() {
                   ? `${listingStats.verified.toLocaleString()} Verified Listings`
                   : item;
               const parts: React.ReactNode[] = [<span key={`t-${i}`}>{text}</span>];
-              if (i < arr.length - 1) parts.push(<span key={`s-${i}`} className="zeni-orange-text">/</span>);
+              if (i < arr.length - 1)
+                parts.push(
+                  <span key={`s-${i}`} className="zeni-orange-text">
+                    /
+                  </span>
+                );
               return parts;
             })}
           </div>
         </div>
 
         {/* Map section — draw your zone, map preview card */}
-        <section id="neighborhoods" className="py-32 px-4 md:px-12 border-b border-[var(--zeni-black)]/10 bg-[var(--zeni-white)] scroll-mt-28">
+        <section
+          id="neighborhoods"
+          className="py-20 px-4 md:px-12 border-b border-[var(--zeni-black)]/10 bg-[var(--zeni-white)] scroll-mt-28"
+        >
           <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-16 items-center">
             <div className="md:col-span-4 reveal-up">
-              <h2 className="font-mono text-xs uppercase tracking-[0.2em] zeni-orange-text line-below">Map-first</h2>
+              <h2 className="font-mono text-xs uppercase tracking-[0.2em] zeni-orange-text line-below">
+                Map-first
+              </h2>
               <p className="mt-6 text-4xl md:text-5xl font-light leading-tight tracking-tight text-[var(--zeni-black)]">
                 Draw your zone.
                 <br />
                 <span className="font-medium">See what&apos;s real.</span>
               </p>
               <p className="mt-6 text-[var(--zeni-black)]/55 leading-relaxed font-light">
-                Visualize price clusters, verify amenities, and ensure you&apos;re dealing with vetted agents across
-                Kenya. Your search, visually verified.
+                Visualize price clusters, verify amenities, and ensure you&apos;re dealing with
+                vetted agents across Kenya. Your search, visually verified.
               </p>
               <div className="mt-10 flex flex-wrap gap-4">
                 <Link to={MAP_EXPLORE_PATH} className={CTA_LINK_CLASSES.primaryBlock}>
@@ -819,7 +1083,9 @@ export function ZeniLanding() {
                   <div className="font-mono text-xs uppercase tracking-[0.2em] zeni-orange-text line-below inline-block">
                     Map Preview
                   </div>
-                  <div className="mt-2 text-2xl font-light text-[var(--zeni-black)]">Kenya overview</div>
+                  <div className="mt-2 text-2xl font-light text-[var(--zeni-black)]">
+                    Kenya overview
+                  </div>
                 </div>
                 <div className="w-full min-h-[280px] sm:min-h-[320px] aspect-[4/3] md:aspect-video bg-[var(--zeni-white)] relative overflow-hidden rounded-b-2xl">
                   {mapListingsLoading ? (
@@ -855,10 +1121,12 @@ export function ZeniLanding() {
         </section>
 
         {/* Philosophy */}
-        <section id="about" className="py-32 px-4 md:px-12 bg-[var(--zeni-white)]">
+        <section id="about" className="py-20 px-4 md:px-12 bg-[var(--zeni-white)]">
           <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-16">
             <div className="col-span-12 md:col-span-3">
-              <h2 className="font-mono text-xs uppercase tracking-widest zeni-orange-text line-below">Philosophy</h2>
+              <h2 className="font-mono text-xs uppercase tracking-widest zeni-orange-text line-below">
+                Philosophy
+              </h2>
             </div>
             <div className="col-span-12 md:col-span-9">
               <p className="text-3xl md:text-5xl font-light leading-tight mb-16 split-text text-[var(--zeni-black)] tracking-tight">
@@ -868,8 +1136,9 @@ export function ZeniLanding() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                 <div className="reveal-up">
                   <p className="text-[var(--zeni-black)]/55 leading-relaxed mb-8 font-light">
-                    Every agent is vetted. Every title deed verified. Every viewing tracked. We don't just list
-                    properties—we curate confidence for Kenyan buyers, renters, and owners.
+                    Every agent is vetted. Every title deed verified. Every viewing tracked. We
+                    don't just list properties—we curate confidence for Kenyan buyers, renters, and
+                    owners.
                   </p>
                 </div>
               </div>
@@ -878,7 +1147,10 @@ export function ZeniLanding() {
         </section>
 
         {/* Services */}
-        <section id="services" className="border-t border-[var(--zeni-black)]/5 bg-[var(--zeni-white)]">
+        <section
+          id="services"
+          className="border-t border-[var(--zeni-black)]/5 bg-[var(--zeni-white)]"
+        >
           <div className="grid grid-cols-1 md:grid-cols-2">
             {SERVICES.map((service, index) => (
               <article
@@ -893,7 +1165,9 @@ export function ZeniLanding() {
                 <h3 className="text-2xl font-medium mb-3 group-hover:translate-x-2 transition-transform duration-300 tracking-tight text-[var(--zeni-black)]">
                   {service.title}
                 </h3>
-                <p className="text-[var(--zeni-black)]/55 leading-relaxed max-w-sm font-light text-sm">{service.desc}</p>
+                <p className="text-[var(--zeni-black)]/55 leading-relaxed max-w-sm font-light text-sm">
+                  {service.desc}
+                </p>
               </article>
             ))}
           </div>
@@ -902,7 +1176,7 @@ export function ZeniLanding() {
         {/* Projects */}
         <section
           id="projects"
-          className="py-32 px-4 md:px-12 border-b border-[var(--zeni-black)]/10 bg-[var(--zeni-white)] scroll-mt-28"
+          className="py-20 px-4 md:px-12 border-b border-[var(--zeni-black)]/10 bg-[var(--zeni-white)] scroll-mt-28"
         >
           <div className="max-w-[1400px] mx-auto">
             <div className="flex justify-between items-end mb-24 px-4">
@@ -933,7 +1207,10 @@ export function ZeniLanding() {
                   Loading live listings…
                 </div>
               ) : featuredListingsError ? (
-                <MapFallbackBlock message="Unable to load listings right now." linkText="Try the map" />
+                <MapFallbackBlock
+                  message="Unable to load listings right now."
+                  linkText="Try the map"
+                />
               ) : featuredProjects.length === 0 ? (
                 <MapFallbackBlock
                   message="No listings yet. Be the first to list or browse the map."
@@ -987,7 +1264,12 @@ export function ZeniLanding() {
           className="fixed top-0 left-0 w-[320px] h-[220px] z-50 pointer-events-none opacity-0 overflow-hidden border border-[var(--zeni-black)]/10 bg-[var(--zeni-white)] hidden md:block"
           aria-hidden="true"
         >
-          <img ref={previewImg} src="" alt="Project Preview" className="w-full h-full object-cover" />
+          <img
+            ref={previewImg}
+            src=""
+            alt="Project Preview"
+            className="w-full h-full object-cover"
+          />
         </div>
 
         {/* Insights */}
@@ -1012,15 +1294,24 @@ export function ZeniLanding() {
                   </div>
                 )}
                 {insightsStatus === 'idle' && insights.length === 0 && (
-                  <div className="text-sm text-[var(--zeni-black)]/55 font-light">No insights this week.</div>
+                  <div className="text-sm text-[var(--zeni-black)]/55 font-light">
+                    No insights this week.
+                  </div>
                 )}
                 {insights.map((insight) => (
-                  <article key={insight.title + (insight.id ?? '')} className="border-b border-[var(--zeni-black)]/5 py-8 group">
+                  <article
+                    key={insight.title + (insight.id ?? '')}
+                    className="border-b border-[var(--zeni-black)]/5 py-8 group"
+                  >
                     <div className="text-xs font-mono uppercase tracking-widest text-[var(--zeni-green)] mb-3">
                       {insight.tag}
                     </div>
-                    <h3 className="text-xl font-medium mb-3 text-[var(--zeni-black)]">{insight.title}</h3>
-                    <p className="text-sm text-[var(--zeni-black)]/55 leading-relaxed font-light">{insight.desc}</p>
+                    <h3 className="text-xl font-medium mb-3 text-[var(--zeni-black)]">
+                      {insight.title}
+                    </h3>
+                    <p className="text-sm text-[var(--zeni-black)]/55 leading-relaxed font-light">
+                      {insight.desc}
+                    </p>
                     {insight.href && (
                       <a
                         href={insight.href}
@@ -1041,7 +1332,9 @@ export function ZeniLanding() {
                 <h3 className="text-xs font-mono uppercase tracking-widest zeni-orange-text line-below mb-4 inline-block">
                   The Brief
                 </h3>
-                <p className="text-2xl font-light text-[var(--zeni-black)]">The Kenya market note.</p>
+                <p className="text-2xl font-light text-[var(--zeni-black)]">
+                  The Kenya market note.
+                </p>
                 <p className="text-sm text-[var(--zeni-black)]/55 mt-3 leading-relaxed font-light">
                   Quietly delivered. High signal, low noise. For buyers, owners, and agents.
                 </p>
@@ -1067,7 +1360,9 @@ export function ZeniLanding() {
                   </button>
                   <div aria-live="polite">
                     {newsletterMessage && (
-                      <p className={`text-xs uppercase tracking-widest mt-3 ${newsletterMessageClassName}`}>
+                      <p
+                        className={`text-xs uppercase tracking-widest mt-3 ${newsletterMessageClassName}`}
+                      >
                         {newsletterMessage}
                       </p>
                     )}
@@ -1079,11 +1374,16 @@ export function ZeniLanding() {
         </section>
 
         {/* FAQ */}
-        <section id="faq" className="py-32 px-4 md:px-12 border-b border-[var(--zeni-black)]/10 bg-[var(--zeni-white)] scroll-mt-28">
+        <section
+          id="faq"
+          className="py-32 px-4 md:px-12 border-b border-[var(--zeni-black)]/10 bg-[var(--zeni-white)] scroll-mt-28"
+        >
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12">
               <div>
-                <h2 className="text-xs font-bold uppercase tracking-widest text-[var(--zeni-green)]">FAQ</h2>
+                <h2 className="text-xs font-bold uppercase tracking-widest text-[var(--zeni-green)]">
+                  FAQ
+                </h2>
                 <p className="text-4xl md:text-5xl font-light leading-tight mt-4">
                   Answers, before
                   <br />
@@ -1096,7 +1396,10 @@ export function ZeniLanding() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {FAQS.map((faq) => (
-                <article key={faq.q} className="border border-[var(--zeni-black)]/10 bg-[var(--zeni-white)] p-6">
+                <article
+                  key={faq.q}
+                  className="border border-[var(--zeni-black)]/10 bg-[var(--zeni-white)] p-6"
+                >
                   <h3 className="text-lg font-light mb-3 text-[var(--zeni-black)]">{faq.q}</h3>
                   <p className="text-sm text-[var(--zeni-black)]/65 leading-relaxed">{faq.a}</p>
                 </article>
@@ -1109,15 +1412,17 @@ export function ZeniLanding() {
         <section className="py-20 px-4 md:px-12 border-b border-[var(--zeni-black)]/10 bg-[var(--zeni-white)]">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-10">
             <div>
-              <h2 className="text-xs font-bold uppercase tracking-widest text-[var(--zeni-green)]">Start now</h2>
+              <h2 className="text-xs font-bold uppercase tracking-widest text-[var(--zeni-green)]">
+                Start now
+              </h2>
               <p className="text-4xl md:text-5xl font-light leading-tight mt-4">
                 Ready to list or
                 <br />
                 <span className="font-medium">find your next place?</span>
               </p>
               <p className="text-[var(--zeni-black)]/65 mt-4 max-w-xl">
-                Zeni brings verified listings across Kenya, clear KES data, and safe viewings into one trusted
-                platform.
+                Zeni brings verified listings across Kenya, clear KES data, and safe viewings into
+                one trusted platform.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
@@ -1130,7 +1435,10 @@ export function ZeniLanding() {
       </main>
 
       {/* Footer */}
-      <footer id="contact" className="py-24 px-4 md:px-12 bg-[var(--zeni-black)] text-white scroll-mt-28">
+      <footer
+        id="contact"
+        className="py-24 px-4 md:px-12 bg-[var(--zeni-black)] text-white scroll-mt-28"
+      >
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-16">
           <div className="col-span-12 md:col-span-6">
             <h2 className="text-4xl md:text-5xl font-serif font-bold tracking-tight mb-8 text-white">
@@ -1141,9 +1449,18 @@ export function ZeniLanding() {
             <p className="text-lg md:text-xl font-light leading-relaxed text-white/70 max-w-sm mb-10">
               The standard for Kenyan property. Verified spaces, clear viewings.
             </p>
-            <nav className="flex gap-6 font-mono text-xs uppercase tracking-widest text-white/60" aria-label="Social Links">
+            <nav
+              className="flex gap-6 font-mono text-xs uppercase tracking-widest text-white/60"
+              aria-label="Social Links"
+            >
               {socialLinks.map(({ href, label }) => (
-                <a key={label} href={href} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                >
                   {label}
                 </a>
               ))}
@@ -1152,8 +1469,13 @@ export function ZeniLanding() {
 
           <div className="col-span-12 md:col-span-4 md:col-start-9 flex flex-col justify-end">
             <address className="space-y-4 not-italic">
-              <p className="font-mono text-xs uppercase tracking-widest text-white/60 block mb-2">Contact</p>
-              <a href={`mailto:${CONTACT_EMAIL}`} className="block font-light text-white/80 hover:text-white transition-colors">
+              <p className="font-mono text-xs uppercase tracking-widest text-white/60 block mb-2">
+                Contact
+              </p>
+              <a
+                href={`mailto:${CONTACT_EMAIL}`}
+                className="block font-light text-white/80 hover:text-white transition-colors"
+              >
                 {CONTACT_EMAIL}
               </a>
               {CONTACT_PHONE && (

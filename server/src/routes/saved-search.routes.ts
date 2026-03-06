@@ -1,7 +1,15 @@
 import { Router } from 'express';
 import { auth } from '../middlewares/auth';
 import { asyncHandler } from '../middlewares/errorHandler';
-import { create, list, remove, update, duplicate, share, getShared } from '../controllers/savedSearch.controller';
+import {
+  create,
+  list,
+  remove,
+  update,
+  duplicate,
+  share,
+  getShared,
+} from '../controllers/savedSearch.controller';
 
 const router = Router();
 

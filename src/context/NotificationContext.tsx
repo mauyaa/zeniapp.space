@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { listNotifications, markAllNotificationsRead, markNotificationRead } from '../lib/api';
+import type { NotificationDto } from '../lib/api/notifications';
 import { useAuth } from './AuthProvider';
 import { getSocket } from '../lib/socket';
 
@@ -24,6 +25,20 @@ interface NotificationContextValue {
 
 const NotificationContext = createContext<NotificationContextValue | undefined>(undefined);
 
+function toNotificationDto(note: NotificationDto): Notification {
+  return {
+    id: note._id || note.id || `ntf-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    title: note.title || 'Notification',
+    description: note.description,
+    type:
+      note.type === 'message' || note.type === 'viewing' || note.type === 'system'
+        ? note.type
+        : undefined,
+    createdAt: note.createdAt || new Date().toISOString(),
+    read: Boolean(note.read),
+  };
+}
+
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
@@ -40,15 +55,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const fetchNotifications = () => {
       setLoading(true);
       listNotifications()
-        .then((items: Array<{ _id?: string; id?: string; title: string; description?: string; type?: string; createdAt: string; read?: boolean }>) => {
-          const mapped = items.map((n) => ({
-            id: n._id || n.id,
-            title: n.title,
-            description: n.description,
-            type: n.type,
-            createdAt: n.createdAt,
-            read: Boolean(n.read)
-          }));
+        .then((items) => {
+          const mapped: Notification[] = (items ?? []).map(toNotificationDto);
           setNotifications(mapped);
         })
         .catch(() => undefined)
@@ -57,27 +65,29 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     let cleanupIdle: (() => void) | undefined;
     if ('requestIdleCallback' in window) {
-      const id = (window as unknown as { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number })
-        .requestIdleCallback(fetchNotifications, { timeout: 2000 });
-      cleanupIdle = () => (window as unknown as { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(id);
+      const id = (
+        window as unknown as {
+          requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number;
+        }
+      ).requestIdleCallback(fetchNotifications, { timeout: 2000 });
+      cleanupIdle = () =>
+        (window as unknown as { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(id);
     } else {
       const t = setTimeout(fetchNotifications, 100);
       cleanupIdle = () => clearTimeout(t);
     }
 
     const s = getSocket(token);
-    const onNotification = (n: { _id?: string; id?: string; title: string; description?: string; type?: string; createdAt?: string; read?: boolean }) => {
-      setNotifications((prev) => [
-        {
-          id: n._id || n.id || `ntf-${Date.now()}`,
-          title: n.title,
-          description: n.description,
-          type: n.type,
-          createdAt: n.createdAt || new Date().toISOString(),
-          read: Boolean(n.read)
-        },
-        ...prev
-      ].slice(0, 50));
+    const onNotification = (n: {
+      _id?: string;
+      id?: string;
+      title: string;
+      description?: string;
+      type?: string;
+      createdAt?: string;
+      read?: boolean;
+    }) => {
+      setNotifications((prev) => [toNotificationDto(n), ...prev].slice(0, 50));
     };
     s.on('notification:new', onNotification);
     return () => {
@@ -88,10 +98,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const push = (note: Omit<Notification, 'id' | 'createdAt' | 'read'> & { id?: string }) => {
     const id = note.id || `ntf-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    setNotifications((prev) => [
-      { ...note, id, createdAt: new Date().toISOString(), read: false },
-      ...prev
-    ].slice(0, 50));
+    setNotifications((prev) =>
+      [{ ...note, id, createdAt: new Date().toISOString(), read: false }, ...prev].slice(0, 50)
+    );
   };
 
   const markAllRead = () => {

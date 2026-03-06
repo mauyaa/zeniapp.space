@@ -14,7 +14,7 @@ const InsightSchema = new Schema<InsightDocument>(
     title: { type: String, required: true },
     desc: { type: String, required: true },
     href: String,
-    published: { type: Boolean, default: true }
+    published: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

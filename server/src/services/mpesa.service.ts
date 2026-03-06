@@ -9,7 +9,17 @@ import { env } from '../config/env';
 
 const DARAJA_SANDBOX = 'https://sandbox.safaricom.co.ke';
 const DARAJA_PRODUCTION = 'https://api.safaricom.co.ke';
-const PLACEHOLDER_VALUES = new Set(['', 'dev', 'changeme', 'n/a', 'na', 'none', 'null', 'undefined', '000000']);
+const PLACEHOLDER_VALUES = new Set([
+  '',
+  'dev',
+  'changeme',
+  'n/a',
+  'na',
+  'none',
+  'null',
+  'undefined',
+  '000000',
+]);
 
 const isPlaceholder = (value?: string) => {
   const normalized = (value || '').trim().toLowerCase();
@@ -32,8 +42,10 @@ const hasShortcode = !isPlaceholder(env.mpesa.shortcode);
 const hasPasskey = !isPlaceholder(env.mpesa.passkey);
 const hasCallbackUrl = isValidCallbackUrl(env.mpesa.callbackUrl);
 
-const hasAnyConfig = hasConsumerKey || hasConsumerSecret || hasShortcode || hasPasskey || hasCallbackUrl;
-const isLiveConfigured = hasConsumerKey && hasConsumerSecret && hasShortcode && hasPasskey && hasCallbackUrl;
+const hasAnyConfig =
+  hasConsumerKey || hasConsumerSecret || hasShortcode || hasPasskey || hasCallbackUrl;
+const isLiveConfigured =
+  hasConsumerKey && hasConsumerSecret && hasShortcode && hasPasskey && hasCallbackUrl;
 const isMockMode = !isLiveConfigured;
 let partialConfigWarned = false;
 let localCallbackWarned = false;
@@ -73,10 +85,12 @@ function parseJsonSafe<T>(text: string): T {
 
 async function getAccessToken(): Promise<string> {
   const base = getBaseUrl();
-  const auth = Buffer.from(`${env.mpesa.consumerKey}:${env.mpesa.consumerSecret}`).toString('base64');
+  const auth = Buffer.from(`${env.mpesa.consumerKey}:${env.mpesa.consumerSecret}`).toString(
+    'base64'
+  );
   const res = await fetch(`${base}/oauth/v1/generate?grant_type=client_credentials`, {
     method: 'GET',
-    headers: { Authorization: `Basic ${auth}` }
+    headers: { Authorization: `Basic ${auth}` },
   });
   const text = await res.text();
   const data = parseJsonSafe<{ access_token?: string; errorMessage?: string }>(text);
@@ -93,7 +107,11 @@ async function getAccessToken(): Promise<string> {
  * Initiate STK push. Phone: 254XXXXXXXXX (no +). Amount in KES.
  * Returns providerRef (CheckoutRequestID) to match with callback.
  */
-export async function initiateStk(_invoiceId: string, phone: string, amount: number): Promise<StkResult> {
+export async function initiateStk(
+  _invoiceId: string,
+  phone: string,
+  amount: number
+): Promise<StkResult> {
   const normalizedPhone = phone.replace(/\D/g, '');
   let partyA = '';
   if (/^254\d{9}$/.test(normalizedPhone)) {
@@ -105,7 +123,7 @@ export async function initiateStk(_invoiceId: string, phone: string, amount: num
   } else {
     throw Object.assign(new Error('Invalid phone format. Use 07XXXXXXXX or 2547XXXXXXXX'), {
       status: 400,
-      code: 'INVALID_PHONE'
+      code: 'INVALID_PHONE',
     });
   }
 
@@ -125,7 +143,9 @@ export async function initiateStk(_invoiceId: string, phone: string, amount: num
       const callbackUrl = new URL(env.mpesa.callbackUrl);
       if (['localhost', '127.0.0.1', '::1'].includes(callbackUrl.hostname)) {
         localCallbackWarned = true;
-        logger.info('[MPESA] MPESA_CALLBACK_URL points to localhost; provider callbacks will not reach your machine without a tunnel (ngrok/cloudflared).');
+        logger.info(
+          '[MPESA] MPESA_CALLBACK_URL points to localhost; provider callbacks will not reach your machine without a tunnel (ngrok/cloudflared).'
+        );
       }
     } catch {
       // URL validity already checked in config phase.
@@ -136,10 +156,7 @@ export async function initiateStk(_invoiceId: string, phone: string, amount: num
   const token = await getAccessToken();
   const shortcode = env.mpesa.shortcode;
   const passkey = env.mpesa.passkey;
-  const timestamp = new Date()
-    .toISOString()
-    .replace(/[-:T]/g, '')
-    .slice(0, 14);
+  const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
   const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString('base64');
 
   const body = {
@@ -153,16 +170,16 @@ export async function initiateStk(_invoiceId: string, phone: string, amount: num
     PhoneNumber: partyA,
     CallBackURL: env.mpesa.callbackUrl,
     AccountReference: _invoiceId.slice(0, 12),
-    TransactionDesc: 'Zeni payment'
+    TransactionDesc: 'Zeni payment',
   };
 
   const res = await fetch(`${base}/mpesa/stkpush/v1/processrequest`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
   });
 
   const text = await res.text();
@@ -182,10 +199,17 @@ export async function initiateStk(_invoiceId: string, phone: string, amount: num
 
   const checkoutRequestId = data.CheckoutRequestID;
   if (!checkoutRequestId) {
-    throw Object.assign(new Error(data.ResponseDescription || 'No CheckoutRequestID'), { status: 502, code: 'MPESA_STK_FAILED' });
+    throw Object.assign(new Error(data.ResponseDescription || 'No CheckoutRequestID'), {
+      status: 502,
+      code: 'MPESA_STK_FAILED',
+    });
   }
 
-  logger.info('[MPESA] STK push initiated', { checkoutRequestId, partyA: partyA.slice(-4), amount });
+  logger.info('[MPESA] STK push initiated', {
+    checkoutRequestId,
+    partyA: partyA.slice(-4),
+    amount,
+  });
   return { providerRef: checkoutRequestId };
 }
 

@@ -19,7 +19,12 @@ export async function payAuth(req: PayAuthRequest, res: Response, next: NextFunc
 
   const token = header.slice(7);
   try {
-    const payload = jwt.verify(token, env.jwtSecret) as { sub: string; role: string; aud?: string; sid?: string };
+    const payload = jwt.verify(token, env.jwtSecret) as {
+      sub: string;
+      role: string;
+      aud?: string;
+      sid?: string;
+    };
     if (payload.aud !== 'pay') {
       return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Invalid token audience' });
     }
@@ -53,7 +58,8 @@ export async function payAuth(req: PayAuthRequest, res: Response, next: NextFunc
 export function requirePayRole(roles: string[]) {
   return (req: PayAuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
-    if (!roles.includes(req.user.role)) return res.status(403).json({ code: 'FORBIDDEN', message: 'Insufficient role' });
+    if (!roles.includes(req.user.role))
+      return res.status(403).json({ code: 'FORBIDDEN', message: 'Insufficient role' });
     next();
   };
 }
@@ -62,11 +68,15 @@ export function requireStepUp(maxAgeMinutes = 10) {
   return (req: PayAuthRequest, res: Response, next: NextFunction) => {
     const session = req.paySession;
     if (!session?.stepUpVerifiedAt) {
-      return res.status(403).json({ code: 'STEP_UP_REQUIRED', message: 'Step-up verification required' });
+      return res
+        .status(403)
+        .json({ code: 'STEP_UP_REQUIRED', message: 'Step-up verification required' });
     }
     const ageMs = Date.now() - new Date(session.stepUpVerifiedAt).getTime();
     if (ageMs > maxAgeMinutes * 60 * 1000) {
-      return res.status(403).json({ code: 'STEP_UP_EXPIRED', message: 'Step-up verification expired' });
+      return res
+        .status(403)
+        .json({ code: 'STEP_UP_EXPIRED', message: 'Step-up verification expired' });
     }
     next();
   };

@@ -4,14 +4,16 @@ import { Link } from 'react-router-dom';
 const benefits = [
   'Verification badge visible on every listing.',
   'Lead inbox built for serious buyers and tenants.',
-  'Faster scheduling with clear availability slots.'
+  'Faster scheduling with clear availability slots.',
 ];
 
 export function AgentSection() {
   return (
     <div className="grid gap-10 lg:grid-cols-[1.1fr,0.9fr] lg:items-center">
       <div>
-        <div className="text-xs uppercase tracking-[0.3em] text-[rgb(var(--muted))]">For agents</div>
+        <div className="text-xs uppercase tracking-[0.3em] text-[rgb(var(--muted))]">
+          For agents
+        </div>
         <h2 className="mt-4 text-3xl sm:text-4xl font-semibold tracking-tight text-[rgb(var(--text))]">
           For agents who want serious leads.
         </h2>
@@ -28,7 +30,10 @@ export function AgentSection() {
             </div>
           ))}
         </div>
-        <Link to="/agentlogin" className="mt-6 inline-flex text-sm text-[rgb(var(--accent))] underline underline-offset-4">
+        <Link
+          to="/agentlogin"
+          className="mt-6 inline-flex text-sm text-[rgb(var(--accent))] underline underline-offset-4"
+        >
           Open Agent Portal &rarr;
         </Link>
       </div>

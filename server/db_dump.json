@@ -1,0 +1,228 @@
+{
+  "users": [
+    {
+      "_id": "698f38df3ae43952e70ee86a",
+      "name": "Bevan",
+      "email": "mauyabevan@gmail.com",
+      "emailOrPhone": "mauyabevan@gmail.com",
+      "password": "$2a$10$UQwn6ga3YrBmiNTlI/ZcC.jKtfTcFFj4Zz.NhGlr4GS2q2G8/p3i2",
+      "role": "user",
+      "status": "active",
+      "availability": "active",
+      "agentVerification": "unverified",
+      "autoArchivedListings": [],
+      "notificationPrefs": {
+        "quietHours": {
+          "start": "22:00",
+          "end": "06:00"
+        },
+        "email": true,
+        "sms": true,
+        "push": true
+      },
+      "mfaEnabled": false,
+      "mfaRecoveryCodes": [],
+      "verificationEvidence": [],
+      "createdAt": "2026-02-13T14:44:47.956Z",
+      "updatedAt": "2026-02-13T14:44:47.956Z",
+      "__v": 0
+    },
+    {
+      "_id": "69a429fe6f4e611251b110ea",
+      "name": "Zeni Support",
+      "email": "support@zeni.test",
+      "emailOrPhone": "support@zeni.test",
+      "password": "$2a$10$2lFnLdGmg.Ohr0bpLai35uA8hfxInRQHWyro4vYscn4ZpQxnY6djW",
+      "role": "agent",
+      "status": "active",
+      "availability": "active",
+      "agentVerification": "verified",
+      "autoArchivedListings": [],
+      "notificationPrefs": {
+        "quietHours": {
+          "start": "22:00",
+          "end": "06:00"
+        },
+        "email": true,
+        "sms": true,
+        "push": true
+      },
+      "mfaEnabled": false,
+      "mfaRecoveryCodes": [],
+      "kycStatus": "none",
+      "businessVerifyStatus": "none",
+      "verificationEvidence": [],
+      "kycEvidence": [],
+      "businessVerifyEvidence": [],
+      "createdAt": "2026-03-01T11:58:54.387Z",
+      "updatedAt": "2026-03-01T11:58:54.387Z",
+      "__v": 0
+    },
+    {
+      "_id": "69a429fe6f4e611251b110ed",
+      "name": "Zeni Agent",
+      "email": "zeniagent.ke@gmail.com",
+      "emailOrPhone": "zeniagent.ke@gmail.com",
+      "password": "$2a$10$MZsUdBEtSnk.SWr8LrwKo.tQAPLQfoWTFZNRpRAyVZCiatqgIHVDe",
+      "role": "agent",
+      "status": "active",
+      "availability": "active",
+      "agentVerification": "verified",
+      "autoArchivedListings": [],
+      "notificationPrefs": {
+        "quietHours": {
+          "start": "22:00",
+          "end": "06:00"
+        },
+        "email": true,
+        "sms": true,
+        "push": true
+      },
+      "mfaEnabled": false,
+      "mfaRecoveryCodes": [],
+      "kycStatus": "none",
+      "businessVerifyStatus": "none",
+      "verificationEvidence": [],
+      "kycEvidence": [],
+      "businessVerifyEvidence": [],
+      "createdAt": "2026-03-01T11:58:54.524Z",
+      "updatedAt": "2026-03-01T12:36:11.638Z",
+      "__v": 0
+    },
+    {
+      "_id": "69a429fe6f4e611251b110f0",
+      "name": "Zeni Admin",
+      "email": "admin@zeni.test",
+      "emailOrPhone": "admin@zeni.test",
+      "password": "$2a$10$HVXe5rPZWlH6DDhOhCwl1.dUrdvEfIrk6h/tHALK8C8HjZ5seWcf2",
+      "role": "agent",
+      "status": "active",
+      "availability": "active",
+      "agentVerification": "verified",
+      "autoArchivedListings": [],
+      "notificationPrefs": {
+        "quietHours": {
+          "start": "22:00",
+          "end": "06:00"
+        },
+        "email": true,
+        "sms": true,
+        "push": true
+      },
+      "mfaEnabled": false,
+      "mfaRecoveryCodes": [],
+      "kycStatus": "none",
+      "businessVerifyStatus": "none",
+      "verificationEvidence": [],
+      "kycEvidence": [],
+      "businessVerifyEvidence": [],
+      "createdAt": "2026-03-01T11:58:54.661Z",
+      "updatedAt": "2026-03-01T12:09:25.645Z",
+      "__v": 0
+    },
+    {
+      "_id": "69a42ffebea77700badec1d0",
+      "name": "Zeni Admin",
+      "emailOrPhone": "zeniapp.ke@gmail.com",
+      "role": "admin",
+      "authProvider": "local",
+      "status": "active",
+      "emailVerified": true,
+      "createdAt": "2026-03-01T12:24:30.754Z",
+      "__v": 1,
+      "agentVerification": "unverified",
+      "autoArchivedListings": [],
+      "availability": "active",
+      "businessVerifyEvidence": [],
+      "businessVerifyStatus": "none",
+      "kycEvidence": [],
+      "kycStatus": "none",
+      "mfaEnabled": false,
+      "mfaRecoveryCodes": [],
+      "notificationPrefs": {
+        "email": true,
+        "push": true,
+        "quietHours": {
+          "end": "06:00",
+          "start": "22:00"
+        },
+        "sms": true
+      },
+      "password": "$2a$10$wbpfmbUIKbVqpbRehz2MGemFjZlR.eb1yKqisXiRoZgCXu8arCUge",
+      "updatedAt": "2026-03-01T12:38:07.157Z",
+      "verificationEvidence": []
+    }
+  ],
+  "listings": [
+    {
+      "_id": "69a2a2b67c044fc3398e30ae",
+      "title": "Two-story detached home in Ngong, Kenya",
+      "price": 2000000,
+      "currency": "KES",
+      "purpose": "buy",
+      "beds": 2,
+      "baths": 2,
+      "amenities": [],
+      "status": "live",
+      "agentId": "69930964892de7acbe90faaf",
+      "location": {
+        "type": "Point",
+        "coordinates": [
+          10,
+          1
+        ],
+        "address": "Kajiado",
+        "city": "Ngong",
+        "area": "Ngong"
+      },
+      "images": [
+        {
+          "url": "https://media.istockphoto.com/id/1562575108/photo/two-story-detached-home-in-nairobi-kenya.jpg?s=612x612&w=0&k=20&c=e-qhFED5AtHYQIyQhmuWkC97_xN7tpDxwI_bxrJAKUo=",
+          "isPrimary": true,
+          "_id": "69a2a2b67c044fc3398e30af"
+        }
+      ],
+      "verified": true,
+      "availabilityStatus": "available",
+      "floorPlans": [],
+      "createdAt": "2026-02-28T08:09:26.069Z",
+      "updatedAt": "2026-02-28T10:46:17.242Z",
+      "__v": 0
+    },
+    {
+      "_id": "69a426b296650dde5bf21d5d",
+      "title": "Kilimani Home in Kenya",
+      "price": 24000000,
+      "currency": "KES",
+      "purpose": "rent",
+      "beds": 3,
+      "baths": 3,
+      "amenities": [],
+      "status": "live",
+      "agentId": "69930964892de7acbe90faaf",
+      "location": {
+        "type": "Point",
+        "coordinates": [
+          36.7842,
+          -1.2921
+        ],
+        "address": "Kilimani",
+        "city": "Kilimani",
+        "area": "Kilimani"
+      },
+      "images": [
+        {
+          "url": "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Ftse1.mm.bing.net%2Fth%2Fid%2FOIP.U9zoQIkwLBSkqqUlbYNhZgHaEf%3Fpid%3DApi&f=1&ipt=e46c0b2e022fcc276121cacf0220f969401b4e5087315dbcf4e880343d2c311d&ipo=images",
+          "isPrimary": true,
+          "_id": "69a426b296650dde5bf21d5e"
+        }
+      ],
+      "verified": true,
+      "availabilityStatus": "available",
+      "floorPlans": [],
+      "createdAt": "2026-03-01T11:44:50.374Z",
+      "updatedAt": "2026-03-01T11:45:47.990Z",
+      "__v": 0
+    }
+  ]
+}

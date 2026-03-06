@@ -19,7 +19,7 @@ const PaySessionSchema = new Schema<PaySessionDocument>(
     ip: String,
     lastUsedAt: Date,
     stepUpVerifiedAt: Date,
-    expiresAt: { type: Date, required: true, index: { expireAfterSeconds: 0 } }
+    expiresAt: { type: Date, required: true, index: { expireAfterSeconds: 0 } },
   },
   { timestamps: true }
 );

@@ -15,7 +15,10 @@ function parseConversationList(data: unknown): Conversation[] {
   const raw = Array.isArray(data) ? data : [];
   const valid = raw
     .map((item) => conversationSchema.safeParse(item))
-    .filter((result): result is { success: true; data: z.infer<typeof conversationSchema> } => result.success)
+    .filter(
+      (result): result is { success: true; data: z.infer<typeof conversationSchema> } =>
+        result.success
+    )
     .map((result) => result.data as Conversation);
   return valid;
 }

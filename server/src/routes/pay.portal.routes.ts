@@ -1,5 +1,13 @@
 import { Router } from 'express';
-import { payLogin, payRefresh, payLogout, payMe, payStepUp, paySessions, payLogoutAll } from '../controllers/payAuth.controller';
+import {
+  payLogin,
+  payRefresh,
+  payLogout,
+  payMe,
+  payStepUp,
+  paySessions,
+  payLogoutAll,
+} from '../controllers/payAuth.controller';
 import {
   initiateTransaction,
   listTransactions,
@@ -8,11 +16,19 @@ import {
   reconcileAdmin,
   resolveAdmin,
   refundAdmin,
-  insightsAdmin
+  insightsAdmin,
 } from '../controllers/payPortal.controller';
 import { payAuth, requirePayRole, requireStepUp } from '../middlewares/payAuth';
-import { payInitiateLimiter, payLoginLimiter, payRefreshLimiter, payAdminLimiter } from '../middlewares/rateLimit';
-import { getPayAccountController, updatePayAccountController } from '../controllers/payAccount.controller';
+import {
+  payInitiateLimiter,
+  payLoginLimiter,
+  payRefreshLimiter,
+  payAdminLimiter,
+} from '../middlewares/rateLimit';
+import {
+  getPayAccountController,
+  updatePayAccountController,
+} from '../controllers/payAccount.controller';
 import { requirePrivilegedNetworkAccess } from '../middlewares/ipAllowlist';
 
 const router = Router();

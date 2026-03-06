@@ -4,7 +4,8 @@
  * TTL and max size are conservative; for production scale consider Redis.
  */
 
-const TTL_MS = 60 * 1000; // 1 minute
+// Short TTL so newly approved listings show up on maps quickly
+const TTL_MS = 5 * 1000; // 5 seconds
 const MAX_ENTRIES = 200;
 
 interface CacheEntry<T> {
@@ -29,11 +30,14 @@ export function cacheKey(prefix: string, query: Record<string, unknown>): string
   const normalized = JSON.stringify(
     Object.keys(query)
       .sort()
-      .reduce((acc, k) => {
-        const v = query[k];
-        if (v !== undefined && v !== '') acc[k] = v;
-        return acc;
-      }, {} as Record<string, unknown>)
+      .reduce(
+        (acc, k) => {
+          const v = query[k];
+          if (v !== undefined && v !== '') acc[k] = v;
+          return acc;
+        },
+        {} as Record<string, unknown>
+      )
   );
   return `${prefix}:${normalized}`;
 }

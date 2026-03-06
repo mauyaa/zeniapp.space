@@ -31,14 +31,17 @@ export const HeroSection = React.memo(function HeroSection({
             Dashboard
           </span>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl text-zinc-900 leading-tight font-serif">
-            Good {timeGreeting},{' '}
-            <span className="italic text-zinc-400">{displayName}.</span>
+            Good {timeGreeting}, <span className="italic text-zinc-400">{displayName}.</span>
           </h1>
           <p className="mt-2 text-sm text-zinc-500 flex items-center gap-2">
-            <span className="inline-flex h-2 w-2 rounded-full bg-green-500 animate-pulse" aria-hidden="true" />
+            <span
+              className="inline-flex h-2 w-2 rounded-full bg-green-500 animate-pulse"
+              aria-hidden="true"
+            />
             {activeUpdates > 0 ? (
               <>
-                <strong className="text-zinc-800">{activeUpdates}</strong> active update{activeUpdates !== 1 ? 's' : ''} today
+                <strong className="text-zinc-800">{activeUpdates}</strong> active update
+                {activeUpdates !== 1 ? 's' : ''} today
               </>
             ) : (
               'All caught up — no new updates'
@@ -65,7 +68,9 @@ export const HeroSection = React.memo(function HeroSection({
           </div>
           <div className="min-w-0">
             <p className="text-xs font-semibold text-zinc-800">Market active</p>
-            <p className="text-[11px] text-zinc-500 truncate">{itemCount} properties available near you</p>
+            <p className="text-[11px] text-zinc-500 truncate">
+              {itemCount} properties available near you
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-xl border border-zinc-100 bg-zinc-50/80 px-4 py-3">
@@ -74,7 +79,9 @@ export const HeroSection = React.memo(function HeroSection({
           </div>
           <div className="min-w-0">
             <p className="text-xs font-semibold text-zinc-800">Verified listings</p>
-            <p className="text-[11px] text-zinc-500 truncate">{verifiedCount} agent-verified homes</p>
+            <p className="text-[11px] text-zinc-500 truncate">
+              {verifiedCount} agent-verified homes
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-xl border border-zinc-100 bg-zinc-50/80 px-4 py-3">
@@ -83,7 +90,9 @@ export const HeroSection = React.memo(function HeroSection({
           </div>
           <div className="min-w-0">
             <p className="text-xs font-semibold text-zinc-800">Your saves</p>
-            <p className="text-[11px] text-zinc-500 truncate">{savedCount > 0 ? `${savedCount} listings saved` : 'No saves yet — start exploring'}</p>
+            <p className="text-[11px] text-zinc-500 truncate">
+              {savedCount > 0 ? `${savedCount} listings saved` : 'No saves yet — start exploring'}
+            </p>
           </div>
         </div>
       </div>

@@ -13,6 +13,7 @@ export async function shareSavedListings(req: AuthRequest, res: Response) {
 export async function getSharedListings(req: AuthRequest, res: Response) {
   const { token } = z.object({ token: z.string().min(8) }).parse(req.params);
   const data = await getSharedShortlist(token);
-  if (!data) return res.status(404).json({ code: 'NOT_FOUND', message: 'Shared shortlist not found' });
+  if (!data)
+    return res.status(404).json({ code: 'NOT_FOUND', message: 'Shared shortlist not found' });
   res.json(data);
 }

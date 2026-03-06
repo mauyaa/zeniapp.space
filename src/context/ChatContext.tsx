@@ -1,22 +1,16 @@
 /* eslint-disable react-refresh/only-export-components */
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Conversation,
-  Message,
-  LeadStage,
-  ConversationStatus,
-  MessageStatus
-} from '../types/chat';
+import { Conversation, Message, LeadStage, ConversationStatus, MessageStatus } from '../types/chat';
 import {
   safeFetchConversations,
   safeBootstrapConversations,
   safeFetchMessages,
   safePostMessage,
   startConversation as startConversationApi,
-  updateLeadStage
+  updateLeadStage,
 } from '../lib/chat';
-import { api } from '../lib/api';
+import { api, getToken } from '../lib/api';
 import { logger } from '../lib/logger';
 import { useAuth } from './AuthProvider';
 import { getSocket, disconnectSocket } from '../lib/socket';
@@ -86,8 +80,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     return selfSenderType;
   };
   const isObjectId = (id: string) => /^[a-f\d]{24}$/i.test(id);
-  const conversationKey = (c: Conversation) =>
-    c.listingId && c.agentId && c.userId ? `${c.listingId}:${c.agentId}:${c.userId}` : c.id;
+  const conversationKey = (c: Conversation) => c.id;
   const dedupeConversations = (items: Conversation[]) => {
     const map = new Map<string, Conversation>();
     items.forEach((c) => {
@@ -115,9 +108,13 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     // Use requestIdleCallback to load after the browser is idle,
     // or fall back to a short delay so the first paint goes through.
     if ('requestIdleCallback' in window) {
-      const id = (window as unknown as { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number })
-        .requestIdleCallback(() => refreshConversations(), { timeout: 2000 });
-      return () => (window as unknown as { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(id);
+      const id = (
+        window as unknown as {
+          requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number;
+        }
+      ).requestIdleCallback(() => refreshConversations(), { timeout: 2000 });
+      return () =>
+        (window as unknown as { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(id);
     } else {
       const t = setTimeout(() => refreshConversations(), 100);
       return () => clearTimeout(t);
@@ -131,7 +128,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   // Realtime sockets
   useEffect(() => {
     if (!user) return;
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (!token) return;
     const s = getSocket(token);
 
@@ -172,7 +169,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
               unreadCount:
                 activeConversationId === msg.conversationId || isSelfMessage
                   ? 0
-                  : existing.unreadCount + 1
+                  : existing.unreadCount + 1,
             }
           : {
               id: msg.conversationId,
@@ -182,11 +179,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
               status: 'active' as const,
               leadStage: 'new' as const,
               lastMessageAt: msg.createdAt,
-              unreadCount:
-                activeConversationId === msg.conversationId || isSelfMessage ? 0 : 1,
+              unreadCount: activeConversationId === msg.conversationId || isSelfMessage ? 0 : 1,
               listingSnapshot: null,
               agentSnapshot: { id: '', name: 'Agent' },
-              userSnapshot: { id: '', name: 'User', role: 'user' as const }
+              userSnapshot: { id: '', name: 'User', role: 'user' as const },
             };
         const rest = prev.filter((c) => c.id !== msg.conversationId);
         return dedupeConversations([updated, ...rest]);
@@ -197,12 +193,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         push({
           title: 'New message',
           description: msg.type === 'text' ? String(msg.content).slice(0, 80) : msg.type,
-          tone: 'info'
+          tone: 'info',
         });
         pushNotification({
           title: 'New message',
           description: msg.type === 'text' ? String(msg.content).slice(0, 80) : msg.type,
-          type: 'message'
+          type: 'message',
         });
       }
     };
@@ -221,11 +217,18 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       }, 2000);
     };
 
-    const onViewing = (payload: { id: string; listingId: string; userId: string; date?: string }) => {
+    const onViewing = (payload: {
+      id: string;
+      listingId: string;
+      userId: string;
+      date?: string;
+    }) => {
       pushNotification({
         title: 'New viewing request',
-        description: payload.date ? `For ${new Date(payload.date).toLocaleString()}` : 'You have a new viewing to review',
-        type: 'viewing'
+        description: payload.date
+          ? `For ${new Date(payload.date).toLocaleString()}`
+          : 'You have a new viewing to review',
+        type: 'viewing',
       });
     };
 
@@ -233,7 +236,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       pushNotification({
         title: 'Viewing updated',
         description: `Status: ${payload.status}`,
-        type: 'viewing'
+        type: 'viewing',
       });
     };
 
@@ -251,13 +254,21 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     s.io?.on?.('reconnect', () => {
       setSocketConnected(true);
       setSocketReconnecting(false);
-      push({ title: 'Reconnected', description: 'Real-time connection restored.', tone: 'success' });
+      push({
+        title: 'Reconnected',
+        description: 'Real-time connection restored.',
+        tone: 'success',
+      });
       refreshConversations();
       if (activeConvIdRef.current) loadMessages(activeConvIdRef.current);
     });
     s.io?.on?.('reconnect_failed', () => {
       setSocketReconnecting(false);
-      push({ title: 'Connection lost', description: 'Unable to reconnect. Try refreshing the page.', tone: 'error' });
+      push({
+        title: 'Connection lost',
+        description: 'Unable to reconnect. Try refreshing the page.',
+        tone: 'error',
+      });
     });
     s.on('message:new', onMessage);
     s.on('conversation:update', onConversation);
@@ -278,7 +289,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   }, [user?.id, activeConversationId]);
 
   const refreshConversations = async () => {
-    if (!user || !localStorage.getItem('token')) {
+    if (!user || !getToken()) {
       setConversations([]);
       setMessages({});
       setActiveConversationId(null);
@@ -308,7 +319,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   };
 
   const bootstrapConversations = async () => {
-    if (!user || !localStorage.getItem('token')) return;
+    if (!user || !getToken()) return;
     setLoadingConversations(true);
     setConversationsLoadError(false);
     try {
@@ -320,13 +331,18 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       } else {
         push({
           title: 'No chats created',
-          description: 'Check that the server is running and the database is connected. Look at the server terminal for errors.',
-          tone: 'error'
+          description:
+            'Check that the server is running and the database is connected. Look at the server terminal for errors.',
+          tone: 'error',
         });
       }
     } catch {
       setConversationsLoadError(true);
-      push({ title: 'Request failed', description: 'Check the server and try again.', tone: 'error' });
+      push({
+        title: 'Request failed',
+        description: 'Check the server and try again.',
+        tone: 'error',
+      });
     } finally {
       setLoadingConversations(false);
     }
@@ -342,18 +358,16 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const sendMessage = async (
-    conversationId: string,
-    body: { type: string; content: unknown }
-  ) => {
+  const sendMessage = async (conversationId: string, body: { type: string; content: unknown }) => {
     const conversation = conversationsRef.current.find((item) => item.id === conversationId);
-    const isParticipant = conversation && user && (conversation.userId === user.id || conversation.agentId === user.id);
+    const isParticipant =
+      conversation && user && (conversation.userId === user.id || conversation.agentId === user.id);
     const isStaff = user?.role === 'admin' || user?.role === 'agent';
     if (user && conversation && !isParticipant && !isStaff) {
       push({
         title: 'Read-only thread',
         description: 'You can view this conversation but cannot send messages.',
-        tone: 'info'
+        tone: 'info',
       });
       return;
     }
@@ -366,12 +380,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       type: body.type as Message['type'],
       content: body.content as string | Record<string, unknown>,
       createdAt: new Date().toISOString(),
-      status: 'sending'
+      status: 'sending',
     };
 
     setMessages((prev) => ({
       ...prev,
-      [conversationId]: [...(prev[conversationId] ?? []), optimistic]
+      [conversationId]: [...(prev[conversationId] ?? []), optimistic],
     }));
 
     try {
@@ -380,7 +394,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         [conversationId]: (prev[conversationId] ?? []).map((m) =>
           m.id === optimistic.id ? real : m
-        )
+        ),
       }));
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : 'Unknown error';
@@ -389,12 +403,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         [conversationId]: (prev[conversationId] ?? []).map((m) =>
           m.id === optimistic.id ? { ...m, status: 'failed' as MessageStatus } : m
-        )
+        ),
       }));
       push({
         title: 'Message failed',
         description: errMsg.length > 100 ? 'Could not send message. Try again.' : errMsg,
-        tone: 'error'
+        tone: 'error',
       });
     }
   };
@@ -417,7 +431,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       try {
         await api.markConversationRead(conversationId);
       } catch (e) {
-        logger.warn('markRead failed', e);
+        logger.warn('markRead failed', { error: e as Error });
       }
     }
     setConversations((prev) =>
@@ -461,7 +475,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         })
         .filter((c) => {
           if (!searchTerm) return true;
-          const hay = `${c.listingSnapshot?.title ?? ''} ${c.listingSnapshot?.locationText ?? ''} ${c.listingSnapshot?.price ?? ''} ${c.agentSnapshot?.name ?? ''} ${c.userSnapshot?.name ?? ''}`.toLowerCase();
+          const hay =
+            `${c.listingSnapshot?.title ?? ''} ${c.listingSnapshot?.locationText ?? ''} ${c.listingSnapshot?.price ?? ''} ${c.agentSnapshot?.name ?? ''} ${c.userSnapshot?.name ?? ''}`.toLowerCase();
           return hay.includes(searchTerm.toLowerCase());
         }),
       messages,
@@ -483,7 +498,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       updateLead,
       typing,
       socketConnected,
-      socketReconnecting
+      socketReconnecting,
     }),
     [
       conversations,
@@ -497,7 +512,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       user?.role,
       typing,
       socketConnected,
-      socketReconnecting
+      socketReconnecting,
     ]
   );
 

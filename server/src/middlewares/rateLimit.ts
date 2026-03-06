@@ -18,7 +18,7 @@ function limiter(name: string, windowMs: number, max: number, options: LimiterOp
         ? 'Too many authentication attempts. Please try again in a few minutes.'
         : 'Too many requests. Please try again later.';
       res.status(429).json({ code: 'RATE_LIMITED', message });
-    }
+    },
   });
 }
 
@@ -29,19 +29,17 @@ export const loginLimiter = limiter('auth_login', 15 * 60 * 1000, isProduction ?
   skipSuccessfulRequests: true,
   keyGenerator: (req) => {
     const identifier =
-      typeof req.body?.emailOrPhone === 'string'
-        ? req.body.emailOrPhone.trim().toLowerCase()
-        : '';
+      typeof req.body?.emailOrPhone === 'string' ? req.body.emailOrPhone.trim().toLowerCase() : '';
     const ip = req.ip || 'unknown';
     return identifier ? `${ip}:${identifier}` : ip;
-  }
+  },
 });
 export const refreshLimiter = limiter('auth_refresh', 15 * 60 * 1000, isProduction ? 300 : 5000);
 export const sendLimiter = limiter('send_generic', 60 * 1000, isProduction ? 120 : 5000);
 export const payLimiter = limiter('pay_stk', 5 * 60 * 1000, 10);
 export const adminLimiter = limiter('admin_api', 60 * 1000, 40);
 export const payLoginLimiter = limiter('pay_login', 15 * 60 * 1000, isProduction ? 10 : 300, {
-  skipSuccessfulRequests: true
+  skipSuccessfulRequests: true,
 });
 export const payRefreshLimiter = limiter('pay_refresh', 15 * 60 * 1000, isProduction ? 60 : 500);
 export const payInitiateLimiter = limiter('pay_initiate', 5 * 60 * 1000, 10);

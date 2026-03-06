@@ -6,7 +6,9 @@ import type { NotificationPayload } from '../types/notification';
 /** In-app only by default. Register senders for email/SMS/push to enable those channels. */
 const channelSenders: Array<import('../types/notification').INotificationSender> = [];
 
-export function registerNotificationSender(sender: import('../types/notification').INotificationSender) {
+export function registerNotificationSender(
+  sender: import('../types/notification').INotificationSender
+) {
   channelSenders.push(sender);
 }
 
@@ -44,7 +46,12 @@ export async function getNotificationPrefs(userId: string) {
 
 export async function updateNotificationPrefs(
   userId: string,
-  prefs: Partial<{ email: boolean; sms: boolean; push: boolean; quietHours: { start: string; end: string } }>
+  prefs: Partial<{
+    email: boolean;
+    sms: boolean;
+    push: boolean;
+    quietHours: { start: string; end: string };
+  }>
 ) {
   const updated = await UserModel.findByIdAndUpdate(
     userId,

@@ -29,9 +29,27 @@ import { useI18n } from '../../context/I18nContext';
 
 function useStatusConfig(t: (k: string) => string) {
   return {
-    pending: { bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-200', icon: Clock, label: t('refunds.pending') },
-    approved: { bg: 'bg-emerald-50', text: 'text-emerald-800', border: 'border-emerald-200', icon: CheckCircle2, label: t('refunds.approved') },
-    rejected: { bg: 'bg-rose-50', text: 'text-rose-800', border: 'border-rose-200', icon: XCircle, label: t('refunds.rejected') },
+    pending: {
+      bg: 'bg-amber-50',
+      text: 'text-amber-800',
+      border: 'border-amber-200',
+      icon: Clock,
+      label: t('refunds.pending'),
+    },
+    approved: {
+      bg: 'bg-emerald-50',
+      text: 'text-emerald-800',
+      border: 'border-emerald-200',
+      icon: CheckCircle2,
+      label: t('refunds.approved'),
+    },
+    rejected: {
+      bg: 'bg-rose-50',
+      text: 'text-rose-800',
+      border: 'border-rose-200',
+      icon: XCircle,
+      label: t('refunds.rejected'),
+    },
   };
 }
 
@@ -84,14 +102,25 @@ export function RefundsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTxId || !reason.trim() || reason.trim().length < 10) {
-      push({ title: 'Invalid request', description: 'Select a payment and give a reason (at least 10 characters).', tone: 'error' });
+      push({
+        title: 'Invalid request',
+        description: 'Select a payment and give a reason (at least 10 characters).',
+        tone: 'error',
+      });
       return;
     }
     setSubmitting(true);
     try {
       await createRefundRequest({ transactionId: selectedTxId, reason: reason.trim() });
-      trackEvent({ name: 'refund_requested', payload: { transactionId: selectedTxId, reasonLength: reason.trim().length } });
-      push({ title: 'Refund requested', description: 'Zeni Support will review your request.', tone: 'success' });
+      trackEvent({
+        name: 'refund_requested',
+        payload: { transactionId: selectedTxId, reasonLength: reason.trim().length },
+      });
+      push({
+        title: 'Refund requested',
+        description: 'Zeni Support will review your request.',
+        tone: 'success',
+      });
       setShowForm(false);
       setSelectedTxId('');
       setReason('');
@@ -106,7 +135,14 @@ export function RefundsPage() {
 
   const getTxFromRequest = (r: RefundRequestItem) => {
     const t = r.transactionId;
-    if (typeof t === 'object' && t && 'amount' in t) return t as { _id: string; amount: number; currency: string; purpose?: string; createdAt?: string };
+    if (typeof t === 'object' && t && 'amount' in t)
+      return t as {
+        _id: string;
+        amount: number;
+        currency: string;
+        purpose?: string;
+        createdAt?: string;
+      };
     return null;
   };
 
@@ -136,7 +172,8 @@ export function RefundsPage() {
             New refund request
           </h3>
           <p className="text-sm text-zinc-500 mb-6">
-            Select a payment and explain why you're requesting a refund. Our team will get back to you.
+            Select a payment and explain why you're requesting a refund. Our team will get back to
+            you.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -148,7 +185,8 @@ export function RefundsPage() {
                 <div className="h-12 rounded-lg bg-zinc-100 animate-pulse" />
               ) : eligible.length === 0 ? (
                 <p className="text-sm text-zinc-500 py-3">
-                  No eligible payments. Only completed payments that don't already have a refund request can be refunded.
+                  No eligible payments. Only completed payments that don't already have a refund
+                  request can be refunded.
                 </p>
               ) : (
                 <div className="relative">
@@ -161,11 +199,15 @@ export function RefundsPage() {
                     <option value="">Select a payment</option>
                     {eligible.map((tx) => (
                       <option key={tx._id} value={tx._id}>
-                        {formatCompactPrice(tx.amount, tx.currency)} · {tx.purpose || 'Payment'} · {tx.createdAt ? new Date(tx.createdAt).toLocaleDateString() : ''}
+                        {formatCompactPrice(tx.amount, tx.currency)} · {tx.purpose || 'Payment'} ·{' '}
+                        {tx.createdAt ? new Date(tx.createdAt).toLocaleDateString() : ''}
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 pointer-events-none" aria-hidden />
+                  <ChevronDown
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 pointer-events-none"
+                    aria-hidden
+                  />
                 </div>
               )}
             </div>
@@ -189,11 +231,18 @@ export function RefundsPage() {
                 type="submit"
                 variant="zeni-primary"
                 size="zeni-md"
-                disabled={submitting || !selectedTxId || reason.trim().length < 10 || eligible.length === 0}
+                disabled={
+                  submitting || !selectedTxId || reason.trim().length < 10 || eligible.length === 0
+                }
               >
                 {submitting ? 'Submitting…' : 'Submit request'}
               </Button>
-              <Button type="button" variant="zeni-secondary" size="zeni-md" onClick={() => setShowForm(false)}>
+              <Button
+                type="button"
+                variant="zeni-secondary"
+                size="zeni-md"
+                onClick={() => setShowForm(false)}
+              >
                 Cancel
               </Button>
             </div>
@@ -223,7 +272,11 @@ export function RefundsPage() {
             subtitle={t('refunds.noRequestsHint')}
             action={
               !showForm
-                ? { label: t('refunds.requestRefund'), onClick: () => setShowForm(true), variant: 'primary' as const }
+                ? {
+                    label: t('refunds.requestRefund'),
+                    onClick: () => setShowForm(true),
+                    variant: 'primary' as const,
+                  }
                 : undefined
             }
           />
@@ -231,7 +284,8 @@ export function RefundsPage() {
           <ul className="space-y-3" role="list">
             {requests.map((r) => {
               const tx = getTxFromRequest(r);
-              const config = statusConfig[r.status as keyof typeof statusConfig] ?? statusConfig.pending;
+              const config =
+                statusConfig[r.status as keyof typeof statusConfig] ?? statusConfig.pending;
               const Icon = config.icon;
               return (
                 <li
@@ -247,7 +301,13 @@ export function RefundsPage() {
                       <span className="font-mono font-semibold text-zinc-900">
                         {tx ? formatCompactPrice(tx.amount, tx.currency) : '—'}
                       </span>
-                      <span className={cn('inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-bold uppercase tracking-widest', config.border, config.text)}>
+                      <span
+                        className={cn(
+                          'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-bold uppercase tracking-widest',
+                          config.border,
+                          config.text
+                        )}
+                      >
                         <Icon className="w-3.5 h-3.5" aria-hidden />
                         {config.label}
                       </span>
@@ -268,7 +328,12 @@ export function RefundsPage() {
       </div>
 
       <div className="flex justify-start">
-        <Button variant="zeni-secondary" size="zeni-sm" onClick={() => navigate('/app/profile')} leftIcon={<ArrowLeft className="w-3 h-3" />}>
+        <Button
+          variant="zeni-secondary"
+          size="zeni-sm"
+          onClick={() => navigate('/app/profile')}
+          leftIcon={<ArrowLeft className="w-3 h-3" />}
+        >
           Back to profile
         </Button>
       </div>

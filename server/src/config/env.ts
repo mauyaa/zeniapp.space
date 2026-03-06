@@ -23,7 +23,8 @@ const parseBoolean = (v: string | undefined, fallback = false) => {
 const parseTrustProxy = (v?: string): boolean | number | string => {
   if (!v) return false;
   const normalized = v.trim().toLowerCase();
-  if (!normalized || normalized === 'false' || normalized === 'off' || normalized === '0') return false;
+  if (!normalized || normalized === 'false' || normalized === 'off' || normalized === '0')
+    return false;
   if (normalized === 'true' || normalized === 'on' || normalized === '1') return true;
   const asNumber = Number(normalized);
   if (Number.isInteger(asNumber) && asNumber >= 0) return asNumber;
@@ -35,20 +36,25 @@ export const env = {
   mongoUri: process.env.MONGO_URI || 'mongodb://localhost:27017/zeni',
   jwtSecret: process.env.JWT_SECRET || 'dev-secret',
   // Default to common Vite dev / preview ports; override in CORS_ORIGIN (comma-separated)
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:4173,http://localhost:5175,capacitor://localhost',
+  corsOrigin:
+    process.env.CORS_ORIGIN ||
+    'http://localhost:5173,http://localhost:4173,http://localhost:5175,capacitor://localhost',
   nodeEnv: process.env.NODE_ENV || 'development',
   trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
   // Allow any domain for admins in development unless explicitly locked down via ADMIN_DOMAIN
   adminDomains: parseCsv(process.env.ADMIN_DOMAIN || '*'),
-  adminDomain: (parseCsv(process.env.ADMIN_DOMAIN || '*')[0] || '*'),
+  adminDomain: parseCsv(process.env.ADMIN_DOMAIN || '*')[0] || '*',
   allowPrivilegedSignup: process.env.ALLOW_PRIVILEGED_SIGNUP === 'true',
   adminOtp: process.env.ADMIN_OTP || '',
   adminIpAllowlist: parseCsv(process.env.ADMIN_IP_ALLOWLIST),
   adminRequireTailnet: parseBoolean(process.env.ADMIN_REQUIRE_TAILNET, false),
   payAdminRequireTailnet: parseBoolean(process.env.PAY_ADMIN_REQUIRE_TAILNET, false),
-  tailnetExpectedCidrs: parseCsv(process.env.TAILNET_EXPECTED_CIDRS || '100.64.0.0/10,fd7a:115c:a1e0::/48'),
+  tailnetExpectedCidrs: parseCsv(
+    process.env.TAILNET_EXPECTED_CIDRS || '100.64.0.0/10,fd7a:115c:a1e0::/48'
+  ),
   adminStepUpCode: process.env.ADMIN_STEP_UP_CODE || '',
   payStepUpCode: process.env.PAY_STEP_UP_CODE || '',
+  publicFeedKey: process.env.PUBLIC_FEED_KEY || 'public-demo-key',
   auditTtlDays: parseNumber(process.env.AUDIT_TTL_DAYS, 180),
   messageRetentionDays: parseNumber(process.env.MESSAGE_RETENTION_DAYS, 730),
   payTxMaxPerHour: parseNumber(process.env.PAY_TX_MAX_PER_HOUR, 10),
@@ -67,7 +73,7 @@ export const env = {
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME || '',
     apiKey: process.env.CLOUDINARY_API_KEY || '',
-    apiSecret: process.env.CLOUDINARY_API_SECRET || ''
+    apiSecret: process.env.CLOUDINARY_API_SECRET || '',
   },
   mpesa: {
     consumerKey: process.env.MPESA_CONSUMER_KEY || 'dev',
@@ -75,12 +81,14 @@ export const env = {
     shortcode: process.env.MPESA_SHORTCODE || '000000',
     passkey: process.env.MPESA_PASSKEY || 'dev',
     callbackUrl: process.env.MPESA_CALLBACK_URL || 'http://localhost:4000/api/pay/mpesa/callback',
-    callbackSecret: process.env.MPESA_CALLBACK_SECRET || ''
+    callbackSecret: process.env.MPESA_CALLBACK_SECRET || '',
   },
   stripe: {
     secretKey: process.env.STRIPE_SECRET_KEY || '',
-    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || ''
-  }
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
+  },
+  resendApiKey: process.env.RESEND_API_KEY || '',
+  resendFrom: process.env.RESEND_FROM || 'onboarding@resend.dev',
 };
 
 Object.defineProperty(env, 'mongoUri', {
@@ -88,7 +96,7 @@ Object.defineProperty(env, 'mongoUri', {
   configurable: true,
   get() {
     return process.env.MONGO_URI || 'mongodb://localhost:27017/zeni';
-  }
+  },
 });
 
 const isPositiveNumber = (value: number) => Number.isFinite(value) && value > 0;
@@ -115,7 +123,9 @@ export function validateRuntimeEnv() {
     errors.push('PAY_STALE_MINUTES must be a positive number.');
   }
   if ((env.adminRequireTailnet || env.payAdminRequireTailnet) && !env.tailnetExpectedCidrs.length) {
-    errors.push('TAILNET_EXPECTED_CIDRS must define at least one CIDR when tailnet enforcement is enabled.');
+    errors.push(
+      'TAILNET_EXPECTED_CIDRS must define at least one CIDR when tailnet enforcement is enabled.'
+    );
   }
 
   if (env.nodeEnv === 'production') {

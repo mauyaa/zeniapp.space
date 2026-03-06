@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   Building2,
   Users,
-  Wallet,
   MessageCircle,
   CalendarClock,
   BarChart3,
@@ -14,7 +13,7 @@ import {
   Plus,
   LogOut,
   ChevronRight,
-  Search
+  Search,
 } from 'lucide-react';
 import { BottomNav } from '../components/ui/BottomNav';
 import { useChat } from '../context/ChatContext';
@@ -31,7 +30,7 @@ const tabs = [
   { to: '/agent/messages', label: 'Comms', icon: MessageCircle },
   { to: '/agent/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/agent/verification', label: 'Verification', icon: ShieldCheck },
-  { to: '/agent/settings', label: 'Settings', icon: Settings }
+  { to: '/agent/settings', label: 'Settings', icon: Settings },
 ];
 
 const mobileTabs = [
@@ -39,7 +38,7 @@ const mobileTabs = [
   { to: '/agent/listings', label: 'Listings', icon: Building2 },
   { to: '/agent/leads', label: 'Leads', icon: Users },
   { to: '/agent/messages', label: 'Messages', icon: MessageCircle },
-  { to: '/agent/settings', label: 'Settings', icon: Settings }
+  { to: '/agent/settings', label: 'Settings', icon: Settings },
 ];
 
 export function AgentLayout() {
@@ -80,25 +79,34 @@ export function AgentLayout() {
       <aside className="hidden xl:flex w-64 flex-col justify-between border-r border-black/10 bg-white py-6 z-20 flex-shrink-0">
         <div>
           <div className="px-6 mb-12">
-            <span className="text-2xl font-serif font-bold tracking-tight text-black">ZENI<span className="text-green-500">.</span></span>
-            <span className="text-[9px] font-bold uppercase tracking-widest block mt-1 text-black/60">Partner Portal</span>
+            <span className="text-2xl font-serif font-bold tracking-tight text-black">
+              ZENI<span className="text-green-500">.</span>
+            </span>
+            <span className="text-[9px] font-bold uppercase tracking-widest block mt-1 text-black/60">
+              Partner Portal
+            </span>
           </div>
 
           <nav className="space-y-1 px-3" aria-label="Main sidebar navigation">
             {tabs.map((tab) => {
               const Icon = tab.icon;
-              const active = location.pathname === tab.to || location.pathname.startsWith(`${tab.to}/`);
+              const active =
+                location.pathname === tab.to || location.pathname.startsWith(`${tab.to}/`);
               const showBadge = tab.to === '/agent/messages' && unread > 0;
               return (
                 <NavLink
                   key={tab.to}
                   to={tab.to}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-sm transition-all ${
-                    active ? 'bg-black text-white' : 'text-black/60 hover:bg-black/5 hover:text-black'
+                    active
+                      ? 'bg-black text-white'
+                      : 'text-black/60 hover:bg-black/5 hover:text-black'
                   }`}
                 >
                   <Icon className="w-4 h-4 flex-shrink-0" />
-                  <span className="text-[11px] font-bold uppercase tracking-[0.15em] flex-1">{tab.label}</span>
+                  <span className="text-[11px] font-bold uppercase tracking-[0.15em] flex-1">
+                    {tab.label}
+                  </span>
                   {showBadge && (
                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-orange-500 text-white">
                       {unread > 99 ? '99+' : unread}
@@ -116,7 +124,9 @@ export function AgentLayout() {
               {user?.name?.charAt(0) || 'A'}
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-wide truncate">{user?.name || 'Agent'}</p>
+              <p className="text-xs font-bold uppercase tracking-wide truncate">
+                {user?.name || 'Agent'}
+              </p>
               <p className="text-[10px] text-gray-400">Senior Agent</p>
             </div>
           </div>

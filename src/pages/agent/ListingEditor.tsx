@@ -6,7 +6,8 @@ import {
   createAgentListing,
   updateAgentListing,
   submitAgentListing,
-  fetchAgentListing
+  fetchAgentListing,
+  getToken,
 } from '../../lib/api';
 import type { AgentListing } from '../../lib/api';
 import { errors } from '../../constants/messages';
@@ -23,6 +24,7 @@ export function ListingEditorPage() {
 
   const [loading, setLoading] = useState(Boolean(listingId));
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
   const [hasLocalDraft, setHasLocalDraft] = useState(false);
   const [form, setForm] = useState({
@@ -42,30 +44,42 @@ export function ListingEditorPage() {
     area: '',
     lat: '',
     lng: '',
-    imageUrl: ''
+    imageUrl: '',
   });
 
-  const hydrateForm = useCallback((data: AgentListing & { description?: string; location?: { address?: string; area?: string; coordinates?: number[] }; images?: { url?: string }[]; amenities?: string[] }) => {
-    setForm({
-      title: data.title || '',
-      category: (data as Record<string, unknown>).category as string || '',
-      description: (data as Record<string, unknown>).description as string || '',
-      price: data.price?.toString?.() || '',
-      currency: data.currency || 'KES',
-      purpose: data.purpose || 'rent',
-      beds: (data as Record<string, unknown>).beds?.toString?.() || '',
-      baths: (data as Record<string, unknown>).baths?.toString?.() || '',
-      sqm: (data as Record<string, unknown>).sqm?.toString?.() || '',
-      type: data.type || '',
-      amenities: Array.isArray((data as Record<string, unknown>).amenities) ? ((data as Record<string, unknown>).amenities as string[]).join(', ') : '',
-      address: data.location?.address || (data.location as { address?: string })?.address || '',
-      city: (data.location as { city?: string })?.city || '',
-      area: (data.location as { area?: string })?.area || '',
-      lat: (data.location as { coordinates?: number[] })?.coordinates?.[1]?.toString?.() || '',
-      lng: (data.location as { coordinates?: number[] })?.coordinates?.[0]?.toString?.() || '',
-      imageUrl: ((data as Record<string, unknown>).images as { url?: string }[])?.[0]?.url || ''
-    });
-  }, []);
+  const hydrateForm = useCallback(
+    (
+      data: AgentListing & {
+        description?: string;
+        location?: { address?: string; area?: string; coordinates?: number[] };
+        images?: { url?: string }[];
+        amenities?: string[];
+      }
+    ) => {
+      setForm({
+        title: data.title || '',
+        category: ((data as Record<string, unknown>).category as string) || '',
+        description: ((data as Record<string, unknown>).description as string) || '',
+        price: data.price?.toString?.() || '',
+        currency: data.currency || 'KES',
+        purpose: data.purpose || 'rent',
+        beds: (data as Record<string, unknown>).beds?.toString?.() || '',
+        baths: (data as Record<string, unknown>).baths?.toString?.() || '',
+        sqm: (data as Record<string, unknown>).sqm?.toString?.() || '',
+        type: data.type || '',
+        amenities: Array.isArray((data as Record<string, unknown>).amenities)
+          ? ((data as Record<string, unknown>).amenities as string[]).join(', ')
+          : '',
+        address: data.location?.address || (data.location as { address?: string })?.address || '',
+        city: (data.location as { city?: string })?.city || '',
+        area: (data.location as { area?: string })?.area || '',
+        lat: (data.location as { coordinates?: number[] })?.coordinates?.[1]?.toString?.() || '',
+        lng: (data.location as { coordinates?: number[] })?.coordinates?.[0]?.toString?.() || '',
+        imageUrl: ((data as Record<string, unknown>).images as { url?: string }[])?.[0]?.url || '',
+      });
+    },
+    []
+  );
 
   useEffect(() => {
     if (!listingId) return;
@@ -126,15 +140,26 @@ export function ListingEditorPage() {
         coordinates: [lng, lat],
         address: form.address.trim() || undefined,
         city: form.city.trim() || undefined,
-        area: form.area.trim() || undefined
+        area: form.area.trim() || undefined,
       },
-      images: form.imageUrl ? [{ url: form.imageUrl.trim(), isPrimary: true }] : []
+      images: form.imageUrl ? [{ url: form.imageUrl.trim(), isPrimary: true }] : [],
     };
   }, [form]);
 
   const completeness = useMemo(() => {
     const required = ['title', 'price', 'lat', 'lng', 'imageUrl'];
-    const optional = ['category', 'description', 'beds', 'baths', 'sqm', 'type', 'amenities', 'address', 'city', 'area'];
+    const optional = [
+      'category',
+      'description',
+      'beds',
+      'baths',
+      'sqm',
+      'type',
+      'amenities',
+      'address',
+      'city',
+      'area',
+    ];
     const hasValue = (value: string) => Boolean(value && String(value).trim().length);
     const f = form as Record<string, string>;
     const total = required.length + optional.length;
@@ -165,9 +190,9 @@ export function ListingEditorPage() {
     try {
       let listing: AgentListing;
       if (isEdit && listingId) {
-        listing = await updateAgentListing(listingId, payload);
+        listing = (await updateAgentListing(listingId, payload)) as AgentListing;
       } else {
-        listing = await createAgentListing(payload) as AgentListing;
+        listing = (await createAgentListing(payload)) as AgentListing;
         navigate(`/agent/listings/${listing._id}/edit`, { replace: true });
       }
 
@@ -190,13 +215,55 @@ export function ListingEditorPage() {
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const token = getToken();
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/upload/image`,
+        {
+          method: 'POST',
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: formData,
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const data = await res.json();
+      if (data.url) {
+        setForm((f) => ({ ...f, imageUrl: data.url }));
+        success('Image uploaded successfully');
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to upload image';
+      error(message);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-serif text-black mb-2">{isEdit ? 'Edit listing' : 'Create listing'}</h1>
+          <h1 className="text-3xl font-serif text-black mb-2">
+            {isEdit ? 'Edit listing' : 'Create listing'}
+          </h1>
           <p className="text-sm text-gray-500">
-            {isEdit ? `Listing ID: ${listingId}` : 'Build a complete, review-ready listing with media and map precision.'}
+            {isEdit
+              ? `Listing ID: ${listingId}`
+              : 'Build a complete, review-ready listing with media and map precision.'}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -229,7 +296,9 @@ export function ListingEditorPage() {
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         <div className="rounded-sm border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Completeness</div>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+            Completeness
+          </div>
           <div className="text-2xl font-semibold text-black mt-1">{completeness}%</div>
         </div>
         <div className="rounded-sm border border-gray-200 bg-white p-6 shadow-sm">
@@ -237,7 +306,9 @@ export function ListingEditorPage() {
           <div className="text-2xl font-semibold text-black mt-1">{isEdit ? 'Editing' : 'New'}</div>
         </div>
         <div className="rounded-sm border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Currency</div>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+            Currency
+          </div>
           <div className="text-2xl font-semibold text-black mt-1">{form.currency}</div>
         </div>
       </div>
@@ -301,7 +372,9 @@ export function ListingEditorPage() {
                 >
                   <option value="">Property type</option>
                   {LISTING_TYPES.map((t) => (
-                    <option key={t} value={t}>{t}</option>
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
                   ))}
                 </select>
                 <input
@@ -369,12 +442,38 @@ export function ListingEditorPage() {
 
             <div className="rounded-sm border border-gray-200 bg-white shadow-sm p-5 space-y-3">
               <div className="text-sm font-semibold text-slate-900">Media and amenities</div>
-              <input
-                value={form.imageUrl}
-                onChange={(e) => setForm((f) => ({ ...f, imageUrl: e.target.value }))}
-                className={fieldClass}
-                placeholder="Primary image URL"
-              />
+
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                  <div className="flex-1 w-full">
+                    <input
+                      value={form.imageUrl}
+                      onChange={(e) => setForm((f) => ({ ...f, imageUrl: e.target.value }))}
+                      className={fieldClass}
+                      placeholder="Primary image URL"
+                    />
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={uploadingImage}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                    />
+                    <Button type="button" variant="secondary" disabled={uploadingImage}>
+                      {uploadingImage ? 'Uploading...' : 'Upload Image'}
+                    </Button>
+                  </div>
+                </div>
+
+                {form.imageUrl && (
+                  <div className="mt-2 text-sm text-gray-500">
+                    Image selected. It will appear in the live preview.
+                  </div>
+                )}
+              </div>
+
               <input
                 value={form.amenities}
                 onChange={(e) => setForm((f) => ({ ...f, amenities: e.target.value }))}
@@ -394,15 +493,21 @@ export function ListingEditorPage() {
                   </div>
                 )}
                 <div className="font-semibold text-black">{form.title || 'Listing title'}</div>
-                <div className="mt-1">{form.currency} {form.price || '0'}</div>
+                <div className="mt-1">
+                  {form.currency} {form.price || '0'}
+                </div>
                 <div className="mt-1 text-xs text-gray-500">
-                  {form.city || 'City'} {form.area ? `- ${form.area}` : ''}{form.sqm ? ` • ${form.sqm} sq ft` : ''}
+                  {form.city || 'City'} {form.area ? `- ${form.area}` : ''}
+                  {form.sqm ? ` • ${form.sqm} sq ft` : ''}
                 </div>
               </div>
               <div className="space-y-1">
                 <div className="text-xs uppercase tracking-[0.16em] text-gray-500">Readiness</div>
                 <div className="h-2 w-full rounded-full bg-gray-100">
-                  <div className="h-2 rounded-full bg-green-600" style={{ width: `${completeness}%` }} />
+                  <div
+                    className="h-2 rounded-full bg-green-600"
+                    style={{ width: `${completeness}%` }}
+                  />
                 </div>
                 <div className="text-xs text-gray-500">{completeness}% completed</div>
               </div>

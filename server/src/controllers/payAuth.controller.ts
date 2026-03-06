@@ -1,7 +1,12 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { authenticate } from '../services/auth.service';
-import { createPaySession, rotatePaySession, signPayAccessToken, invalidatePaySession } from '../services/payAuth.service';
+import {
+  createPaySession,
+  rotatePaySession,
+  signPayAccessToken,
+  invalidatePaySession,
+} from '../services/payAuth.service';
 import { UserModel } from '../models/User';
 import { PaySessionModel } from '../models/PaySession';
 import { PayAuthRequest } from '../middlewares/payAuth';
@@ -10,15 +15,15 @@ import { AuditLogModel } from '../models/AuditLog';
 
 const loginSchema = z.object({
   emailOrPhone: z.string(),
-  password: z.string()
+  password: z.string(),
 });
 
 const refreshSchema = z.object({
-  refreshToken: z.string()
+  refreshToken: z.string(),
 });
 
 const stepUpSchema = z.object({
-  code: z.string().min(4)
+  code: z.string().min(4),
 });
 
 export async function payLogin(req: Request, res: Response) {
@@ -30,7 +35,7 @@ export async function payLogin(req: Request, res: Response) {
 
   const { accessToken, refreshToken, sessionId, expiresAt } = await createPaySession(user, {
     userAgent: req.headers['user-agent'],
-    ip: req.ip
+    ip: req.ip,
   });
 
   await AuditLogModel.create({
@@ -39,7 +44,7 @@ export async function payLogin(req: Request, res: Response) {
     action: 'pay_login',
     entityType: 'pay_session',
     entityId: sessionId,
-    after: { ip: req.ip, ua: req.headers['user-agent'] }
+    after: { ip: req.ip, ua: req.headers['user-agent'] },
   });
 
   res.json({
@@ -47,14 +52,15 @@ export async function payLogin(req: Request, res: Response) {
     refreshToken,
     sessionId,
     refreshExpiresAt: expiresAt,
-    user: { id: user.id, name: user.name, role: user.role }
+    user: { id: user.id, name: user.name, role: user.role },
   });
 }
 
 export async function payRefresh(req: Request, res: Response) {
   const body = refreshSchema.parse(req.body);
   const rotated = await rotatePaySession(body.refreshToken);
-  if (!rotated) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Invalid refresh token' });
+  if (!rotated)
+    return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Invalid refresh token' });
 
   const userDoc = await UserModel.findById(rotated.session.userId);
   if (!userDoc) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Invalid session' });
@@ -68,13 +74,13 @@ export async function payRefresh(req: Request, res: Response) {
     actorRole: userDoc.role,
     action: 'pay_refresh',
     entityType: 'pay_session',
-    entityId: rotated.session.id
+    entityId: rotated.session.id,
   });
   res.json({
     accessToken,
     refreshToken: rotated.refreshToken,
     refreshExpiresAt: rotated.expiresAt,
-    user: { id: userDoc.id, name: userDoc.name, role: userDoc.role }
+    user: { id: userDoc.id, name: userDoc.name, role: userDoc.role },
   });
 }
 
@@ -87,7 +93,7 @@ export async function payLogout(req: PayAuthRequest, res: Response) {
       actorRole: req.user.role,
       action: 'pay_logout',
       entityType: 'pay_session',
-      entityId: req.paySession.id
+      entityId: req.paySession.id,
     });
   }
   res.status(204).end();
@@ -104,11 +110,15 @@ export async function payStepUp(req: PayAuthRequest, res: Response) {
   const configured = env.payStepUpCode;
   const isProd = env.nodeEnv === 'production';
   if (isProd && !configured) {
-    return res.status(500).json({ code: 'STEP_UP_CONFIG_REQUIRED', message: 'Step-up configuration missing' });
+    return res
+      .status(500)
+      .json({ code: 'STEP_UP_CONFIG_REQUIRED', message: 'Step-up configuration missing' });
   }
   if (configured) {
     if (body.code !== configured) {
-      return res.status(403).json({ code: 'STEP_UP_INVALID', message: 'Invalid verification code' });
+      return res
+        .status(403)
+        .json({ code: 'STEP_UP_INVALID', message: 'Invalid verification code' });
     }
   } else if (!isProd && !body.code) {
     return res.status(403).json({ code: 'STEP_UP_INVALID', message: 'Verification code required' });
@@ -138,7 +148,7 @@ export async function payLogoutAll(req: PayAuthRequest, res: Response) {
     actorRole: req.user.role,
     action: 'pay_logout_all',
     entityType: 'pay_session',
-    entityId: req.user.id
+    entityId: req.user.id,
   });
   res.status(204).end();
 }

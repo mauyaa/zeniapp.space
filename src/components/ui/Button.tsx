@@ -17,6 +17,8 @@ export type ButtonSize = 'sm' | 'md' | 'lg' | 'xl' | 'zeni-sm' | 'zeni-md';
 export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
   variant?: ButtonVariant;
   size?: ButtonSize;
+  /** Optional semantic tone for upstream APIs; currently maps to variant styles. */
+  tone?: string;
   loading?: boolean;
   loadingText?: string;
   leftIcon?: React.ReactNode;
@@ -34,8 +36,10 @@ const variantStyles: Record<ButtonVariant, string> = {
     'bg-white text-black hover:bg-black/5 active:bg-black/10 focus-visible:ring-black/20 border border-black/10',
   outline:
     'border border-black/20 text-black hover:bg-black/5 active:bg-black/10 focus-visible:ring-black/20 bg-transparent',
-  ghost: 'text-black/70 hover:bg-black/5 hover:text-black focus-visible:ring-black/20 bg-transparent',
-  danger: 'bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 focus-visible:ring-rose-500 shadow-sm shadow-rose-900/10',
+  ghost:
+    'text-black/70 hover:bg-black/5 hover:text-black focus-visible:ring-black/20 bg-transparent',
+  danger:
+    'bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 focus-visible:ring-rose-500 shadow-sm shadow-rose-900/10',
   'zeni-primary':
     'bg-zeni-foreground text-white border border-zeni-foreground rounded transition-colors duration-200 hover:bg-white hover:text-zeni-foreground hover:border-zinc-200 focus-visible:ring-zinc-400',
   'zeni-secondary':
@@ -50,7 +54,8 @@ const sizeStyles: Record<ButtonSize, string> = {
   md: 'h-11 px-4 text-sm gap-2 rounded-xl',
   lg: 'h-11 px-5 text-base gap-2.5 rounded-xl',
   xl: 'h-11 px-6 text-lg gap-3 rounded-xl',
-  'zeni-sm': 'h-9 px-3 text-[10px] font-mono font-semibold uppercase tracking-widest gap-1.5 rounded-xl',
+  'zeni-sm':
+    'h-9 px-3 text-[10px] font-mono font-semibold uppercase tracking-widest gap-1.5 rounded-xl',
   'zeni-md': 'h-11 px-5 text-xs font-mono font-semibold uppercase tracking-widest gap-2 rounded-xl',
 };
 

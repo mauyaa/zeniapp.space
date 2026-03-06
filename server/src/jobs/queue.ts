@@ -2,7 +2,12 @@
  * Pluggable job queue. Default in-process; replace with BullMQ/Redis for production scaling.
  * Usage: addJob('saved_search_alerts', {}); then run worker or cron that processes the queue.
  */
-export type JobType = 'saved_search_alerts' | 'email' | 'notification' | 'pay_reconcile' | 'audit_forward';
+export type JobType =
+  | 'saved_search_alerts'
+  | 'email'
+  | 'notification'
+  | 'pay_reconcile'
+  | 'audit_forward';
 
 export interface JobPayload {
   type: JobType;

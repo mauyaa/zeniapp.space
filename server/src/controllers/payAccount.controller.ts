@@ -2,12 +2,17 @@ import { Response } from 'express';
 import { z } from 'zod';
 import { PayAuthRequest } from '../middlewares/payAuth';
 import { AuthRequest } from '../middlewares/auth';
-import { ensurePayAccount, listPayAccounts, setPayAccountStatus, updatePayAccountDefaults } from '../services/payAccount.service';
+import {
+  ensurePayAccount,
+  listPayAccounts,
+  setPayAccountStatus,
+  updatePayAccountDefaults,
+} from '../services/payAccount.service';
 import { AuditLogModel } from '../models/AuditLog';
 
 const updateSchema = z.object({
   defaultCurrency: z.string().optional(),
-  defaultMethod: z.enum(['mpesa_stk', 'card', 'bank_transfer']).optional()
+  defaultMethod: z.enum(['mpesa_stk', 'card', 'bank_transfer']).optional(),
 });
 
 export async function getPayAccountController(req: PayAuthRequest, res: Response) {
@@ -27,7 +32,7 @@ export async function updatePayAccountController(req: PayAuthRequest, res: Respo
     action: 'pay_account_update',
     entityType: 'PayAccount',
     entityId: account.id,
-    after: account.toObject()
+    after: account.toObject(),
   });
   res.json(account);
 }
@@ -49,7 +54,7 @@ export async function adminSetPayAccountStatus(req: AuthRequest, res: Response) 
     action: `pay_account_${body.status}`,
     entityType: 'PayAccount',
     entityId: account.id,
-    after: account.toObject()
+    after: account.toObject(),
   });
   res.json(account);
 }

@@ -12,12 +12,12 @@ const reasonLabel: Record<string, string> = {
   test_bypass: 'Bypassed in tests',
   ip_missing: 'Missing source IP',
   ip_not_allowed: 'IP not on allowlist',
-  tailnet_required: 'Tailnet required'
+  tailnet_required: 'Tailnet required',
 };
 
 const surfaceLabel: Record<string, string> = {
   admin: 'Admin',
-  pay_admin: 'Pay Admin'
+  pay_admin: 'Pay Admin',
 };
 
 function renderReason(reason?: string) {
@@ -35,7 +35,9 @@ function DecisionRow({ row }: { row: NetworkAccessDecision }) {
   return (
     <div className="grid gap-3 border-b border-gray-100 py-3 px-6 text-sm hover:bg-gray-50 transition-colors md:grid-cols-[140px_110px_180px_1fr_130px] min-w-[640px]">
       <div className="flex items-center">
-        <span className={`inline-block px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-widest border ${allowed ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+        <span
+          className={`inline-block px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-widest border ${allowed ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}
+        >
           {allowed ? 'Allowed' : 'Denied'}
         </span>
       </div>
@@ -45,7 +47,9 @@ function DecisionRow({ row }: { row: NetworkAccessDecision }) {
         {renderReason(row.reason)}
         {row.path ? <span className="ml-2 text-gray-400">({row.path})</span> : null}
       </div>
-      <div className="text-xs text-gray-500">{formatDistanceToNow(new Date(row.createdAt), { addSuffix: true })}</div>
+      <div className="text-xs text-gray-500">
+        {formatDistanceToNow(new Date(row.createdAt), { addSuffix: true })}
+      </div>
     </div>
   );
 }
@@ -61,7 +65,11 @@ export function NetworkAccessPage() {
       const res = await fetchNetworkAccessStatus();
       setData(res);
     } catch (err) {
-      logger.error('Failed to load network access status', {}, err instanceof Error ? err : undefined);
+      logger.error(
+        'Failed to load network access status',
+        {},
+        err instanceof Error ? err : undefined
+      );
       push({ title: 'Load failed', description: errors.generic, tone: 'error' });
     } finally {
       setLoading(false);
@@ -81,9 +89,17 @@ export function NetworkAccessPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-serif text-black mb-2">Network Access</h1>
-          <p className="text-sm text-gray-500">Read-only visibility into privileged route network controls and access decisions.</p>
+          <p className="text-sm text-gray-500">
+            Read-only visibility into privileged route network controls and access decisions.
+          </p>
         </div>
-        <Button variant="admin-primary" size="sm" onClick={() => void load()} loading={loading} className="h-9 px-4 text-xs font-medium rounded-sm shadow-sm">
+        <Button
+          variant="admin-primary"
+          size="sm"
+          onClick={() => void load()}
+          loading={loading}
+          className="h-9 px-4 text-xs font-medium rounded-sm shadow-sm"
+        >
           Refresh
         </Button>
       </div>
@@ -95,34 +111,54 @@ export function NetworkAccessPage() {
           </div>
           <div className="p-6 grid gap-4 sm:grid-cols-2">
             <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-4">
-              <div className="text-xs font-semibold uppercase tracking-widest text-gray-500">Admin tailnet enforcement</div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+                Admin tailnet enforcement
+              </div>
               <div className="mt-2 flex items-center gap-2">
-                <span className={`px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border ${adminEnforced ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                <span
+                  className={`px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border ${adminEnforced ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}
+                >
                   {adminEnforced ? 'ON' : 'OFF'}
                 </span>
-                <span className="text-sm text-gray-600">{adminEnforced ? 'Only tailnet IPs allowed' : 'Tailnet optional'}</span>
+                <span className="text-sm text-gray-600">
+                  {adminEnforced ? 'Only tailnet IPs allowed' : 'Tailnet optional'}
+                </span>
               </div>
             </div>
             <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-4">
-              <div className="text-xs font-semibold uppercase tracking-widest text-gray-500">Pay-admin tailnet enforcement</div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+                Pay-admin tailnet enforcement
+              </div>
               <div className="mt-2 flex items-center gap-2">
-                <span className={`px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border ${payAdminEnforced ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                <span
+                  className={`px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border ${payAdminEnforced ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}
+                >
                   {payAdminEnforced ? 'ON' : 'OFF'}
                 </span>
-                <span className="text-sm text-gray-600">{payAdminEnforced ? 'Only tailnet IPs allowed' : 'Tailnet optional'}</span>
+                <span className="text-sm text-gray-600">
+                  {payAdminEnforced ? 'Only tailnet IPs allowed' : 'Tailnet optional'}
+                </span>
               </div>
             </div>
             <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-4">
-              <div className="text-xs font-semibold uppercase tracking-widest text-gray-500">Admin IP allowlist mode</div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+                Admin IP allowlist mode
+              </div>
               <div className="mt-2 flex items-center gap-2">
-                <span className={`px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border ${data?.policy.adminIpAllowlist.mode === 'restricted' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                <span
+                  className={`px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border ${data?.policy.adminIpAllowlist.mode === 'restricted' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}
+                >
                   {(data?.policy.adminIpAllowlist.mode || 'open').toUpperCase()}
                 </span>
-                <span className="text-sm text-gray-600">{(data?.policy.adminIpAllowlist.entries || []).length} entries</span>
+                <span className="text-sm text-gray-600">
+                  {(data?.policy.adminIpAllowlist.entries || []).length} entries
+                </span>
               </div>
             </div>
             <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-4">
-              <div className="text-xs font-semibold uppercase tracking-widest text-gray-500">Policy loaded</div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+                Policy loaded
+              </div>
               <div className="mt-2 text-sm text-gray-700">
                 {data?.policy.loadedAt ? new Date(data.policy.loadedAt).toLocaleString() : 'n/a'}
               </div>
@@ -136,33 +172,53 @@ export function NetworkAccessPage() {
           </div>
           <div className="p-6 space-y-4">
             <div className="rounded-lg border border-gray-200 bg-gray-50/50 px-4 py-3">
-              <div className="text-xs font-semibold uppercase tracking-widest text-gray-500">Source IP</div>
-              <div className="mt-1 text-sm font-mono text-gray-700">{data?.request.sourceIp || 'n/a'}</div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+                Source IP
+              </div>
+              <div className="mt-1 text-sm font-mono text-gray-700">
+                {data?.request.sourceIp || 'n/a'}
+              </div>
             </div>
             <div className="rounded-lg border border-gray-200 bg-gray-50/50 px-4 py-3">
-              <div className="text-xs font-semibold uppercase tracking-widest text-gray-500">Tailnet detected</div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+                Tailnet detected
+              </div>
               <div className="mt-1">
-                <span className={`inline-block px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border ${data?.request.tailnetDetected ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                <span
+                  className={`inline-block px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border ${data?.request.tailnetDetected ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}
+                >
                   {data?.request.tailnetDetected ? 'YES' : 'NO'}
                 </span>
               </div>
             </div>
             <div className="rounded-lg border border-gray-200 bg-gray-50/50 px-4 py-3">
-              <div className="text-xs font-semibold uppercase tracking-widest text-gray-500">Admin access decision</div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+                Admin access decision
+              </div>
               <div className="mt-1 flex items-center gap-2 flex-wrap">
-                <span className={`inline-block px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border ${data?.request.admin.allowed ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                <span
+                  className={`inline-block px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border ${data?.request.admin.allowed ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}
+                >
                   {data?.request.admin.allowed ? 'ALLOWED' : 'DENIED'}
                 </span>
-                <span className="text-xs text-gray-500">{renderReason(data?.request.admin.reason)}</span>
+                <span className="text-xs text-gray-500">
+                  {renderReason(data?.request.admin.reason)}
+                </span>
               </div>
             </div>
             <div className="rounded-lg border border-gray-200 bg-gray-50/50 px-4 py-3">
-              <div className="text-xs font-semibold uppercase tracking-widest text-gray-500">Pay-admin access decision</div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+                Pay-admin access decision
+              </div>
               <div className="mt-1 flex items-center gap-2 flex-wrap">
-                <span className={`inline-block px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border ${data?.request.payAdmin.allowed ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                <span
+                  className={`inline-block px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border ${data?.request.payAdmin.allowed ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}
+                >
                   {data?.request.payAdmin.allowed ? 'ALLOWED' : 'DENIED'}
                 </span>
-                <span className="text-xs text-gray-500">{renderReason(data?.request.payAdmin.reason)}</span>
+                <span className="text-xs text-gray-500">
+                  {renderReason(data?.request.payAdmin.reason)}
+                </span>
               </div>
             </div>
           </div>
@@ -174,7 +230,9 @@ export function NetworkAccessPage() {
           Recent network access decisions
         </div>
         {decisions.length === 0 ? (
-          <div className="px-6 py-10 text-sm text-gray-500">No network-access decisions logged yet.</div>
+          <div className="px-6 py-10 text-sm text-gray-500">
+            No network-access decisions logged yet.
+          </div>
         ) : (
           <div className="min-w-[640px]">
             {decisions.map((row) => (

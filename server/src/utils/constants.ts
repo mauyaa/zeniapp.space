@@ -15,7 +15,7 @@ export const listingTypes = [
   'Retail',
   'Warehouse',
   'Land',
-  'Other'
+  'Other',
 ] as const;
 export type ListingType = (typeof listingTypes)[number];
 export const conversationStatuses = ['active', 'scheduled', 'closed'] as const;
@@ -30,7 +30,7 @@ export const viewingStatuses = [
   'declined',
   'completed',
   'canceled',
-  'no_show'
+  'no_show',
 ] as const;
 /** Minimum hours from now before a viewing slot can be requested (EAT). */
 export const VIEWING_LEAD_TIME_HOURS = 24;
@@ -41,8 +41,13 @@ export const LISTING_MAX_IMAGES = 15;
 export const LISTING_MAX_VIDEOS = 0;
 export const LISTING_IMAGE_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 export const listingAvailabilityStatuses = ['available', 'under_offer', 'sold', 'let'] as const;
-export const listingRejectionCodes = ['photo_quality', 'missing_docs', 'policy_violation', 'duplicate', 'other'] as const;
+export const listingRejectionCodes = [
+  'photo_quality',
+  'missing_docs',
+  'policy_violation',
+  'duplicate',
+  'other',
+] as const;
 
 /** EARB (Estate Agents Registration Board) Kenya — portal for manual license verification. */
 export const EARB_VERIFY_URL = 'https://earb.go.ke';
-

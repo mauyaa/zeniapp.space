@@ -1,7 +1,10 @@
 import { Response } from 'express';
 import { z } from 'zod';
 import { AuthRequest } from '../middlewares/auth';
-import { evaluatePrivilegedRequest, getPrivilegedNetworkPolicySnapshot } from '../middlewares/ipAllowlist';
+import {
+  evaluatePrivilegedRequest,
+  getPrivilegedNetworkPolicySnapshot,
+} from '../middlewares/ipAllowlist';
 import {
   verifyAgent,
   markEarbVerified,
@@ -19,7 +22,8 @@ import {
   listAllUsers,
   updateUserStatusService,
   deleteUserService,
-  listNetworkAccessDecisions
+  deleteListingService,
+  listNetworkAccessDecisions,
 } from '../services/admin.service';
 import { getAdminDashboardData } from '../services/dashboard.service';
 import { getRateLimitMetrics } from '../services/rateMetrics';
@@ -109,6 +113,17 @@ export async function verifyListing(req: AuthRequest, res: Response) {
   res.json(updated);
 }
 
+export async function deleteListing(req: AuthRequest, res: Response) {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
+  try {
+    await deleteListingService(userId, req.params.id);
+    res.status(204).end();
+  } catch (error) {
+    res.status(404).json({ code: 'NOT_FOUND', message: (error as Error).message });
+  }
+}
+
 export async function analytics(_req: AuthRequest, res: Response) {
   res.json(await analyticsCounts());
 }
@@ -119,12 +134,15 @@ export async function dashboard(_req: AuthRequest, res: Response) {
 
 export async function audit(req: AuthRequest, res: Response) {
   const schema = z.object({
-    actorId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
+    actorId: z
+      .string()
+      .regex(/^[a-f\d]{24}$/i)
+      .optional(),
     actorRole: z.string().optional(),
     entityType: z.string().optional(),
     entityId: z.string().optional(),
     action: z.string().optional(),
-    limit: z.coerce.number().min(1).max(500).optional()
+    limit: z.coerce.number().min(1).max(500).optional(),
   });
   const filters = schema.parse(req.query);
   res.json(await auditLogs(filters));

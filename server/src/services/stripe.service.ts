@@ -32,7 +32,9 @@ export interface CreatePaymentIntentParams {
  * Create a Stripe PaymentIntent for a portal card payment. Caller stores paymentIntent.id in PayTransaction.ref.
  * Returns clientSecret for frontend and paymentIntentId for ref.
  */
-export async function createPaymentIntent(params: CreatePaymentIntentParams): Promise<{ clientSecret: string; paymentIntentId: string } | null> {
+export async function createPaymentIntent(
+  params: CreatePaymentIntentParams
+): Promise<{ clientSecret: string; paymentIntentId: string } | null> {
   const s = getStripe();
   if (!s) return null;
 
@@ -47,27 +49,34 @@ export async function createPaymentIntent(params: CreatePaymentIntentParams): Pr
       payTransactionId: params.payTransactionId,
       userId: params.userId,
       purpose: params.purpose || '',
-      referenceId: params.referenceId || ''
-    }
+      referenceId: params.referenceId || '',
+    },
   });
 
-  return { clientSecret: paymentIntent.client_secret!, paymentIntentId: paymentIntent.id };
+  if (!paymentIntent.client_secret) {
+    throw new Error('Stripe did not return a client secret');
+  }
+
+  return { clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id };
 }
 
 /**
  * Handle Stripe webhook payment_intent.succeeded: find our PayTransaction by ref (pi_xxx), mark paid, receipt, side effects.
  */
-export async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent): Promise<void> {
+export async function handlePaymentIntentSucceeded(
+  paymentIntent: Stripe.PaymentIntent
+): Promise<void> {
   const tx = await PayTransactionModel.findOne({ ref: paymentIntent.id });
   if (!tx || tx.status === 'paid') return;
 
   const receiptNumber =
     paymentIntent.latest_charge && typeof paymentIntent.latest_charge === 'object'
-      ? (paymentIntent.latest_charge as { receipt_url?: string }).receipt_url || `STRIPE-${Date.now()}-${tx.id.slice(-6)}`
+      ? (paymentIntent.latest_charge as { receipt_url?: string }).receipt_url ||
+        `STRIPE-${Date.now()}-${tx.id.slice(-6)}`
       : `STRIPE-${Date.now()}-${tx.id.slice(-6)}`;
 
   await markTransactionPaidAndNotify(tx, receiptNumber, paymentIntent.id, {
     setStatusToPaid: true,
-    rawCallback: { stripe: true, paymentIntentId: paymentIntent.id }
+    rawCallback: { stripe: true, paymentIntentId: paymentIntent.id },
   });
 }

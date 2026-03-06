@@ -7,12 +7,14 @@ import { env } from './env';
 
 let Sentry: any = {
   // No-op shim to keep middleware chain intact when Sentry is disabled
-  init: () => { /* noop */ },
+  init: () => {
+    /* noop */
+  },
   Handlers: {
     requestHandler: () => (_req: any, _res: any, next: any) => next(),
     tracingHandler: () => (_req: any, _res: any, next: any) => next(),
-    errorHandler: () => (_err: any, _req: any, _res: any, next: any) => next()
-  }
+    errorHandler: () => (_err: any, _req: any, _res: any, next: any) => next(),
+  },
 };
 let sentryAvailable = false;
 
@@ -30,7 +32,7 @@ export function initSentry() {
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
     environment: env.nodeEnv,
-    tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE || 0.1)
+    tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE || 0.1),
   });
   return true;
 }

@@ -22,7 +22,7 @@ const SavedSearchSchema = new Schema<SavedSearchDocument>(
     snoozeUntil: { type: Date, default: null },
     shareToken: { type: String, default: null },
     shareTokenExpiresAt: { type: Date, default: null },
-    lastUsedAt: Date
+    lastUsedAt: Date,
   },
   { timestamps: true }
 );
@@ -30,4 +30,7 @@ const SavedSearchSchema = new Schema<SavedSearchDocument>(
 SavedSearchSchema.index({ userId: 1, createdAt: -1 });
 SavedSearchSchema.index({ shareToken: 1 }, { unique: true, sparse: true });
 
-export const SavedSearchModel = mongoose.model<SavedSearchDocument>('SavedSearch', SavedSearchSchema);
+export const SavedSearchModel = mongoose.model<SavedSearchDocument>(
+  'SavedSearch',
+  SavedSearchSchema
+);

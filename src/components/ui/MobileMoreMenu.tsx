@@ -26,7 +26,7 @@ export function MobileMoreMenu({
   title,
   items,
   theme = 'light',
-  className
+  className,
 }: MobileMoreMenuProps) {
   const isDark = theme === 'dark';
 
@@ -61,14 +61,21 @@ export function MobileMoreMenu({
             )}
           >
             <div className="mb-3 flex items-center justify-between">
-              <div className={clsx('text-[11px] font-semibold uppercase tracking-[0.22em]', isDark ? 'text-slate-400' : 'text-slate-500')}>
+              <div
+                className={clsx(
+                  'text-[11px] font-semibold uppercase tracking-[0.22em]',
+                  isDark ? 'text-slate-400' : 'text-slate-500'
+                )}
+              >
                 {title}
               </div>
               <button
                 onClick={onClose}
                 className={clsx(
                   'inline-flex h-8 w-8 items-center justify-center rounded-full border',
-                  isDark ? 'border-white/10 text-slate-400 hover:text-white' : 'border-slate-200 text-slate-500 hover:text-slate-900'
+                  isDark
+                    ? 'border-white/10 text-slate-400 hover:text-white'
+                    : 'border-slate-200 text-slate-500 hover:text-slate-900'
                 )}
                 aria-label="Close"
               >
@@ -91,8 +98,8 @@ export function MobileMoreMenu({
                             ? 'border-amber-300/30 bg-amber-300/10 text-amber-200'
                             : 'border-white/10 bg-white/5 text-slate-300'
                           : isActive
-                          ? 'border-slate-900 bg-slate-900 text-white'
-                          : 'border-slate-200 bg-slate-50 text-slate-700'
+                            ? 'border-slate-900 bg-slate-900 text-white'
+                            : 'border-slate-200 bg-slate-50 text-slate-700'
                       )
                     }
                   >
@@ -108,4 +115,3 @@ export function MobileMoreMenu({
     </>
   );
 }
-

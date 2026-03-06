@@ -9,7 +9,7 @@ export function auditContext(req?: MinimalReq) {
     ip: req.ip,
     userAgent: req.headers['user-agent'],
     requestId: req.requestId,
-    correlationId: req.header('x-correlation-id') || undefined
+    correlationId: req.header('x-correlation-id') || undefined,
   };
 }
 

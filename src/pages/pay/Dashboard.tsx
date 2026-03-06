@@ -16,7 +16,9 @@ export function PayDashboardPage() {
           <div>
             <p className="text-[10px] uppercase tracking-[0.24em] text-slate-500 mb-1">Payments</p>
             <h1 className="text-xl font-semibold text-slate-100">Financial overview</h1>
-            <p className="text-sm text-slate-400 mt-1">Track balances, invoices, and payment history.</p>
+            <p className="text-sm text-slate-400 mt-1">
+              Track balances, invoices, and payment history.
+            </p>
           </div>
           <Button onClick={() => navigate('/pay/invoices')}>
             <CreditCard className="w-3.5 h-3.5 mr-1.5" />
@@ -42,7 +44,8 @@ export function PayDashboardPage() {
           <div className="flex-1">
             <h2 className="text-base font-semibold text-slate-100">M-Pesa quick pay</h2>
             <p className="text-sm text-slate-400 mt-1">
-              Settle your next invoice instantly. An STK push prompt will be sent to your registered phone — no card data stored.
+              Settle your next invoice instantly. An STK push prompt will be sent to your registered
+              phone — no card data stored.
             </p>
             <div className="flex items-center gap-2 mt-3">
               <Button size="sm" onClick={() => navigate('/pay/invoices')}>
@@ -60,9 +63,24 @@ export function PayDashboardPage() {
       {/* Quick links */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {[
-          { label: 'Invoices', icon: FileText, to: '/pay/invoices', desc: 'View and pay pending invoices' },
-          { label: 'Transaction history', icon: Receipt, to: '/pay/history', desc: 'All past payments and receipts' },
-          { label: 'Security center', icon: Shield, to: '/pay/security', desc: 'Phone verification & controls' },
+          {
+            label: 'Invoices',
+            icon: FileText,
+            to: '/pay/invoices',
+            desc: 'View and pay pending invoices',
+          },
+          {
+            label: 'Transaction history',
+            icon: Receipt,
+            to: '/pay/history',
+            desc: 'All past payments and receipts',
+          },
+          {
+            label: 'Security center',
+            icon: Shield,
+            to: '/pay/security',
+            desc: 'Phone verification & controls',
+          },
         ].map((item) => {
           const Icon = item.icon;
           return (

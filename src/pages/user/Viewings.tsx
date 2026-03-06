@@ -1,8 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarClock, MessageCircle, MapPin, ExternalLink, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import {
+  CalendarClock,
+  MessageCircle,
+  MapPin,
+  ExternalLink,
+  Clock,
+  CheckCircle2,
+  XCircle,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { fetchListing, fetchMyViewings, confirmViewingCompleted, type ListingCard } from '../../lib/api';
+import {
+  fetchListing,
+  fetchMyViewings,
+  confirmViewingCompleted,
+  type ListingCard,
+} from '../../lib/api';
 import { listingThumbUrl } from '../../lib/cloudinary';
 import { formatCompactPrice } from '../../lib/format';
 import { useChat } from '../../context/ChatContext';
@@ -16,7 +29,8 @@ import { SectionHeader } from '../../components/ui/SectionHeader';
 import { StatsBar } from '../../components/ui/StatsBar';
 import { Button } from '../../components/ui/Button';
 
-const fallbackImage = 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=800&q=60';
+const fallbackImage =
+  'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=800&q=60';
 
 type Viewing = {
   _id: string;
@@ -40,7 +54,10 @@ const tabs: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: 'declined', label: 'Declined', icon: XCircle },
 ];
 
-const statusConfig: Record<string, { bg: string; text: string; border: string; dot: string; label: string }> = {
+const statusConfig: Record<
+  string,
+  { bg: string; text: string; border: string; dot: string; label: string }
+> = {
   confirmed: {
     bg: 'bg-emerald-50',
     text: 'text-emerald-700',
@@ -110,7 +127,9 @@ export function ViewingsPage() {
   }, []);
 
   useEffect(() => {
-    const missingIds = Array.from(new Set(items.map((v) => v.listingId))).filter((id) => !listingMap[id]);
+    const missingIds = Array.from(new Set(items.map((v) => v.listingId))).filter(
+      (id) => !listingMap[id]
+    );
     if (missingIds.length === 0) return;
     let cancelled = false;
     Promise.all(
@@ -138,7 +157,10 @@ export function ViewingsPage() {
     () => items.filter((v) => new Date(v.date).getTime() > Date.now()).length,
     [items]
   );
-  const confirmedCount = useMemo(() => items.filter((v) => v.status === 'confirmed').length, [items]);
+  const confirmedCount = useMemo(
+    () => items.filter((v) => v.status === 'confirmed').length,
+    [items]
+  );
   const declinedCount = useMemo(() => items.filter((v) => v.status === 'declined').length, [items]);
 
   const filteredItems = useMemo(() => {
@@ -177,10 +199,20 @@ export function ViewingsPage() {
       await confirmViewingCompleted(viewingId);
       setItems((prev) =>
         prev.map((v) =>
-          v._id === viewingId ? { ...v, viewingFeeStatus: 'released' as const, tenantConfirmedAt: new Date().toISOString() } : v
+          v._id === viewingId
+            ? {
+                ...v,
+                viewingFeeStatus: 'released' as const,
+                tenantConfirmedAt: new Date().toISOString(),
+              }
+            : v
         )
       );
-      push({ title: 'Viewing confirmed', description: 'The viewing fee has been released to the agent.', tone: 'success' });
+      push({
+        title: 'Viewing confirmed',
+        description: 'The viewing fee has been released to the agent.',
+        tone: 'success',
+      });
     } catch {
       push({ title: 'Could not confirm', description: 'Please try again.', tone: 'error' });
     }
@@ -231,7 +263,10 @@ export function ViewingsPage() {
       </SectionHeader>
 
       {/* Tab navigation */}
-      <div className="flex items-center gap-1 p-1 bg-zinc-50 border border-zinc-200 rounded-xl w-fit" role="tablist">
+      <div
+        className="flex items-center gap-1 p-1 bg-zinc-50 border border-zinc-200 rounded-xl w-fit"
+        role="tablist"
+      >
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
@@ -285,8 +320,16 @@ export function ViewingsPage() {
           }
           action={
             activeTab === 'all'
-              ? { label: 'Explore listings', onClick: () => navigate('/app/explore'), variant: 'primary' as const }
-              : { label: 'Show all', onClick: () => setActiveTab('all'), variant: 'primary' as const }
+              ? {
+                  label: 'Explore listings',
+                  onClick: () => navigate('/app/explore'),
+                  variant: 'primary' as const,
+                }
+              : {
+                  label: 'Show all',
+                  onClick: () => setActiveTab('all'),
+                  variant: 'primary' as const,
+                }
           }
         />
       ) : (
@@ -320,10 +363,14 @@ export function ViewingsPage() {
                       alt={listing?.title || 'Listing'}
                       className="h-32 sm:h-full w-full object-cover"
                     />
-                    <div className={cn(
-                      'absolute top-3 left-3 flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest',
-                      config.bg, config.text, config.border
-                    )}>
+                    <div
+                      className={cn(
+                        'absolute top-3 left-3 flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest',
+                        config.bg,
+                        config.text,
+                        config.border
+                      )}
+                    >
                       <span className={cn('h-1.5 w-1.5 rounded-full', config.dot)} />
                       {config.label}
                     </div>
@@ -346,6 +393,9 @@ export function ViewingsPage() {
                       <div className="flex items-center gap-4 mt-2.5">
                         <span className="font-mono text-sm font-semibold text-zinc-900">
                           {formatCompactPrice(listing?.price, listing?.currency || 'KES')}
+                          {(listing?.purpose === 'rent' ||
+                            (listing?.category || '').toLowerCase().includes('rent')) &&
+                            ' per month'}
                         </span>
                         <span className="text-zinc-300">|</span>
                         <span className="flex items-center gap-1.5 text-xs text-zinc-600">
@@ -365,10 +415,10 @@ export function ViewingsPage() {
                           {v.viewingFeeStatus === 'released'
                             ? `Fee released · KES ${v.viewingFeeAmount}`
                             : v.viewingFeeStatus === 'held'
-                            ? `Fee held · KES ${v.viewingFeeAmount}`
-                            : v.viewingFeeStatus === 'pending_payment'
-                            ? `Pay KES ${v.viewingFeeAmount} to secure`
-                            : `Viewing fee KES ${v.viewingFeeAmount}`}
+                              ? `Fee held · KES ${v.viewingFeeAmount}`
+                              : v.viewingFeeStatus === 'pending_payment'
+                                ? `Pay KES ${v.viewingFeeAmount} to secure`
+                                : `Viewing fee KES ${v.viewingFeeAmount}`}
                         </p>
                       )}
                     </div>

@@ -28,7 +28,9 @@ const TITLES: Record<string, string> = {
 
 export function RouteTitle() {
   const { pathname } = useLocation();
-  const title = TITLES[pathname] || (pathname.startsWith('/listing/') ? 'Listing' : pathname.startsWith('/pay/') ? 'Pay' : '');
+  const title =
+    TITLES[pathname] ||
+    (pathname.startsWith('/listing/') ? 'Listing' : pathname.startsWith('/pay/') ? 'Pay' : '');
   useDocumentTitle(title || 'Zeni', { skipSuffix: !title });
   return null;
 }

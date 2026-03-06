@@ -1,7 +1,13 @@
 import { Response } from 'express';
 import { z } from 'zod';
 import { AuthRequest } from '../middlewares/auth';
-import { listNotifications, markAllRead, markRead, getNotificationPrefs, updateNotificationPrefs } from '../services/notification.service';
+import {
+  listNotifications,
+  markAllRead,
+  markRead,
+  getNotificationPrefs,
+  updateNotificationPrefs,
+} from '../services/notification.service';
 import { objectIdSchema } from '../utils/validators';
 
 export async function listNotificationsHandler(req: AuthRequest, res: Response) {
@@ -24,7 +30,8 @@ export async function markReadHandler(req: AuthRequest, res: Response) {
   if (!userId) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
   const { id } = z.object({ id: objectIdSchema }).parse({ id: req.params.id });
   const updated = await markRead(userId, id);
-  if (!updated) return res.status(404).json({ code: 'NOT_FOUND', message: 'Notification not found' });
+  if (!updated)
+    return res.status(404).json({ code: 'NOT_FOUND', message: 'Notification not found' });
   res.json(updated);
 }
 
@@ -45,9 +52,9 @@ export async function updatePrefsHandler(req: AuthRequest, res: Response) {
     quietHours: z
       .object({
         start: z.string().regex(/^\d{2}:\d{2}$/),
-        end: z.string().regex(/^\d{2}:\d{2}$/)
+        end: z.string().regex(/^\d{2}:\d{2}$/),
       })
-      .optional()
+      .optional(),
   });
   const prefs = schema.parse(req.body);
   const updated = await updateNotificationPrefs(userId, prefs);

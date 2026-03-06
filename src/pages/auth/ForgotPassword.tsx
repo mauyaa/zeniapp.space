@@ -16,10 +16,14 @@ export function ForgotPasswordPage() {
     try {
       const res = await forgotPassword(emailOrPhone.trim());
       setStatus('sent');
-      if (import.meta.env.DEV && res.resetToken) {
-        setMessage(`Dev token: ${res.resetToken}`);
+      if (res.resetToken) {
+        setMessage(`Success! Your reset code is: ${res.resetToken}`);
+        // Pro-tip: Suggest clicking to reset
+        setTimeout(() => {
+          navigate(`/reset?token=${res.resetToken}`);
+        }, 3000);
       } else {
-        setMessage('Check your inbox for a reset link.');
+        setMessage('Check your inbox (or server logs) for a reset link.');
       }
     } catch (err) {
       setStatus('error');
@@ -45,7 +49,8 @@ export function ForgotPasswordPage() {
           </div>
           <h1 className="text-3xl font-light tracking-tight">Reset your password</h1>
           <p className="text-sm text-slate-500 leading-relaxed">
-            Enter the email or phone you used for ZENI. We&apos;ll send you a secure link to reset your password.
+            Enter the email or phone you used for ZENI. We&apos;ll send you a secure link to reset
+            your password.
           </p>
         </div>
 
@@ -74,6 +79,14 @@ export function ForgotPasswordPage() {
               }`}
             >
               {message}
+              {status === 'sent' && (
+                <Link
+                  to={`/reset?token=${message.split(': ').pop()}`}
+                  className="block mt-2 font-bold underline"
+                >
+                  Click here to set new password now →
+                </Link>
+              )}
             </div>
           )}
 

@@ -1,15 +1,19 @@
 import { Response } from 'express';
 import { z } from 'zod';
 import { AuthRequest } from '../middlewares/auth';
-import { listViewingsForAgent as listService, updateViewingStatus, generateViewingIcs } from '../services/viewing.service';
+import {
+  listViewingsForAgent as listService,
+  updateViewingStatus,
+  generateViewingIcs,
+} from '../services/viewing.service';
 import { objectIdSchema } from '../utils/validators';
 
 const patchSchema = z.object({
   body: z.object({
     status: z.enum(['confirmed', 'declined', 'completed', 'no_show', 'canceled']),
     reason: z.string().max(140).optional(),
-    message: z.string().max(280).optional()
-  })
+    message: z.string().max(280).optional(),
+  }),
 });
 
 export async function listViewingsForAgent(req: AuthRequest, res: Response) {

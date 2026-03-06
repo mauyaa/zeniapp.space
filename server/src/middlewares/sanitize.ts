@@ -17,4 +17,3 @@ export function sanitize(req: Request, _res: Response, next: NextFunction) {
   stripMongoOperators(req.query);
   next();
 }
-

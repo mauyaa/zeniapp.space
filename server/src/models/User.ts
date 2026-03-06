@@ -11,7 +11,8 @@ export interface UserDocument extends Document {
   role: Role;
   status: 'active' | 'suspended' | 'banned';
   availability: 'active' | 'paused';
-  agentVerification: typeof agentStatuses[number];
+  agentVerification: (typeof agentStatuses)[number];
+  avatarUrl?: string;
   /** EARB (Estate Agents Registration Board) registration number for legal compliance in Kenya. */
   earbRegistrationNumber?: string;
   /** Set when admin has verified EARB number against EARB portal. */
@@ -48,10 +49,16 @@ const UserSchema = new Schema<UserDocument>(
     phone: { type: String },
     emailOrPhone: { type: String, required: true, unique: true, index: true },
     password: { type: String, required: true },
-    role: { type: String, enum: ['user', 'agent', 'admin', 'finance'], default: 'user', index: true },
+    role: {
+      type: String,
+      enum: ['user', 'agent', 'admin', 'finance'],
+      default: 'user',
+      index: true,
+    },
     status: { type: String, enum: ['active', 'suspended', 'banned'], default: 'active' },
     availability: { type: String, enum: ['active', 'paused'], default: 'active' },
     agentVerification: { type: String, enum: agentStatuses, default: 'unverified' },
+    avatarUrl: { type: String },
     earbRegistrationNumber: { type: String, trim: true, index: true },
     earbVerifiedAt: Date,
     autoArchivedListings: [{ type: Schema.Types.ObjectId, ref: 'Listing' }],
@@ -61,27 +68,29 @@ const UserSchema = new Schema<UserDocument>(
       push: { type: Boolean, default: true },
       quietHours: {
         start: { type: String, default: '22:00' },
-        end: { type: String, default: '06:00' }
-      }
+        end: { type: String, default: '06:00' },
+      },
     },
     mfaEnabled: { type: Boolean, default: false },
     mfaSecret: { type: String },
     mfaRecoveryCodes: [{ type: String }],
     verificationEvidence: [
-      { url: String, note: String, uploadedAt: { type: Date, default: Date.now } }
+      { url: String, note: String, uploadedAt: { type: Date, default: Date.now } },
     ],
     kycStatus: { type: String, enum: ['none', 'pending', 'verified', 'rejected'], default: 'none' },
-    kycEvidence: [
-      { url: String, note: String, uploadedAt: { type: Date, default: Date.now } }
-    ],
+    kycEvidence: [{ url: String, note: String, uploadedAt: { type: Date, default: Date.now } }],
     kycSubmittedAt: Date,
-    businessVerifyStatus: { type: String, enum: ['none', 'pending', 'verified', 'rejected'], default: 'none' },
+    businessVerifyStatus: {
+      type: String,
+      enum: ['none', 'pending', 'verified', 'rejected'],
+      default: 'none',
+    },
     businessVerifyEvidence: [
-      { url: String, note: String, uploadedAt: { type: Date, default: Date.now } }
+      { url: String, note: String, uploadedAt: { type: Date, default: Date.now } },
     ],
     businessVerifySubmittedAt: Date,
     consentVersion: String,
-    consentAt: Date
+    consentAt: Date,
   },
   { timestamps: true }
 );
@@ -103,4 +112,3 @@ UserSchema.methods.comparePassword = function (pw: string) {
 };
 
 export const UserModel = mongoose.model<UserDocument>('User', UserSchema);
-

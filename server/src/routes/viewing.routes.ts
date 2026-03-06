@@ -7,7 +7,7 @@ import {
   getMyViewing,
   exportMyViewingIcs,
   cancelMyViewing,
-  confirmViewingCompleted
+  confirmViewingCompleted,
 } from '../controllers/viewing.controller';
 
 const router = Router();

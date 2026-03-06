@@ -30,7 +30,9 @@ export function getEnvConfig(): EnvConfig {
       if (!getEnv(key)) missing.push(key);
     }
     if (missing.length > 0) {
-      logger.warn(`[env] Recommended in production: set ${missing.join(', ')} in your environment or .env. Using defaults for now.`);
+      logger.warn(
+        `[env] Recommended in production: set ${missing.join(', ')} in your environment or .env. Using defaults for now.`
+      );
     }
   }
 

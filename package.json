@@ -9,6 +9,7 @@
     "dev:server": "npm --prefix server run dev",
     "dev:full": "concurrently -n fe,be -c cyan,magenta \"npm run dev\" \"npm run dev:server\"",
     "build": "vite build",
+    "check:bundle": "node scripts/check-bundle-budget.mjs",
     "build:server": "npm --prefix server run build",
     "mobile:sync": "npm run build && npx cap sync",
     "mobile:android": "npm run build && npx cap sync android && npx cap open android",
@@ -24,7 +25,11 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css}\"",
     "prepare": "husky",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "verify:frontend": "npm run lint && npm run format:check && npm run build && npm run check:bundle && npm run test",
+    "verify:backend": "npm --prefix server run lint && npm --prefix server run build && npm --prefix server run test -- --runInBand",
+    "verify:e2e": "npm run test:e2e",
+    "verify": "npm run verify:frontend && npm run verify:backend && npm run verify:e2e"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [

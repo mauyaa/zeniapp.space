@@ -67,7 +67,8 @@ export function ListingHeaderCard({ listing, listingId, onView, agent }: Listing
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           onClick={onView}
-          className="inline-flex items-center gap-1 rounded-xl bg-emerald-700 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-600">
+          className="inline-flex items-center gap-1 rounded-xl bg-emerald-700 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-600"
+        >
           <ExternalLink className="h-4 w-4" />
           View Listing
         </button>
@@ -75,7 +76,8 @@ export function ListingHeaderCard({ listing, listingId, onView, agent }: Listing
           <button
             onClick={handleSave}
             disabled={saving}
-            className="inline-flex items-center gap-1 rounded-xl border border-[#E9E2D8] px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-amber-300 hover:text-amber-700 dark:border-slate-800 dark:text-slate-200 dark:hover:border-amber-500/50">
+            className="inline-flex items-center gap-1 rounded-xl border border-[#E9E2D8] px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-amber-300 hover:text-amber-700 dark:border-slate-800 dark:text-slate-200 dark:hover:border-amber-500/50"
+          >
             <Bookmark className="h-4 w-4" />
             {saved ? 'Saved' : 'Save'}
           </button>

@@ -6,15 +6,21 @@ import { formatCurrency } from '../../lib/format';
 
 const STATUS_STYLE: Record<string, string> = {
   paid: 'text-[9px] font-bold uppercase bg-emerald-900/30 text-emerald-400 px-2 py-1 rounded-sm border border-emerald-900',
-  completed: 'text-[9px] font-bold uppercase bg-emerald-900/30 text-emerald-400 px-2 py-1 rounded-sm border border-emerald-900',
-  pending: 'text-[9px] font-bold uppercase bg-amber-900/30 text-amber-400 px-2 py-1 rounded-sm border border-amber-900',
-  failed: 'text-[9px] font-bold uppercase bg-red-900/30 text-red-400 px-2 py-1 rounded-sm border border-red-900',
-  reversed: 'text-[9px] font-bold uppercase bg-zinc-700/30 text-zinc-400 px-2 py-1 rounded-sm border border-zinc-700',
+  completed:
+    'text-[9px] font-bold uppercase bg-emerald-900/30 text-emerald-400 px-2 py-1 rounded-sm border border-emerald-900',
+  pending:
+    'text-[9px] font-bold uppercase bg-amber-900/30 text-amber-400 px-2 py-1 rounded-sm border border-amber-900',
+  failed:
+    'text-[9px] font-bold uppercase bg-red-900/30 text-red-400 px-2 py-1 rounded-sm border border-red-900',
+  reversed:
+    'text-[9px] font-bold uppercase bg-zinc-700/30 text-zinc-400 px-2 py-1 rounded-sm border border-zinc-700',
 };
 
 function formatDateOnly(value?: string) {
   if (!value) return '--';
-  return new Date(value).toLocaleDateString('en-KE', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
+  return new Date(value)
+    .toLocaleDateString('en-KE', { year: 'numeric', month: '2-digit', day: '2-digit' })
+    .replace(/\//g, '-');
 }
 
 export function PayTransactions() {
@@ -137,7 +143,9 @@ export function PayTransactions() {
               <div className="col-span-2 text-sm text-white">
                 {tx.ref || tx.method?.replace('_', ' ') || 'Payment'}
               </div>
-              <div className="col-span-1 font-mono text-xs text-zinc-500">{tx.ref || tx._id.slice(0, 10)}</div>
+              <div className="col-span-1 font-mono text-xs text-zinc-500">
+                {tx.ref || tx._id.slice(0, 10)}
+              </div>
               <div className="col-span-1">
                 <span className={STATUS_STYLE[tx.status] || STATUS_STYLE.failed}>
                   {tx.status === 'paid' || tx.status === 'completed' ? 'Paid' : tx.status}

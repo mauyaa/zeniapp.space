@@ -6,14 +6,16 @@ import {
   listRefundRequestsByUser,
   listRefundRequestsAdmin,
   resolveRefundRequest,
-  getEligibleTransactionsForRefund
+  getEligibleTransactionsForRefund,
 } from '../services/refundRequest.service';
 import { objectIdSchema } from '../utils/validators';
 
 export async function create(req: AuthRequest, res: Response) {
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
-  const schema = z.object({ body: z.object({ transactionId: objectIdSchema, reason: z.string().min(10).max(500) }) });
+  const schema = z.object({
+    body: z.object({ transactionId: objectIdSchema, reason: z.string().min(10).max(500) }),
+  });
   const { body } = schema.parse(req);
   try {
     const doc = await createRefundRequest(userId, body.transactionId, body.reason);
@@ -55,8 +57,8 @@ export async function resolve(req: AuthRequest, res: Response) {
     params: z.object({ id: objectIdSchema }),
     body: z.object({
       decision: z.enum(['approved', 'rejected']),
-      adminNotes: z.string().max(500).optional()
-    })
+      adminNotes: z.string().max(500).optional(),
+    }),
   });
   const { params, body } = schema.parse(req);
   try {

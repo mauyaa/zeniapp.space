@@ -20,27 +20,57 @@ const collageSets: CollageSet[] = [
   {
     mapImage: '/landing/map-preview.jpg',
     listings: [
-      { badge: 'Verified', price: 'KES 180K / mo', location: 'Kilimani', image: '/landing/home-1.jpg' },
+      {
+        badge: 'Verified',
+        price: 'KES 180K per month',
+        location: 'Kilimani',
+        image: '/landing/home-1.jpg',
+      },
       { badge: 'New', price: 'KES 52M', location: 'Riverside', image: '/landing/home-2.jpg' },
-      { badge: 'Verified', price: 'KES 220K / mo', location: 'Westlands', image: '/landing/home-3.jpg' }
-    ]
+      {
+        badge: 'Verified',
+        price: 'KES 220K per month',
+        location: 'Westlands',
+        image: '/landing/home-3.jpg',
+      },
+    ],
   },
   {
     mapImage: '/landing/map-preview.jpg',
     listings: [
-      { badge: 'New', price: 'KES 95K / mo', location: 'Kileleshwa', image: '/landing/home-4.jpg' },
+      {
+        badge: 'New',
+        price: 'KES 95K per month',
+        location: 'Kileleshwa',
+        image: '/landing/home-4.jpg',
+      },
       { badge: 'Verified', price: 'KES 38M', location: 'Lavington', image: '/landing/home-5.jpg' },
-      { badge: 'Verified', price: 'KES 310K / mo', location: 'Gigiri', image: '/landing/home-6.jpg' }
-    ]
+      {
+        badge: 'Verified',
+        price: 'KES 310K per month',
+        location: 'Gigiri',
+        image: '/landing/home-6.jpg',
+      },
+    ],
   },
   {
     mapImage: '/landing/map-preview.jpg',
     listings: [
       { badge: 'Verified', price: 'KES 70M', location: 'Runda', image: '/landing/home-7.jpg' },
-      { badge: 'New', price: 'KES 140K / mo', location: 'Karen', image: '/landing/home-8.jpg' },
-      { badge: 'Verified', price: 'KES 250K / mo', location: 'Kilimani', image: '/landing/home-9.jpg' }
-    ]
-  }
+      {
+        badge: 'New',
+        price: 'KES 140K per month',
+        location: 'Karen',
+        image: '/landing/home-8.jpg',
+      },
+      {
+        badge: 'Verified',
+        price: 'KES 250K per month',
+        location: 'Kilimani',
+        image: '/landing/home-9.jpg',
+      },
+    ],
+  },
 ];
 
 export function TiltedCollage() {
@@ -101,7 +131,9 @@ export function TiltedCollage() {
             <div className="space-y-3">
               {collage.listings.map((listing, index) => (
                 <div key={`map-${listing.location}-${index}`} className="space-y-1">
-                  <div className="text-sm font-semibold text-[rgb(var(--text))]">{listing.location}</div>
+                  <div className="text-sm font-semibold text-[rgb(var(--text))]">
+                    {listing.location}
+                  </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface2))] px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-[rgb(var(--text))]">
                       {listing.badge}
@@ -116,19 +148,12 @@ export function TiltedCollage() {
         </div>
 
         {collage.listings.map((listing, index) => {
-          const positions = [
-            'left-10 top-32',
-            'right-2 top-14',
-            'left-24 top-56'
-          ];
+          const positions = ['left-10 top-32', 'right-2 top-14', 'left-24 top-56'];
           const rotations = ['rotate(4deg)', 'rotate(-3deg)', 'rotate(2deg)'];
           return (
             <div
               key={`${listing.location}-${index}`}
-              className={clsx(
-                'absolute w-[58%] sm:w-[46%] bounce-card-trigger',
-                positions[index]
-              )}
+              className={clsx('absolute w-[58%] sm:w-[46%] bounce-card-trigger', positions[index])}
               style={{ transform: reduceMotion ? 'none' : rotations[index] }}
             >
               <div className="bounce-card w-full rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-[0_16px_30px_rgba(15,23,42,0.12)]">
@@ -147,7 +172,9 @@ export function TiltedCollage() {
                   <div className="absolute bottom-2 left-3 text-xs text-white">{listing.price}</div>
                 </div>
                 <div className="px-3 py-3 text-xs text-[rgb(var(--muted))]">
-                  <div className="text-sm font-semibold text-[rgb(var(--text))]">{listing.location}</div>
+                  <div className="text-sm font-semibold text-[rgb(var(--text))]">
+                    {listing.location}
+                  </div>
                   <div>Sample listing preview</div>
                 </div>
               </div>

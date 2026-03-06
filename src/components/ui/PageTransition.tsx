@@ -25,9 +25,9 @@ export function PageTransition({ children, className, layout }: PageTransitionPr
   return (
     <motion.div
       layout={layout}
-      initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+      initial={reduceMotion ? undefined : { opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={reduceMotion ? false : { opacity: 0, y: -4 }}
+      exit={reduceMotion ? undefined : { opacity: 0, y: -4 }}
       transition={defaultTransition}
       className={className}
       style={{ willChange: 'opacity, transform' }}
@@ -54,5 +54,9 @@ export const staggerContainer = {
  */
 export const staggerItem = {
   hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0, transition: { type: 'tween', duration: 0.15, ease: [0.25, 0.1, 0.25, 1] } },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { type: 'tween', duration: 0.15, ease: [0.25, 0.1, 0.25, 1] },
+  },
 };

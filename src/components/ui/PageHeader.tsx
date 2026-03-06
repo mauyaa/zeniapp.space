@@ -36,7 +36,10 @@ export function PageHeader({
   const reduceMotion = useReducedMotion();
   const effectiveTone: PageHeaderTone = tone || (isDark ? 'emerald' : 'amber');
 
-  const toneStyles: Record<PageHeaderTone, { badge: string; dot: string; glowA: string; glowB: string; stat: string }> = {
+  const toneStyles: Record<
+    PageHeaderTone,
+    { badge: string; dot: string; glowA: string; glowB: string; stat: string }
+  > = {
     emerald: {
       badge: 'bg-emerald-500/15 text-emerald-200 border-emerald-500/30',
       dot: 'bg-emerald-400',
@@ -106,7 +109,12 @@ export function PageHeader({
                 isDark ? `border ${toneStyle.badge}` : 'bg-amber-100/70 text-amber-700'
               )}
             >
-              <span className={clsx('h-1.5 w-1.5 rounded-full', isDark ? toneStyle.dot : 'bg-amber-500')} />
+              <span
+                className={clsx(
+                  'h-1.5 w-1.5 rounded-full',
+                  isDark ? toneStyle.dot : 'bg-amber-500'
+                )}
+              />
               {eyebrow}
             </span>
           )}
@@ -120,7 +128,12 @@ export function PageHeader({
               {title}
             </h1>
             {subtitle && (
-              <p className={clsx('mt-1 max-w-xl text-sm', isDark ? 'text-slate-400' : 'text-slate-600')}>
+              <p
+                className={clsx(
+                  'mt-1 max-w-xl text-sm',
+                  isDark ? 'text-slate-400' : 'text-slate-600'
+                )}
+              >
                 {subtitle}
               </p>
             )}
@@ -139,14 +152,26 @@ export function PageHeader({
                 isDark ? 'border-slate-800 bg-slate-900/60' : 'border-[#E9E2D8] bg-[#FFFBF7]'
               )}
             >
-              <div className={clsx('text-xs font-semibold uppercase tracking-widest', isDark ? 'text-slate-500' : 'text-slate-500')}>
+              <div
+                className={clsx(
+                  'text-xs font-semibold uppercase tracking-widest',
+                  isDark ? 'text-slate-500' : 'text-slate-500'
+                )}
+              >
                 {stat.label}
               </div>
-              <div className={clsx('mt-1 text-lg font-semibold', isDark ? toneStyle.stat : 'text-slate-900')}>
+              <div
+                className={clsx(
+                  'mt-1 text-lg font-semibold',
+                  isDark ? toneStyle.stat : 'text-slate-900'
+                )}
+              >
                 {stat.value}
               </div>
               {stat.hint && (
-                <div className={clsx('text-xs', isDark ? 'text-slate-500' : 'text-slate-500')}>{stat.hint}</div>
+                <div className={clsx('text-xs', isDark ? 'text-slate-500' : 'text-slate-500')}>
+                  {stat.hint}
+                </div>
               )}
             </div>
           ))}

@@ -60,16 +60,15 @@ export function SectionHeader({
           </h1>
           {subtitle && (
             <p
-              className={cn(
-                'mt-1.5 text-sm max-w-xl',
-                isZeni ? 'text-zinc-500' : 'text-slate-400'
-              )}
+              className={cn('mt-1.5 text-sm max-w-xl', isZeni ? 'text-zinc-500' : 'text-slate-400')}
             >
               {subtitle}
             </p>
           )}
         </div>
-        {actions && <div className="flex flex-wrap items-center gap-2 flex-shrink-0">{actions}</div>}
+        {actions && (
+          <div className="flex flex-wrap items-center gap-2 flex-shrink-0">{actions}</div>
+        )}
       </div>
 
       {children}

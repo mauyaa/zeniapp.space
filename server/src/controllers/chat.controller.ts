@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { z } from 'zod';
+import { env } from '../config/env';
 import { AuthRequest } from '../middlewares/auth';
 import { PaginationQuery } from '../utils/paginate';
 import { objectIdSchema, paginationSchema } from '../utils/validators';
@@ -15,13 +16,28 @@ import {
   ensureWelcomeAgentsInDb,
   ensureWelcomeConversations,
   ensureAgentSupportConversation,
-  ensureAdminZeniAgentConversation
+  ensureAdminZeniAgentConversation,
 } from '../services/chat.service';
+
+const chatDebugInTest =
+  process.env.CHAT_DEBUG_IN_TEST === 'true' || process.env.REQUEST_LOG_IN_TEST === 'true';
+const shouldLogChatDebug = env.nodeEnv !== 'test' || chatDebugInTest;
+
+const chatDebug = (...args: unknown[]) => {
+  if (!shouldLogChatDebug) return;
+  console.log(...args);
+};
+
+const chatDebugError = (...args: unknown[]) => {
+  if (!shouldLogChatDebug) return;
+  console.error(...args);
+};
 
 export async function conversations(req: AuthRequest, res: Response) {
   const userId = req.user?.id;
   const role = req.user?.role;
-  if (!userId || !role) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
+  if (!userId || !role)
+    return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
   let items = await listConversations(userId, role);
   try {
     await ensureWelcomeAgentsInDb();
@@ -36,7 +52,7 @@ export async function conversations(req: AuthRequest, res: Response) {
       items = await listConversations(userId, role);
     }
   } catch (err) {
-    console.error('[chat] ensure welcome conversations failed', err);
+    chatDebugError('[chat] ensure welcome conversations failed', err);
   }
   res.json(items);
 }
@@ -48,12 +64,13 @@ export async function conversations(req: AuthRequest, res: Response) {
 export async function bootstrapConversations(req: AuthRequest, res: Response) {
   const userId = req.user?.id;
   const role = req.user?.role;
-  if (!userId || !role) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
-  console.log('[chat] bootstrap start', { userId, role });
+  if (!userId || !role)
+    return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
+  chatDebug('[chat] bootstrap start', { userId, role });
   try {
     await ensureWelcomeAgentsInDb();
   } catch (err) {
-    console.error('[chat] bootstrap ensureWelcomeAgentsInDb failed', err);
+    chatDebugError('[chat] bootstrap ensureWelcomeAgentsInDb failed', err);
   }
   try {
     if (role === 'user') {
@@ -64,14 +81,14 @@ export async function bootstrapConversations(req: AuthRequest, res: Response) {
       await ensureAdminZeniAgentConversation(userId);
     }
   } catch (err) {
-    console.error('[chat] bootstrap ensure welcome conversations failed', err);
+    chatDebugError('[chat] bootstrap ensure welcome conversations failed', err);
   }
   let items: Awaited<ReturnType<typeof listConversations>> = [];
   try {
     items = await listConversations(userId, role);
-    console.log('[chat] bootstrap listConversations returned', items.length, 'conversations');
+    chatDebug('[chat] bootstrap listConversations returned', items.length, 'conversations');
   } catch (err) {
-    console.error('[chat] bootstrap listConversations failed', err);
+    chatDebugError('[chat] bootstrap listConversations failed', err);
   }
   res.json(items);
 }
@@ -89,7 +106,8 @@ export async function createConversation(req: AuthRequest, res: Response) {
 export async function messages(req: AuthRequest, res: Response) {
   const userId = req.user?.id;
   const role = req.user?.role;
-  if (!userId || !role) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
+  if (!userId || !role)
+    return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
   const paramsSchema = z.object({ id: objectIdSchema }).merge(paginationSchema);
   const parsed = paramsSchema.parse({ id: req.params.id, ...req.query });
   const msgs = await listMessages(parsed.id, userId, parsed as unknown as PaginationQuery, role);
@@ -101,20 +119,14 @@ export async function postMessage(req: AuthRequest, res: Response) {
     id: objectIdSchema,
     type: z.string(),
     content: z.any(),
-    clientTempId: z.string().max(64).optional()
+    clientTempId: z.string().max(64).optional(),
   });
   const { type, content, id, clientTempId } = schema.parse({ ...req.body, id: req.params.id });
   const userId = req.user?.id;
   const role = req.user?.role;
-  if (!userId || !role) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
-  const msg = await sendMessage(
-    id,
-    userId,
-    role,
-    type,
-    content,
-    clientTempId
-  );
+  if (!userId || !role)
+    return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
+  const msg = await sendMessage(id, userId, role, type, content, clientTempId);
   res.status(201).json(formatMessage(msg));
 }
 
@@ -132,12 +144,13 @@ export async function updateConversationState(req: AuthRequest, res: Response) {
     status: z.enum(['active', 'scheduled', 'closed']).optional(),
     leadStage: z.enum(['new', 'contacted', 'viewing', 'offer', 'closed']).optional(),
     pinned: z.boolean().optional(),
-    muted: z.boolean().optional()
+    muted: z.boolean().optional(),
   });
   const body = schema.parse({ ...req.body, id: req.params.id });
   const userId = req.user?.id;
   const role = req.user?.role;
-  if (!userId || !role) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
+  if (!userId || !role)
+    return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
   const updated = await updateConversation(body.id, userId, role, body);
   res.json(updated);
 }

@@ -84,12 +84,23 @@ export function ListingsPage() {
   };
 
   const activeListings = useMemo(
-    () => rows.filter((r) => r.status !== 'draft' && r.availabilityStatus !== 'sold' && r.availabilityStatus !== 'let' && r.status !== 'archived'),
+    () =>
+      rows.filter(
+        (r) =>
+          r.status !== 'draft' &&
+          r.availabilityStatus !== 'sold' &&
+          r.availabilityStatus !== 'let' &&
+          r.status !== 'archived'
+      ),
     [rows]
   );
   const draftListings = useMemo(() => rows.filter((r) => r.status === 'draft'), [rows]);
-  const soldListings = useMemo(() => rows.filter((r) => r.availabilityStatus === 'sold' || r.availabilityStatus === 'let'), [rows]);
-  const filtered = tab === 'active' ? activeListings : tab === 'drafts' ? draftListings : soldListings;
+  const soldListings = useMemo(
+    () => rows.filter((r) => r.availabilityStatus === 'sold' || r.availabilityStatus === 'let'),
+    [rows]
+  );
+  const filtered =
+    tab === 'active' ? activeListings : tab === 'drafts' ? draftListings : soldListings;
 
   return (
     <div className="space-y-10">
@@ -100,7 +111,9 @@ export function ListingsPage() {
             type="button"
             onClick={() => setTab('active')}
             className={`px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-colors ${
-              tab === 'active' ? 'bg-white border border-gray-200 text-black' : 'bg-transparent border border-transparent text-gray-400 hover:text-black'
+              tab === 'active'
+                ? 'bg-white border border-gray-200 text-black'
+                : 'bg-transparent border border-transparent text-gray-400 hover:text-black'
             }`}
           >
             Active ({activeListings.length})
@@ -109,7 +122,9 @@ export function ListingsPage() {
             type="button"
             onClick={() => setTab('drafts')}
             className={`px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-colors ${
-              tab === 'drafts' ? 'bg-white border border-gray-200 text-black' : 'bg-transparent border border-transparent text-gray-400 hover:text-black'
+              tab === 'drafts'
+                ? 'bg-white border border-gray-200 text-black'
+                : 'bg-transparent border border-transparent text-gray-400 hover:text-black'
             }`}
           >
             Drafts ({draftListings.length})
@@ -118,7 +133,9 @@ export function ListingsPage() {
             type="button"
             onClick={() => setTab('sold')}
             className={`px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-colors ${
-              tab === 'sold' ? 'bg-white border border-gray-200 text-black' : 'bg-transparent border border-transparent text-gray-400 hover:text-black'
+              tab === 'sold'
+                ? 'bg-white border border-gray-200 text-black'
+                : 'bg-transparent border border-transparent text-gray-400 hover:text-black'
             }`}
           >
             Sold ({soldListings.length})
@@ -129,7 +146,10 @@ export function ListingsPage() {
       {loading ? (
         <div className="grid grid-cols-1 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col md:flex-row h-48 animate-pulse">
+            <div
+              key={i}
+              className="bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col md:flex-row h-48 animate-pulse"
+            >
               <div className="w-full md:w-64 h-48 md:h-full bg-gray-200" />
               <div className="flex-1 p-6 flex flex-col justify-center gap-2">
                 <div className="h-5 w-3/4 bg-gray-200 rounded" />
@@ -143,9 +163,21 @@ export function ListingsPage() {
         <div className="bg-white border border-gray-200 rounded-lg p-8">
           <EmptyState
             variant="light"
-            title={tab === 'active' ? 'No active listings' : tab === 'drafts' ? 'No drafts' : 'No sold listings'}
-            subtitle={tab === 'active' ? 'Create a listing to get started.' : 'Nothing in this tab yet.'}
-            action={tab === 'active' ? { label: 'Create listing', onClick: () => navigate('/agent/listings/new') } : undefined}
+            title={
+              tab === 'active'
+                ? 'No active listings'
+                : tab === 'drafts'
+                  ? 'No drafts'
+                  : 'No sold listings'
+            }
+            subtitle={
+              tab === 'active' ? 'Create a listing to get started.' : 'Nothing in this tab yet.'
+            }
+            action={
+              tab === 'active'
+                ? { label: 'Create listing', onClick: () => navigate('/agent/listings/new') }
+                : undefined
+            }
           />
         </div>
       ) : (
@@ -201,10 +233,13 @@ function ListingCard({
     listing.images?.find((i) => i.isPrimary)?.url ||
     listing.images?.[0]?.url ||
     'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80';
-  const location = [listing.location?.area, listing.location?.city].filter(Boolean).join(', ') || 'Kenya';
+  const location =
+    [listing.location?.area, listing.location?.city].filter(Boolean).join(', ') || 'Kenya';
   const isSold = listing.availabilityStatus === 'sold' || listing.availabilityStatus === 'let';
   const isDraft = listing.status === 'draft';
   const isArchived = listing.status === 'archived';
+  const isRent =
+    listing.purpose === 'rent' || (listing.category || '').toLowerCase().includes('rent');
   const statusLabel = isSold ? 'Sold' : isDraft ? 'Draft' : isArchived ? 'Archived' : 'Active';
   const statusClass = isSold
     ? 'bg-gray-100 text-gray-600'
@@ -228,7 +263,9 @@ function ListingCard({
           alt={listing.title}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 grayscale-[20%] group-hover:grayscale-0"
         />
-        <div className={`absolute top-3 left-3 px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-widest border ${statusClass}`}>
+        <div
+          className={`absolute top-3 left-3 px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-widest border ${statusClass}`}
+        >
           {statusLabel}
         </div>
       </div>
@@ -236,7 +273,9 @@ function ListingCard({
         <div>
           <div className="flex justify-between items-start mb-2">
             <div className="min-w-0 pr-8">
-              <h3 className="text-xl font-serif font-medium text-black group-hover:underline decoration-1 underline-offset-4 truncate">{listing.title}</h3>
+              <h3 className="text-xl font-serif font-medium text-black group-hover:underline decoration-1 underline-offset-4 truncate">
+                {listing.title}
+              </h3>
               <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1 flex items-center">
                 <span className="w-1.5 h-1.5 bg-gray-300 rounded-full mr-2 flex-shrink-0" />
                 <span className="truncate">{location}</span>
@@ -261,7 +300,10 @@ function ListingCard({
                     <div className="absolute right-0 top-full mt-1 z-20 w-48 rounded-md border border-gray-200 bg-white py-1 shadow-lg">
                       <button
                         type="button"
-                        onClick={() => { onEdit(); onMenuToggle(); }}
+                        onClick={() => {
+                          onEdit();
+                          onMenuToggle();
+                        }}
                         className="w-full px-3 py-2 text-left text-xs font-medium text-gray-700 hover:bg-gray-50"
                       >
                         Edit
@@ -302,27 +344,31 @@ function ListingCard({
             </div>
           </div>
           <p className="font-mono text-lg font-medium mt-2 text-black">
-            {listing.currency === 'KES' ? 'KES' : listing.currency} {Number(listing.price).toLocaleString()}
-            {!isSold && <span className="text-xs text-gray-400 font-sans"> / mo</span>}
+            {listing.currency === 'KES' ? 'KES' : listing.currency}{' '}
+            {Number(listing.price).toLocaleString()}
+            {!isSold && isRent && (
+              <span className="text-xs text-gray-500 font-sans"> per month</span>
+            )}
           </p>
           {isSold && (
             <p className="font-mono text-lg font-medium mt-0.5 line-through text-gray-400">
               {listing.currency} {Number(listing.price).toLocaleString()}
+              {isRent && <span className="text-xs text-gray-400 font-sans"> per month</span>}
             </p>
           )}
         </div>
         <div className="flex items-center gap-6 mt-4 pt-4 border-t border-gray-100">
           <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
-            <Eye className="w-4 h-4 text-gray-400" />
-            —
+            <Eye className="w-4 h-4 text-gray-400" />—
           </div>
           <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
-            <Heart className="w-4 h-4 text-gray-400" />
-            —
+            <Heart className="w-4 h-4 text-gray-400" />—
           </div>
           <div className="flex-1 text-right">
             {isSold ? (
-              <span className="text-[10px] font-bold uppercase tracking-widest text-green-600">Deal Closed</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-green-600">
+                Deal Closed
+              </span>
             ) : (
               <button
                 type="button"

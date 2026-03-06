@@ -7,7 +7,7 @@ const links = [
   { to: '/pay/invoices', label: 'Invoices' },
   { to: '/pay/history', label: 'History' },
   { to: '/pay/security', label: 'Security' },
-  { to: '/pay/support', label: 'Support' }
+  { to: '/pay/support', label: 'Support' },
 ];
 
 export function PaymentLayout() {
@@ -17,7 +17,9 @@ export function PaymentLayout() {
         <div className="flex items-center justify-between">
           <div>
             <div className="text-lg font-semibold text-[rgb(var(--text))]">Payment Portal</div>
-            <div className="text-xs text-[rgb(var(--muted))]">Secured payments • Receipts issued</div>
+            <div className="text-xs text-[rgb(var(--muted))]">
+              Secured payments • Receipts issued
+            </div>
           </div>
           <div className="rounded-full border border-[rgb(var(--border))] px-3 py-1 text-xs text-[rgb(var(--text))]">
             Lock • TLS
@@ -34,7 +36,8 @@ export function PaymentLayout() {
                     ? 'bg-[rgb(var(--accent))] text-[rgb(var(--bg))]'
                     : 'text-[rgb(var(--text))] hover:bg-[rgb(var(--surface2))]'
                 }`
-              }>
+              }
+            >
               {l.label}
             </NavLink>
           ))}

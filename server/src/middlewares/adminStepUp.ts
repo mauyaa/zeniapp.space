@@ -11,7 +11,7 @@ export const adminStepUpProtected = [
   'GET /api/admin/reports/export',
   'GET /api/admin/agents/export',
   'GET /api/admin/listings/export',
-  'PATCH /api/admin/pay/accounts/:userId/status'
+  'PATCH /api/admin/pay/accounts/:userId/status',
 ];
 
 export function requireAdminStepUp(maxAgeMinutes = 10) {
@@ -24,7 +24,8 @@ export function requireAdminStepUp(maxAgeMinutes = 10) {
     if (!sid) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Session missing' });
     const session: AuthSessionDocument | null =
       (req.authSession as AuthSessionDocument | null) || (await AuthSessionModel.findById(sid));
-    if (!session) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Session not found' });
+    if (!session)
+      return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Session not found' });
     if (!session.stepUpVerifiedAt) {
       return res.status(403).json({ code: 'STEP_UP_REQUIRED', message: 'Admin step-up required' });
     }

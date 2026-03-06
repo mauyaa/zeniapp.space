@@ -90,6 +90,10 @@ h6 {
   font-family: 'JetBrains Mono', monospace;
 }
 
+.font-outfit {
+  font-family: 'Outfit', 'Inter', sans-serif;
+}
+
 @keyframes pulse-ring {
   0% {
     transform: scale(0.8);
@@ -211,12 +215,12 @@ h6 {
 }
 
 .custom-scroll::-webkit-scrollbar-thumb {
-  background: #E4E4E7;
+  background: #e4e4e7;
   border-radius: 3px;
 }
 
 .custom-scroll::-webkit-scrollbar-thumb:hover {
-  background: #A1A1AA;
+  background: #a1a1aa;
 }
 
 /* Agent / Admin portal: narrow scrollbar to match design */
@@ -225,12 +229,12 @@ h6 {
 }
 
 .portal-scroll::-webkit-scrollbar-thumb {
-  background: #D4D4D8;
+  background: #d4d4d8;
   border-radius: 3px;
 }
 
 .portal-scroll::-webkit-scrollbar-thumb:hover {
-  background: #A1A1AA;
+  background: #a1a1aa;
 }
 
 /* Curtain: shutter wipe from bottom to top (no fade). GPU-accelerated. */
@@ -238,7 +242,7 @@ h6 {
   position: fixed;
   inset: 0;
   z-index: 9998;
-  background: var(--zeni-background, #F8F9FA);
+  background: var(--zeni-background, #f8f9fa);
   transform: translateY(0);
   will-change: transform;
   transition: transform 0.36s cubic-bezier(0.32, 0.72, 0, 1);
@@ -246,10 +250,10 @@ h6 {
 }
 
 html.dark .curtain {
-  background: #09090B;
+  background: #09090b;
 }
 
-.curtain[data-revealed="true"] {
+.curtain[data-revealed='true'] {
   transform: translateY(-100%);
 }
 
@@ -277,7 +281,9 @@ html.dark .curtain {
 }
 
 .hover-lift {
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+  transition:
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.2s ease;
 }
 
 .hover-lift:hover {
@@ -300,7 +306,7 @@ html.dark .curtain {
 /* ---------- Performance: GPU layers & content-visibility ---------- */
 
 /* Promote sidebar + header to GPU layers to prevent repaints during scroll */
-aside[aria-label="Main sidebar navigation"],
+aside[aria-label='Main sidebar navigation'],
 header {
   will-change: transform;
 }
@@ -324,7 +330,7 @@ img {
 /* Improved touch responsiveness on mobile */
 a,
 button,
-[role="button"] {
+[role='button'] {
   touch-action: manipulation;
 }
 
@@ -347,7 +353,7 @@ button,
 .zeni-skeleton-shimmer {
   position: relative;
   overflow: hidden;
-  background-color: #F0F0F0;
+  background-color: #f0f0f0;
   /* GPU layer promotion — prevents repaint during animation */
   will-change: transform;
   transform: translateZ(0);
@@ -357,24 +363,28 @@ button,
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.55) 50%,
-      transparent 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
   animation: zeni-shimmer 1.6s ease-in-out infinite;
   will-change: transform;
 }
 
 /* Dark mode shimmer */
 .dark .zeni-skeleton-shimmer {
-  background-color: #27272A;
+  background-color: #27272a;
 }
 
 .dark .zeni-skeleton-shimmer::after {
-  background: linear-gradient(90deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.07) 50%,
-      transparent 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.07) 50%,
+    transparent 100%
+  );
 }
 
 /* Reduce motion — keep the placeholder color but kill the sweep */
@@ -392,7 +402,7 @@ button,
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #16A34A;
+  background: #16a34a;
   position: relative;
   /* GPU layer so pulse ring doesn't repaint surrounding text */
   will-change: transform;
@@ -404,7 +414,7 @@ button,
   position: absolute;
   inset: -3px;
   border-radius: 50%;
-  background: #16A34A;
+  background: #16a34a;
   opacity: 0;
   animation: zeni-dot-pulse 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
 }
@@ -442,7 +452,6 @@ button,
   min-height: -webkit-fill-available;
 }
 
-
 /* ==========================================================================
    Range sliders — Price range (dual handle) + Mortgage calculator
    Zero appearance so we can style the thumb freely on all browsers.
@@ -471,7 +480,7 @@ button,
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #09090B;
+  background: #09090b;
   /* zeni-foreground */
   border: 2px solid #ffffff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
@@ -490,14 +499,14 @@ button,
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #09090B;
+  background: #09090b;
   border: 2px solid #ffffff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
   cursor: grab;
 }
 
 .price-slider-thumb:focus-visible::-webkit-slider-thumb {
-  outline: 2px solid #09090B;
+  outline: 2px solid #09090b;
   outline-offset: 2px;
 }
 
@@ -506,7 +515,7 @@ button,
   position: static;
   height: 4px;
   border-radius: 9999px;
-  background: #E4E4E7;
+  background: #e4e4e7;
   /* zinc-200 rail */
   pointer-events: auto;
 }
@@ -516,7 +525,7 @@ button,
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #16A34A;
+  background: #16a34a;
   /* green-600 */
   border: 2px solid #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
@@ -533,37 +542,35 @@ button,
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #16A34A;
+  background: #16a34a;
   border: 2px solid #ffffff;
   cursor: grab;
 }
 
 .mortgage-slider:focus-visible {
-  outline: 2px solid #16A34A;
+  outline: 2px solid #16a34a;
   outline-offset: 2px;
 }
 
 /* Dark mode variants */
 .dark .price-slider-thumb::-webkit-slider-thumb {
-  background: #F4F4F5;
+  background: #f4f4f5;
 }
 
 .dark .price-slider-thumb::-moz-range-thumb {
-  background: #F4F4F5;
+  background: #f4f4f5;
 }
 
 .dark .mortgage-slider {
-  background: #3F3F46;
+  background: #3f3f46;
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   .price-slider-thumb::-webkit-slider-thumb,
   .mortgage-slider::-webkit-slider-thumb {
     transition: none;
   }
 }
-
 
 .pay-console ::-webkit-scrollbar {
   width: 5px;
@@ -575,12 +582,12 @@ button,
 }
 
 .pay-console ::-webkit-scrollbar-thumb {
-  background: #3F3F46;
+  background: #3f3f46;
   border-radius: 3px;
 }
 
 .pay-console ::-webkit-scrollbar-thumb:hover {
-  background: #52525B;
+  background: #52525b;
 }
 
 .pay-console .pay-fade-in {
@@ -588,7 +595,7 @@ button,
 }
 
 .pay-console .glow-border:focus-within {
-  border-color: #10B981;
+  border-color: #10b981;
   box-shadow: 0 0 15px -3px rgba(16, 185, 129, 0.2);
 }
 
@@ -596,9 +603,8 @@ button,
    Print Styles — clean output for property listings and receipts
    ========================================================================== */
 @media print {
-
   /* Hide non-essential UI chrome */
-  aside[aria-label="Main sidebar navigation"],
+  aside[aria-label='Main sidebar navigation'],
   header,
   nav,
   .bottom-nav,
@@ -608,7 +614,7 @@ button,
   .zeni-dot-live,
   .zeni-dot-unread,
   .NotificationDrawer,
-  [role="toolbar"] {
+  [role='toolbar'] {
     display: none !important;
   }
 
@@ -637,8 +643,8 @@ button,
   }
 
   /* Show URLs after links */
-  a[href^="http"]::after {
-    content: " (" attr(href) ")";
+  a[href^='http']::after {
+    content: ' (' attr(href) ')';
     font-size: 0.8em;
     color: #666;
   }

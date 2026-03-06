@@ -11,6 +11,7 @@ import {
   verifyAgentDecision,
   markAgentEarbVerified,
   verifyListing,
+  deleteListing,
   resolveKyc,
   resolveBusinessVerifyDecision,
   analytics,
@@ -20,13 +21,19 @@ import {
   exportAgents,
   exportListings,
   rateMetrics,
-  networkAccessStatus
+  networkAccessStatus,
 } from '../controllers/admin.controller';
-import { adminListPayAccounts, adminSetPayAccountStatus } from '../controllers/payAccount.controller';
+import {
+  adminListPayAccounts,
+  adminSetPayAccountStatus,
+} from '../controllers/payAccount.controller';
 import { adminLimiter } from '../middlewares/rateLimit';
 import { requireAdminStepUp } from '../middlewares/adminStepUp';
 import { requirePrivilegedNetworkAccess } from '../middlewares/ipAllowlist';
-import { listAdmin as listRefundRequestsAdmin, resolve as resolveRefundRequest } from '../controllers/refundRequest.controller';
+import {
+  listAdmin as listRefundRequestsAdmin,
+  resolve as resolveRefundRequest,
+} from '../controllers/refundRequest.controller';
 
 const router = Router();
 router.use(auth, requireRole(['admin']), adminLimiter, requirePrivilegedNetworkAccess('admin'));
@@ -40,8 +47,13 @@ router.get('/moderation/queue', getModerationQueue);
 router.patch('/verification/agents/:id', requireAdminStepUp(), verifyAgentDecision);
 router.patch('/verification/agents/:id/earb-verified', requireAdminStepUp(), markAgentEarbVerified);
 router.patch('/verification/listings/:id', requireAdminStepUp(), verifyListing);
+router.delete('/verification/listings/:id', requireAdminStepUp(), deleteListing);
 router.patch('/verification/kyc/:userId', requireAdminStepUp(), resolveKyc);
-router.patch('/verification/business/:agentId', requireAdminStepUp(), resolveBusinessVerifyDecision);
+router.patch(
+  '/verification/business/:agentId',
+  requireAdminStepUp(),
+  resolveBusinessVerifyDecision
+);
 router.get('/analytics/overview', analytics);
 router.get('/analytics/dashboard', dashboard);
 router.get('/audit', audit);

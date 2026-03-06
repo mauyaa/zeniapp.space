@@ -15,4 +15,3 @@ export function buildPagination(query: PaginationQuery): PaginationResult {
   const skip = (page - 1) * limit;
   return { page, limit, skip };
 }
-

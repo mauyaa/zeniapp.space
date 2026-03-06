@@ -6,7 +6,7 @@ import {
   markAllReadHandler,
   markReadHandler,
   getPrefsHandler,
-  updatePrefsHandler
+  updatePrefsHandler,
 } from '../controllers/notification.controller';
 
 const router = Router();

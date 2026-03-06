@@ -6,13 +6,13 @@ const statusStyles: Record<string, string> = {
   paid: 'bg-emerald-100 text-emerald-700',
   pending: 'bg-amber-100 text-amber-700',
   failed: 'bg-rose-100 text-rose-700',
-  reversed: 'bg-slate-200 text-slate-600'
+  reversed: 'bg-slate-200 text-slate-600',
 };
 
 export function TransactionsTable({
   transactions,
   onSelect,
-  onDownloadReceipt
+  onDownloadReceipt,
 }: {
   transactions: PayTransaction[];
   onSelect: (tx: PayTransaction) => void;
@@ -42,11 +42,11 @@ export function TransactionsTable({
               <td className="px-4 py-3">{formatDate(tx.createdAt)}</td>
               <td className="px-4 py-3">{tx.method}</td>
               <td className="px-4 py-3">{tx.ref || '-'}</td>
-              <td className="px-4 py-3 font-semibold">
-                {formatCurrency(tx.amount, tx.currency)}
-              </td>
+              <td className="px-4 py-3 font-semibold">{formatCurrency(tx.amount, tx.currency)}</td>
               <td className="px-4 py-3">
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[tx.status] || 'bg-slate-200 text-slate-600'}`}>
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[tx.status] || 'bg-slate-200 text-slate-600'}`}
+                >
                   {tx.status}
                 </span>
               </td>
@@ -57,8 +57,8 @@ export function TransactionsTable({
                       tx.riskLevel === 'high'
                         ? 'bg-rose-100 text-rose-700'
                         : tx.riskLevel === 'medium'
-                        ? 'bg-amber-100 text-amber-700'
-                        : 'bg-emerald-100 text-emerald-700'
+                          ? 'bg-amber-100 text-amber-700'
+                          : 'bg-emerald-100 text-emerald-700'
                     }`}
                   >
                     {tx.riskLevel.toUpperCase()}

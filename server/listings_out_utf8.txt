@@ -1,0 +1,5 @@
+﻿[DB] Connected successfully to mongodb://localhost:27017/zeni
+Total listings: 2
+- Two-story detached home in Ngong, Kenya | Status: live | Verified: true | Availability: available | Agent: Unknown
+- Kilimani Home in Kenya | Status: live | Verified: true | Availability: available | Agent: Unknown
+[DB] Disconnected gracefully

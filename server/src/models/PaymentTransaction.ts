@@ -7,7 +7,7 @@ export interface PaymentTransactionDocument extends Document {
   userId: mongoose.Types.ObjectId;
   method: 'mpesa_stk' | 'card' | 'bank_transfer';
   amount: number;
-  status: typeof txStatuses[number];
+  status: (typeof txStatuses)[number];
   provider: 'mpesa';
   providerRef?: string;
   receiptNumber?: string;
@@ -28,7 +28,7 @@ const TxSchema = new Schema<PaymentTransactionDocument>(
     receiptNumber: String,
     phone: String,
     idempotencyKey: { type: String, unique: true },
-    rawCallback: Object
+    rawCallback: Object,
   },
   { timestamps: true }
 );
@@ -37,4 +37,7 @@ TxSchema.index({ invoiceId: 1, status: 1, createdAt: -1 });
 TxSchema.index({ providerRef: 1 }, { unique: true, sparse: true });
 TxSchema.index({ userId: 1, createdAt: -1 });
 
-export const PaymentTransactionModel = mongoose.model<PaymentTransactionDocument>('PaymentTransaction', TxSchema);
+export const PaymentTransactionModel = mongoose.model<PaymentTransactionDocument>(
+  'PaymentTransaction',
+  TxSchema
+);

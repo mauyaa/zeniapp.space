@@ -16,7 +16,16 @@ export type EligibleTransaction = {
 export type RefundRequestItem = {
   _id: string;
   userId: string;
-  transactionId: string | { _id: string; amount: number; currency: string; status?: string; purpose?: string; createdAt?: string };
+  transactionId:
+    | string
+    | {
+        _id: string;
+        amount: number;
+        currency: string;
+        status?: string;
+        purpose?: string;
+        createdAt?: string;
+      };
   reason: string;
   status: 'pending' | 'approved' | 'rejected';
   adminNotes?: string;
@@ -30,7 +39,10 @@ export function fetchEligibleTransactions(): Promise<EligibleTransaction[]> {
   return request<EligibleTransaction[]>('/refund-requests/eligible');
 }
 
-export function createRefundRequest(body: { transactionId: string; reason: string }): Promise<RefundRequestItem> {
+export function createRefundRequest(body: {
+  transactionId: string;
+  reason: string;
+}): Promise<RefundRequestItem> {
   return request<RefundRequestItem>('/refund-requests', {
     method: 'POST',
     body: JSON.stringify(body),

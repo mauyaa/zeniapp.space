@@ -16,7 +16,7 @@ export async function uploadDoc(req: AuthRequest, res: Response) {
     type: z.enum(['preapproval', 'pof', 'id']),
     url: z.string().url(),
     note: z.string().max(200).optional(),
-    sharedListings: z.array(objectIdSchema).optional()
+    sharedListings: z.array(objectIdSchema).optional(),
   });
   const body = schema.parse(req.body);
   const userId = req.user?.id;

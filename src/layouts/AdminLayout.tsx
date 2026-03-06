@@ -14,7 +14,7 @@ import {
   ScrollText,
   Wallet,
   Network,
-  ChevronRight
+  ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthProvider';
 import { useChat } from '../context/ChatContext';
@@ -35,7 +35,7 @@ const navItems = [
   { to: '/admin/audit', label: 'Audit Logs', icon: ScrollText },
   { to: '/admin/network-access', label: 'Network Access', icon: Network },
   { to: '/admin/messages', label: 'Messages', icon: MessageCircle },
-  { to: '/admin/settings', label: 'Settings', icon: Settings }
+  { to: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
 const mobileTabs = [
@@ -43,7 +43,7 @@ const mobileTabs = [
   { to: '/admin/verification', label: 'Verify', icon: ShieldCheck },
   { to: '/admin/users', label: 'Users', icon: Users },
   { to: '/admin/messages', label: 'Messages', icon: MessageCircle },
-  { to: '/admin/settings', label: 'Settings', icon: Settings }
+  { to: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
 function AdminShell() {
@@ -79,14 +79,19 @@ function AdminShell() {
       <aside className="hidden xl:flex w-64 flex-col justify-between border-r border-white/10 bg-black text-white py-6 z-20 flex-shrink-0">
         <div>
           <div className="px-6 mb-12">
-            <span className="text-2xl font-serif font-bold tracking-tight text-white">ZENI<span className="text-green-400">.</span></span>
-            <span className="text-[9px] font-bold uppercase tracking-widest block mt-1 text-white/60">Admin Console</span>
+            <span className="text-2xl font-serif font-bold tracking-tight text-white">
+              ZENI<span className="text-green-400">.</span>
+            </span>
+            <span className="text-[9px] font-bold uppercase tracking-widest block mt-1 text-white/60">
+              Admin Console
+            </span>
           </div>
 
           <nav className="space-y-1 px-3" aria-label="Main sidebar navigation">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+              const isActive =
+                location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
               const showBadge = item.to === '/admin/verification' && false; // optional: pending count
               const showMsgBadge = item.to === '/admin/messages' && unread > 0;
               return (
@@ -94,13 +99,19 @@ function AdminShell() {
                   key={item.to}
                   to={item.to}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-sm transition-all ${
-                    isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
+                    isActive
+                      ? 'bg-white/10 text-white'
+                      : 'text-white/70 hover:bg-white/5 hover:text-white'
                   }`}
                 >
                   <Icon className="w-4 h-4 flex-shrink-0" />
-                  <span className="text-[11px] font-bold uppercase tracking-[0.15em] flex-1">{item.label}</span>
+                  <span className="text-[11px] font-bold uppercase tracking-[0.15em] flex-1">
+                    {item.label}
+                  </span>
                   {showBadge && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-orange-500 text-white">12</span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-orange-500 text-white">
+                      12
+                    </span>
                   )}
                   {showMsgBadge && (
                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-orange-500 text-white">
@@ -119,7 +130,9 @@ function AdminShell() {
               {user?.name?.charAt(0) || 'A'}
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-wide truncate text-white">{user?.name || 'Admin'}</p>
+              <p className="text-xs font-bold uppercase tracking-wide truncate text-white">
+                {user?.name || 'Admin'}
+              </p>
               <p className="text-[10px] text-white/50">Super Admin</p>
             </div>
           </div>
@@ -198,7 +211,13 @@ function AdminShell() {
         />
 
         <NotificationDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
-        <AdminStepUpModal open={open} onClose={close} onSubmit={submit} loading={loading} error={error} />
+        <AdminStepUpModal
+          open={open}
+          onClose={close}
+          onSubmit={submit}
+          loading={loading}
+          error={error}
+        />
       </div>
     </div>
   );

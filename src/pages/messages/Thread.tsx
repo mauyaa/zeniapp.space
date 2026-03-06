@@ -10,7 +10,11 @@ import { useAuth } from '../../context/AuthProvider';
 import { getSocket } from '../../lib/socket';
 import { Message } from '../../types/chat';
 import { cn } from '../../utils/cn';
-import { resolveUserContactLabel, getAgentOtherPartyLabel, getAdminOtherPartyLabel } from './contactLabels';
+import {
+  resolveUserContactLabel,
+  getAgentOtherPartyLabel,
+  getAdminOtherPartyLabel,
+} from './contactLabels';
 
 const userSuggestions = [
   'Hi, I am interested in this property.',
@@ -52,7 +56,7 @@ export function ThreadPage() {
     loadingThread,
     setActiveConversation,
     markRead,
-    typing
+    typing,
   } = useChat();
   const { role, token, user } = useAuth();
   const basePath =
@@ -103,12 +107,12 @@ export function ThreadPage() {
   const threadMessages = messages[conversationId ?? ''] ?? [];
   const canSend = text.trim().length > 0;
   const canCompose = Boolean(
-    conversation && user && (
-      conversation.userId === user.id ||
+    conversation &&
+    user &&
+    (conversation.userId === user.id ||
       conversation.agentId === user.id ||
       role === 'admin' ||
-      role === 'agent'
-    )
+      role === 'agent')
   );
 
   const allSuggestions = role === 'user' ? userSuggestions : staffSuggestions;
@@ -116,7 +120,9 @@ export function ThreadPage() {
   const filteredSuggestions = useMemo(() => {
     const query = text.trim().toLowerCase();
     if (!query) return [];
-    return allSuggestions.filter((s) => s.toLowerCase().includes(query) && s.toLowerCase() !== query);
+    return allSuggestions.filter(
+      (s) => s.toLowerCase().includes(query) && s.toLowerCase() !== query
+    );
   }, [text, allSuggestions]);
 
   const groupedMessages = useMemo(() => {
@@ -145,7 +151,7 @@ export function ThreadPage() {
         message,
         showDateSeparator: !previous || previousDay !== currentDay,
         isFirstInGroup: !sameAsPrevious,
-        isLastInGroup: !sameAsNext
+        isLastInGroup: !sameAsNext,
       };
     });
   }, [threadMessages]);
@@ -191,10 +197,13 @@ export function ThreadPage() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleSend = useCallback(async (value: string) => {
-    if (!conversationId) return;
-    await sendMessage(conversationId, { type: 'text', content: value });
-  }, [conversationId, sendMessage]);
+  const handleSend = useCallback(
+    async (value: string) => {
+      if (!conversationId) return;
+      await sendMessage(conversationId, { type: 'text', content: value });
+    },
+    [conversationId, sendMessage]
+  );
 
   const formatDateLabel = (dateString: string) => {
     const date = new Date(dateString);
@@ -221,27 +230,47 @@ export function ThreadPage() {
         <div className="space-y-1">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Viewing</p>
           <p className="text-sm leading-relaxed text-current">
-            {typeof message.content === 'string' ? message.content : JSON.stringify(message.content)}
+            {typeof message.content === 'string'
+              ? message.content
+              : JSON.stringify(message.content)}
           </p>
         </div>
       );
     }
-    if (message.type === 'attachment' && message.content && typeof message.content === 'object' && 'url' in message.content) {
+    if (
+      message.type === 'attachment' &&
+      message.content &&
+      typeof message.content === 'object' &&
+      'url' in message.content
+    ) {
       const content = message.content as { url: string; name?: string };
       const name = content.name || 'Attachment';
-      const isImage = /\.(jpe?g|png|webp|gif)$/i.test(content.url) || /^data:image\//i.test(content.url);
+      const isImage =
+        /\.(jpe?g|png|webp|gif)$/i.test(content.url) || /^data:image\//i.test(content.url);
       if (isImage) {
         return (
           <div className="space-y-1">
-            <a href={content.url} target="_blank" rel="noopener noreferrer" className="block rounded-lg overflow-hidden max-w-[280px]">
+            <a
+              href={content.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block rounded-lg overflow-hidden max-w-[280px]"
+            >
               <img src={content.url} alt={name} className="w-full h-auto object-cover" />
             </a>
-            {name && name !== content.url && <p className="text-xs text-slate-500 truncate">{name}</p>}
+            {name && name !== content.url && (
+              <p className="text-xs text-slate-500 truncate">{name}</p>
+            )}
           </div>
         );
       }
       return (
-        <a href={content.url} target="_blank" rel="noopener noreferrer" className="text-sm text-emerald-600 underline break-all">
+        <a
+          href={content.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-emerald-600 underline break-all"
+        >
           {name}
         </a>
       );
@@ -281,7 +310,11 @@ export function ThreadPage() {
     e.target.value = '';
     if (!file || !conversationId) return;
     if (!file.type.startsWith('image/')) {
-      pushToast({ title: 'Invalid file', description: 'Please choose an image (JPEG, PNG, WebP, or GIF).', tone: 'error' });
+      pushToast({
+        title: 'Invalid file',
+        description: 'Please choose an image (JPEG, PNG, WebP, or GIF).',
+        tone: 'error',
+      });
       return;
     }
     setUploading(true);
@@ -289,7 +322,11 @@ export function ThreadPage() {
       const { url } = await api.uploadChatImage(file);
       await sendMessage(conversationId, { type: 'attachment', content: { url, name: file.name } });
     } catch (err) {
-      pushToast({ title: 'Upload failed', description: err instanceof Error ? err.message : 'Could not attach image.', tone: 'error' });
+      pushToast({
+        title: 'Upload failed',
+        description: err instanceof Error ? err.message : 'Could not attach image.',
+        tone: 'error',
+      });
     } finally {
       setUploading(false);
     }
@@ -335,7 +372,13 @@ export function ThreadPage() {
   }, [conversationId, conversation, navigate, basePath]);
 
   if (!conversationId) {
-    return <EmptyState title="No conversation selected" subtitle="Pick one from the inbox." variant="light" />;
+    return (
+      <EmptyState
+        title="No conversation selected"
+        subtitle="Pick one from the inbox."
+        variant="light"
+      />
+    );
   }
 
   if (!conversation) {
@@ -384,58 +427,60 @@ export function ThreadPage() {
           </div>
         ) : (
           <div className="space-y-1.5">
-            {groupedMessages.map(({ message, showDateSeparator, isFirstInGroup, isLastInGroup }) => {
-              const isBot = message.senderType === 'bot' || message.senderType === 'system';
-              const isMine = selfSenderType !== null && message.senderType === selfSenderType;
-              const roundClass = isMine
-                ? `${isFirstInGroup ? 'rounded-tr-2xl' : 'rounded-tr-md'} ${
-                    isLastInGroup ? 'rounded-br-2xl' : 'rounded-br-md'
-                  } rounded-l-2xl`
-                : `${isFirstInGroup ? 'rounded-tl-2xl' : 'rounded-tl-md'} ${
-                    isLastInGroup ? 'rounded-bl-2xl' : 'rounded-bl-md'
-                  } rounded-r-2xl`;
+            {groupedMessages.map(
+              ({ message, showDateSeparator, isFirstInGroup, isLastInGroup }) => {
+                const isBot = message.senderType === 'bot' || message.senderType === 'system';
+                const isMine = selfSenderType !== null && message.senderType === selfSenderType;
+                const roundClass = isMine
+                  ? `${isFirstInGroup ? 'rounded-tr-2xl' : 'rounded-tr-md'} ${
+                      isLastInGroup ? 'rounded-br-2xl' : 'rounded-br-md'
+                    } rounded-l-2xl`
+                  : `${isFirstInGroup ? 'rounded-tl-2xl' : 'rounded-tl-md'} ${
+                      isLastInGroup ? 'rounded-bl-2xl' : 'rounded-bl-md'
+                    } rounded-r-2xl`;
 
-              return (
-                <React.Fragment key={message.id}>
-                  {showDateSeparator && (
-                    <div className="flex justify-center py-3">
-                      <span className="rounded-full bg-gray-200/70 px-3 py-1 text-[10px] font-medium text-gray-500">
-                        {formatDateLabel(message.createdAt)}
-                      </span>
-                    </div>
-                  )}
-                  <div className={cn('flex w-full', isMine ? 'justify-end' : 'justify-start')}>
-                    <div
-                      className={cn(
-                        'max-w-[80%] px-3.5 py-2 md:max-w-md',
-                        roundClass,
-                        isMine
-                          ? 'bg-black text-white'
-                          : isBot
-                          ? 'bg-amber-50 border border-amber-200 text-black'
-                          : 'bg-white border border-gray-200 text-black'
-                      )}
-                    >
-                      {renderMessageContent(message)}
+                return (
+                  <React.Fragment key={message.id}>
+                    {showDateSeparator && (
+                      <div className="flex justify-center py-3">
+                        <span className="rounded-full bg-gray-200/70 px-3 py-1 text-[10px] font-medium text-gray-500">
+                          {formatDateLabel(message.createdAt)}
+                        </span>
+                      </div>
+                    )}
+                    <div className={cn('flex w-full', isMine ? 'justify-end' : 'justify-start')}>
                       <div
                         className={cn(
-                          'mt-1 flex items-center gap-1 text-[10px]',
-                          isMine ? 'justify-end text-gray-400' : 'text-gray-400'
+                          'max-w-[80%] px-3.5 py-2 md:max-w-md',
+                          roundClass,
+                          isMine
+                            ? 'bg-black text-white'
+                            : isBot
+                              ? 'bg-amber-50 border border-amber-200 text-black'
+                              : 'bg-white border border-gray-200 text-black'
                         )}
                       >
-                        <span>{formatTime(message.createdAt)}</span>
-                        {isMine &&
-                          (message.status === 'read' || message.status === 'delivered' ? (
-                            <CheckCheck className="h-3 w-3" />
-                          ) : (
-                            <Check className="h-3 w-3" />
-                          ))}
+                        {renderMessageContent(message)}
+                        <div
+                          className={cn(
+                            'mt-1 flex items-center gap-1 text-[10px]',
+                            isMine ? 'justify-end text-gray-400' : 'text-gray-400'
+                          )}
+                        >
+                          <span>{formatTime(message.createdAt)}</span>
+                          {isMine &&
+                            (message.status === 'read' || message.status === 'delivered' ? (
+                              <CheckCheck className="h-3 w-3" />
+                            ) : (
+                              <Check className="h-3 w-3" />
+                            ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </React.Fragment>
-              );
-            })}
+                  </React.Fragment>
+                );
+              }
+            )}
           </div>
         )}
 
@@ -443,8 +488,14 @@ export function ThreadPage() {
           <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-white border border-gray-200 px-3 py-1.5 text-xs text-gray-500">
             <span className="flex gap-0.5">
               <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400" />
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: '0.15s' }} />
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: '0.3s' }} />
+              <span
+                className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400"
+                style={{ animationDelay: '0.15s' }}
+              />
+              <span
+                className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400"
+                style={{ animationDelay: '0.3s' }}
+              />
             </span>
             {headerName} is typing
           </div>

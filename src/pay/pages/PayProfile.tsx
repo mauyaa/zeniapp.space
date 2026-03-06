@@ -21,8 +21,14 @@ export function PayProfile() {
   const [stepUpMessage, setStepUpMessage] = useState('');
 
   useEffect(() => {
-    payApi.sessions().then(setSessions).catch(() => setSessions([]));
-    payApi.getAccount().then(setAccount).catch(() => setAccount(null));
+    payApi
+      .sessions()
+      .then((s) => setSessions(s as PaySession[]))
+      .catch(() => setSessions([]));
+    payApi
+      .getAccount()
+      .then((acct) => setAccount(acct as PayAccount | null))
+      .catch(() => setAccount(null));
   }, []);
 
   const handleLogoutAll = async () => {
@@ -65,7 +71,8 @@ export function PayProfile() {
                   <Input label="Role" value={user?.role || ''} />
                   <div className="sm:col-span-2 rounded-sm border border-zinc-800 bg-zinc-900/30 px-4 py-3">
                     <p className="text-xs text-zinc-400">
-                      Email and phone are managed in your main Zeni account. Update them at <strong>App → Profile</strong>.
+                      Email and phone are managed in your main Zeni account. Update them at{' '}
+                      <strong>App → Profile</strong>.
                     </p>
                   </div>
                 </div>
@@ -97,7 +104,14 @@ export function PayProfile() {
                         <select
                           value={account.defaultMethod || 'mpesa_stk'}
                           onChange={(e) =>
-                            setAccount((prev) => (prev ? { ...prev, defaultMethod: e.target.value } : prev))
+                            setAccount((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    defaultMethod: e.target.value as PayAccount['defaultMethod'],
+                                  }
+                                : prev
+                            )
                           }
                           className="w-full rounded-sm border border-zinc-700 bg-black px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                         >
@@ -113,7 +127,9 @@ export function PayProfile() {
                         <select
                           value={account.defaultCurrency || 'KES'}
                           onChange={(e) =>
-                            setAccount((prev) => (prev ? { ...prev, defaultCurrency: e.target.value } : prev))
+                            setAccount((prev) =>
+                              prev ? { ...prev, defaultCurrency: e.target.value } : prev
+                            )
                           }
                           className="w-full rounded-sm border border-zinc-700 bg-black px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                         >
@@ -129,11 +145,17 @@ export function PayProfile() {
                         setSaving(true);
                         setMessage('');
                         try {
+                          const method =
+                            account.defaultMethod === 'card' ||
+                            account.defaultMethod === 'bank_transfer' ||
+                            account.defaultMethod === 'mpesa_stk'
+                              ? account.defaultMethod
+                              : 'mpesa_stk';
                           const updated = await payApi.updateAccount({
                             defaultCurrency: account.defaultCurrency,
-                            defaultMethod: account.defaultMethod,
+                            defaultMethod: method,
                           });
-                          setAccount(updated);
+                          setAccount(updated as PayAccount);
                           setMessage('Wallet defaults saved.');
                         } catch (e: unknown) {
                           setMessage(e instanceof Error ? e.message : 'Save failed');
@@ -155,7 +177,8 @@ export function PayProfile() {
             {active === 'Password' && (
               <div className="space-y-4">
                 <p className="text-xs text-zinc-400">
-                  Pay portal uses the same credentials as your main Zeni account. To change your password, go to <strong>App → Profile → Security</strong> on the main site.
+                  Pay portal uses the same credentials as your main Zeni account. To change your
+                  password, go to <strong>App → Profile → Security</strong> on the main site.
                 </p>
               </div>
             )}
@@ -169,7 +192,9 @@ export function PayProfile() {
                   </p>
                   <div className="mt-4 flex flex-wrap items-center gap-3">
                     <div className="flex-1 min-w-[200px]">
-                      <div className="text-xs font-semibold text-zinc-300">Two-factor verification</div>
+                      <div className="text-xs font-semibold text-zinc-300">
+                        Two-factor verification
+                      </div>
                       <div className="text-[10px] text-zinc-500 mt-0.5">
                         Enter your step-up code to elevate this session.
                       </div>
@@ -187,7 +212,9 @@ export function PayProfile() {
                           setStepUpMessage('');
                           try {
                             const res = await payApi.stepUp(stepUpCode);
-                            setStepUpMessage(`Verified at ${new Date(res.verifiedAt).toLocaleTimeString()}`);
+                            setStepUpMessage(
+                              `Verified at ${new Date(res.verifiedAt).toLocaleTimeString()}`
+                            );
                             const updated = await payApi.sessions();
                             setSessions(updated);
                           } catch (e: unknown) {
@@ -200,7 +227,9 @@ export function PayProfile() {
                       </button>
                     </div>
                   </div>
-                  {stepUpMessage && <div className="mt-2 text-xs text-emerald-400">{stepUpMessage}</div>}
+                  {stepUpMessage && (
+                    <div className="mt-2 text-xs text-emerald-400">{stepUpMessage}</div>
+                  )}
                 </div>
 
                 <div className="rounded-sm border border-zinc-800 bg-[#18181B] p-4">
@@ -217,7 +246,10 @@ export function PayProfile() {
                             {session.userAgent || 'Unknown device'}
                           </div>
                           <div className="text-[10px] text-zinc-500">
-                            Last used {session.lastUsedAt ? new Date(session.lastUsedAt).toLocaleString() : '--'}
+                            Last used{' '}
+                            {session.lastUsedAt
+                              ? new Date(session.lastUsedAt).toLocaleString()
+                              : '--'}
                           </div>
                         </div>
                         <div className="text-[10px] text-zinc-500">{session.ip || '--'}</div>
@@ -255,7 +287,9 @@ function Input({
 }) {
   return (
     <div>
-      <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">{label}</label>
+      <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">
+        {label}
+      </label>
       <input
         value={value}
         type={type}

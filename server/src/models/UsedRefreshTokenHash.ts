@@ -15,7 +15,7 @@ const UsedRefreshTokenHashSchema = new Schema<UsedRefreshTokenHashDocument>(
   {
     tokenHash: { type: String, required: true, unique: true, index: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    expiresAt: { type: Date, required: true }
+    expiresAt: { type: Date, required: true },
   },
   { timestamps: false }
 );

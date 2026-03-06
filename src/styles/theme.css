@@ -7,10 +7,10 @@
   --muted: 107 114 128;
   --accent: 16 185 129;
   --accent2: 20 184 166;
-  --color-bg: #F9FAFB;
-  --color-text-main: #1A1A1A;
-  --color-text-muted: #6B7280;
-  --color-accent: #2C3E50;
+  --color-bg: #f9fafb;
+  --color-text-main: #1a1a1a;
+  --color-text-muted: #6b7280;
+  --color-accent: #2c3e50;
   --font-heading: 'Playfair Display', serif;
   --font-body: 'Inter', sans-serif;
   --font-sans: var(--font-body);
@@ -136,7 +136,7 @@ html {
   width: 100%;
   padding: 1rem 0;
   border: none;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 1px solid #e5e7eb;
   background: transparent;
   font-family: var(--font-body);
   font-size: 1rem;
@@ -146,30 +146,30 @@ html {
 
 .zeni-input:focus {
   outline: none;
-  border-bottom: 1px solid #1A1A1A;
-  background: #FAFAFA;
+  border-bottom: 1px solid #1a1a1a;
+  background: #fafafa;
 }
 
 .dark .zeni-input {
   border-bottom-color: #334155;
-  color: #E2E8F0;
+  color: #e2e8f0;
 }
 
 .dark .zeni-input:focus {
-  border-bottom-color: #E2E8F0;
-  background: #0B0F14;
+  border-bottom-color: #e2e8f0;
+  background: #0b0f14;
 }
 
 .zeni-label {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #9CA3AF;
+  color: #9ca3af;
   font-weight: 600;
   margin-bottom: 0.25rem;
   display: block;
 }
 
 .dark .zeni-label {
-  color: #94A3B8;
+  color: #94a3b8;
 }

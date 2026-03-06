@@ -5,7 +5,9 @@ import { handlePaymentIntentSucceeded } from '../services/stripe.service';
 
 export async function stripeWebhook(req: Request, res: Response) {
   if (!env.stripe.secretKey || !env.stripe.webhookSecret) {
-    return res.status(503).json({ code: 'STRIPE_DISABLED', message: 'Stripe webhook not configured' });
+    return res
+      .status(503)
+      .json({ code: 'STRIPE_DISABLED', message: 'Stripe webhook not configured' });
   }
 
   const rawBody = req.body as Buffer;

@@ -18,7 +18,7 @@ export const SERVICES = [
   {
     id: '01',
     title: 'Map-First Search',
-    desc: 'Search across Kenya on the map. Filter by KES price, beds, and amenities—see what\'s really available.',
+    desc: "Search across Kenya on the map. Filter by KES price, beds, and amenities—see what's really available.",
   },
   {
     id: '02',
@@ -37,15 +37,31 @@ export const SERVICES = [
   },
 ];
 
-export const AREAS_WE_COVER = ['Westlands', 'Kilimani', 'Karen', 'Lavington', 'Riverside', 'Ngong Road'];
+export const AREAS_WE_COVER = [
+  'Westlands',
+  'Kilimani',
+  'Karen',
+  'Lavington',
+  'Riverside',
+  'Ngong Road',
+];
 
 export const TOOLBOX = [
-  { title: 'Map-first discovery', desc: 'Draw your zone, compare amenities, and spot pricing clusters fast.' },
-  { title: 'Verified agents', desc: 'Identity checks and performance history before anyone goes live.' },
+  {
+    title: 'Map-first discovery',
+    desc: 'Draw your zone, compare amenities, and spot pricing clusters fast.',
+  },
+  {
+    title: 'Verified agents',
+    desc: 'Identity checks and performance history before anyone goes live.',
+  },
   { title: 'Viewing wallet', desc: 'Schedule tours, share itineraries, and track confirmations.' },
   { title: 'Market signals', desc: 'Price movement, rental yield, and demand trends in one view.' },
   { title: 'Document vault', desc: 'Store leases, offers, and inspection notes in one place.' },
-  { title: 'Offer room', desc: 'Compare options, counter with clarity, and close with confidence.' },
+  {
+    title: 'Offer room',
+    desc: 'Compare options, counter with clarity, and close with confidence.',
+  },
 ];
 
 export const JOURNEYS = [
@@ -63,7 +79,11 @@ export const JOURNEYS = [
   {
     title: 'Rent with clarity',
     label: 'Renters',
-    steps: ['Search verified rentals', 'Track viewings and approvals', 'Move in with clear payment records'],
+    steps: [
+      'Search verified rentals',
+      'Track viewings and approvals',
+      'Move in with clear payment records',
+    ],
     cta: 'Find rentals',
     href: '/explore',
   },

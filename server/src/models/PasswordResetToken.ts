@@ -16,7 +16,7 @@ const PasswordResetTokenSchema = new Schema<PasswordResetTokenDocument>(
     expiresAt: { type: Date, required: true, index: { expireAfterSeconds: 0 } },
     usedAt: { type: Date },
     userAgent: String,
-    ip: String
+    ip: String,
   },
   { timestamps: true }
 );

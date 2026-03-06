@@ -1,11 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { 
-  MessageSquare, 
-  MessagesSquare,
-  Inbox,
-  type LucideIcon 
-} from 'lucide-react';
+import { MessageSquare, MessagesSquare, Inbox, type LucideIcon } from 'lucide-react';
 
 /**
  * Chat-specific empty states with animations and CTAs
@@ -31,8 +26,8 @@ const iconMap: Record<string, LucideIcon> = {
   custom: MessageSquare,
 };
 
-export function EmptyState({ 
-  title, 
+export function EmptyState({
+  title,
   subtitle,
   type = 'messages',
   icon,
@@ -43,7 +38,7 @@ export function EmptyState({
   const isLight = variant === 'light';
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
@@ -61,14 +56,17 @@ export function EmptyState({
         className="relative"
       >
         {/* Background circle */}
-        <div className={`flex h-16 w-16 items-center justify-center rounded-full ${
-          isLight ? 'bg-amber-50' : 'bg-gradient-to-br from-slate-800 to-slate-900'
-        }`}>
-          <IconComponent className={`h-8 w-8 ${
-            isLight ? 'text-amber-400' : 'text-slate-500'
-          }`} strokeWidth={1.5} />
+        <div
+          className={`flex h-16 w-16 items-center justify-center rounded-full ${
+            isLight ? 'bg-amber-50' : 'bg-gradient-to-br from-slate-800 to-slate-900'
+          }`}
+        >
+          <IconComponent
+            className={`h-8 w-8 ${isLight ? 'text-amber-400' : 'text-slate-500'}`}
+            strokeWidth={1.5}
+          />
         </div>
-        
+
         {/* Decorative elements */}
         <motion.div
           className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-500/60"
@@ -104,8 +102,14 @@ export function EmptyState({
         transition={{ delay: 0.2, duration: 0.3 }}
         className="space-y-1"
       >
-        <h3 className={`text-sm font-semibold font-display ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>{title}</h3>
-        <p className={`max-w-[240px] text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>{subtitle}</p>
+        <h3
+          className={`text-sm font-semibold font-display ${isLight ? 'text-slate-900' : 'text-slate-100'}`}
+        >
+          {title}
+        </h3>
+        <p className={`max-w-[240px] text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+          {subtitle}
+        </p>
       </motion.div>
 
       {/* Action button */}
@@ -133,7 +137,7 @@ export function EmptyState({
  */
 export function NoConversationsState({
   onExplore,
-  variant = 'dark'
+  variant = 'dark',
 }: {
   onExplore?: () => void;
   variant?: 'light' | 'dark';
@@ -144,10 +148,14 @@ export function NoConversationsState({
       title="No conversations yet"
       subtitle="Start a conversation by messaging an agent about a property you're interested in."
       variant={variant}
-      action={onExplore ? {
-        label: 'Explore Properties',
-        onClick: onExplore,
-      } : undefined}
+      action={
+        onExplore
+          ? {
+              label: 'Explore Properties',
+              onClick: onExplore,
+            }
+          : undefined
+      }
     />
   );
 }
@@ -157,7 +165,7 @@ export function NoConversationsState({
  */
 export function NoSearchResultsState({
   query,
-  variant = 'dark'
+  variant = 'dark',
 }: {
   query: string;
   variant?: 'light' | 'dark';

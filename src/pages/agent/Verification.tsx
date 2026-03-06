@@ -1,6 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { CloudUpload, ShieldCheck, FileText, AlertTriangle, CalendarClock, UserCheck, ArrowRight } from 'lucide-react';
-import { uploadImage, submitVerificationEvidence, submitBusinessVerify, fetchVerificationHistory, updateEarbNumber } from '../../lib/api';
+import {
+  CloudUpload,
+  ShieldCheck,
+  FileText,
+  AlertTriangle,
+  CalendarClock,
+  UserCheck,
+  ArrowRight,
+} from 'lucide-react';
+import {
+  uploadImage,
+  submitVerificationEvidence,
+  submitBusinessVerify,
+  fetchVerificationHistory,
+  updateEarbNumber,
+} from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthProvider';
 import { Button } from '../../components/ui/Button';
@@ -44,11 +58,19 @@ export function AgentVerificationPage() {
     }
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
-      push({ title: 'File too large', description: 'Documents must be 5MB or smaller.', tone: 'error' });
+      push({
+        title: 'File too large',
+        description: 'Documents must be 5MB or smaller.',
+        tone: 'error',
+      });
       return;
     }
     if (!/^image\/(jpeg|png|webp|gif)$/i.test(file.type)) {
-      push({ title: 'Invalid file type', description: 'Use JPEG, PNG, WebP or GIF.', tone: 'error' });
+      push({
+        title: 'Invalid file type',
+        description: 'Use JPEG, PNG, WebP or GIF.',
+        tone: 'error',
+      });
       return;
     }
     setUploading(true);
@@ -61,22 +83,34 @@ export function AgentVerificationPage() {
       const latest = await fetchVerificationHistory();
       setHistory(latest);
     } catch (err) {
-      push({ title: 'Failed', description: err instanceof Error ? err.message : 'Could not submit evidence', tone: 'error' });
+      push({
+        title: 'Failed',
+        description: err instanceof Error ? err.message : 'Could not submit evidence',
+        tone: 'error',
+      });
     } finally {
       setUploading(false);
     }
   };
 
-  const statusLabel = user?.role === 'agent'
-    ? (user?.agentVerification === 'verified' ? 'Verified' : user?.agentVerification === 'rejected' ? 'Rejected' : history?.status || 'Pending review')
-    : 'N/A';
+  const statusLabel =
+    user?.role === 'agent'
+      ? user?.agentVerification === 'verified'
+        ? 'Verified'
+        : user?.agentVerification === 'rejected'
+          ? 'Rejected'
+          : history?.status || 'Pending review'
+      : 'N/A';
 
   return (
     <div className="space-y-10 max-w-4xl">
       <div>
-        <h1 className="text-3xl font-serif font-semibold text-zinc-900 tracking-tight">Agent verification</h1>
+        <h1 className="text-3xl font-serif font-semibold text-zinc-900 tracking-tight">
+          Agent verification
+        </h1>
         <p className="text-base text-zinc-600 mt-2">
-          You start as a user. Once your application and documents are accepted by our team, you become a verified agent and can list properties.
+          You start as a user. Once your application and documents are accepted by our team, you
+          become a verified agent and can list properties.
         </p>
       </div>
 
@@ -97,7 +131,10 @@ export function AgentVerificationPage() {
                 <p className="text-sm text-zinc-600 mt-0.5">{description}</p>
               </div>
               {step < AGENT_ONBOARDING_PROTOCOL.length && (
-                <ArrowRight className="h-5 w-5 shrink-0 text-zinc-300 mt-1 hidden sm:block" aria-hidden />
+                <ArrowRight
+                  className="h-5 w-5 shrink-0 text-zinc-300 mt-1 hidden sm:block"
+                  aria-hidden
+                />
               )}
             </li>
           ))}
@@ -107,24 +144,36 @@ export function AgentVerificationPage() {
       {/* Status cards */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <div className="text-xs font-mono font-semibold uppercase tracking-widest text-zinc-500">Current status</div>
+          <div className="text-xs font-mono font-semibold uppercase tracking-widest text-zinc-500">
+            Current status
+          </div>
           <div className="text-xl font-semibold text-zinc-900 mt-2">{statusLabel}</div>
         </div>
         <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <div className="text-xs font-mono font-semibold uppercase tracking-widest text-zinc-500">Evidence files</div>
-          <div className="text-xl font-semibold text-zinc-900 mt-2">{history?.evidence?.length || 0}</div>
+          <div className="text-xs font-mono font-semibold uppercase tracking-widest text-zinc-500">
+            Evidence files
+          </div>
+          <div className="text-xl font-semibold text-zinc-900 mt-2">
+            {history?.evidence?.length || 0}
+          </div>
         </div>
         <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm col-span-2 md:col-span-1">
-          <div className="text-xs font-mono font-semibold uppercase tracking-widest text-zinc-500">Latest upload</div>
+          <div className="text-xs font-mono font-semibold uppercase tracking-widest text-zinc-500">
+            Latest upload
+          </div>
           <div className="text-xl font-semibold text-zinc-900 mt-2">
-            {history?.evidence?.[0]?.uploadedAt ? new Date(history.evidence[0].uploadedAt).toLocaleDateString() : '—'}
+            {history?.evidence?.[0]?.uploadedAt
+              ? new Date(history.evidence[0].uploadedAt).toLocaleDateString()
+              : '—'}
           </div>
         </div>
       </div>
 
       {/* What admins check */}
       <div className="rounded-xl border border-zinc-200 bg-white p-5">
-        <h2 className="text-xs font-mono font-semibold uppercase tracking-widest text-zinc-500 mb-3">What we verify before approving</h2>
+        <h2 className="text-xs font-mono font-semibold uppercase tracking-widest text-zinc-500 mb-3">
+          What we verify before approving
+        </h2>
         <ul className="text-sm text-zinc-600 space-y-2">
           {AGENT_ACCEPTANCE_CRITERIA.map((item) => (
             <li key={item} className="flex items-start gap-2">
@@ -137,13 +186,18 @@ export function AgentVerificationPage() {
 
       {/* EARB */}
       <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm p-6">
-        <div className="text-xs font-mono font-semibold uppercase tracking-widest text-zinc-500 mb-3">EARB registration</div>
+        <div className="text-xs font-mono font-semibold uppercase tracking-widest text-zinc-500 mb-3">
+          EARB registration
+        </div>
         <p className="text-sm text-zinc-600 mb-4">
-          Provide your Estate Agents Registration Board (EARB) license number. Admins verify it against the official EARB portal before approval.
+          Provide your Estate Agents Registration Board (EARB) license number. Admins verify it
+          against the official EARB portal before approval.
         </p>
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-xs font-medium text-zinc-600 mb-1">EARB registration number</label>
+            <label className="block text-xs font-medium text-zinc-600 mb-1">
+              EARB registration number
+            </label>
             <Input
               type="text"
               value={earbNumber}
@@ -164,7 +218,11 @@ export function AgentVerificationPage() {
                 setHistory(latest);
                 if (latest.earbRegistrationNumber) setEarbNumber(latest.earbRegistrationNumber);
               } catch (err) {
-                push({ title: 'Failed', description: err instanceof Error ? err.message : 'Could not save', tone: 'error' });
+                push({
+                  title: 'Failed',
+                  description: err instanceof Error ? err.message : 'Could not save',
+                  tone: 'error',
+                });
               } finally {
                 setEarbSaving(false);
               }
@@ -184,7 +242,10 @@ export function AgentVerificationPage() {
       <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm p-6">
         <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
           <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
-          <p>Upload your license or ID and proof of agency. Reviews are usually completed within 1–2 business days.</p>
+          <p>
+            Upload your license or ID and proof of agency. Reviews are usually completed within 1–2
+            business days.
+          </p>
         </div>
 
         <form onSubmit={onSubmit} className="mt-4 space-y-4">
@@ -218,19 +279,33 @@ export function AgentVerificationPage() {
 
       {history && history.evidence?.length > 0 && (
         <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm p-6 space-y-3">
-          <div className="text-xs font-mono font-semibold uppercase tracking-widest text-zinc-500">Submission history</div>
+          <div className="text-xs font-mono font-semibold uppercase tracking-widest text-zinc-500">
+            Submission history
+          </div>
           <div className="space-y-2">
             {history.evidence
               .slice()
               .reverse()
               .map((ev, idx) => (
-                <div key={`${ev.url}-${idx}`} className="flex items-start gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm">
+                <div
+                  key={`${ev.url}-${idx}`}
+                  className="flex items-start gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm"
+                >
                   <div className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-200 text-zinc-600">
                     <CalendarClock className="h-4 w-4" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-xs text-zinc-500">{new Date(ev.uploadedAt).toLocaleString()}</div>
-                    <a href={ev.url} target="_blank" rel="noreferrer" className="text-sm text-zinc-900 underline truncate block">View document</a>
+                    <div className="text-xs text-zinc-500">
+                      {new Date(ev.uploadedAt).toLocaleString()}
+                    </div>
+                    <a
+                      href={ev.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm text-zinc-900 underline truncate block"
+                    >
+                      View document
+                    </a>
                     {ev.note && <div className="text-xs text-zinc-600">Note: {ev.note}</div>}
                   </div>
                 </div>
@@ -245,9 +320,12 @@ export function AgentVerificationPage() {
 
       {/* Business verification */}
       <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm p-6">
-        <div className="text-xs font-mono font-semibold uppercase tracking-widest text-zinc-500 mb-3">Business verification</div>
+        <div className="text-xs font-mono font-semibold uppercase tracking-widest text-zinc-500 mb-3">
+          Business verification
+        </div>
         <p className="text-sm text-zinc-600 mb-4">
-          Submit company or entity documents (e.g. business registration, agency license) for admin verification. Appears in the moderation queue as Business Verify.
+          Submit company or entity documents (e.g. business registration, agency license) for admin
+          verification. Appears in the moderation queue as Business Verify.
         </p>
         {history?.businessVerifyStatus === 'verified' && (
           <div className="mb-4 inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
@@ -255,34 +333,56 @@ export function AgentVerificationPage() {
             Business verified
           </div>
         )}
-        {(history?.businessVerifyStatus === 'none' || history?.businessVerifyStatus === 'pending' || history?.businessVerifyStatus === 'rejected') && (
+        {(history?.businessVerifyStatus === 'none' ||
+          history?.businessVerifyStatus === 'pending' ||
+          history?.businessVerifyStatus === 'rejected') && (
           <form
             onSubmit={async (e) => {
               e.preventDefault();
               if (!businessFile) {
-                push({ title: 'Select a file', description: 'Upload a business document image', tone: 'error' });
+                push({
+                  title: 'Select a file',
+                  description: 'Upload a business document image',
+                  tone: 'error',
+                });
                 return;
               }
               const maxSize = 5 * 1024 * 1024; // 5MB
               if (businessFile.size > maxSize) {
-                push({ title: 'File too large', description: 'Documents must be 5MB or smaller.', tone: 'error' });
+                push({
+                  title: 'File too large',
+                  description: 'Documents must be 5MB or smaller.',
+                  tone: 'error',
+                });
                 return;
               }
               if (!/^image\/(jpeg|png|webp|gif)$/i.test(businessFile.type)) {
-                push({ title: 'Invalid file type', description: 'Use JPEG, PNG, WebP or GIF.', tone: 'error' });
+                push({
+                  title: 'Invalid file type',
+                  description: 'Use JPEG, PNG, WebP or GIF.',
+                  tone: 'error',
+                });
                 return;
               }
               setBusinessUploading(true);
               try {
                 const { url } = await uploadImage(businessFile);
                 await submitBusinessVerify(url, businessNote || undefined);
-                push({ title: 'Submitted', description: 'Business documents sent for review', tone: 'success' });
+                push({
+                  title: 'Submitted',
+                  description: 'Business documents sent for review',
+                  tone: 'success',
+                });
                 setBusinessFile(null);
                 setBusinessNote('');
                 const latest = await fetchVerificationHistory();
                 setHistory(latest);
               } catch (err) {
-                push({ title: 'Failed', description: err instanceof Error ? err.message : 'Could not submit', tone: 'error' });
+                push({
+                  title: 'Failed',
+                  description: err instanceof Error ? err.message : 'Could not submit',
+                  tone: 'error',
+                });
               } finally {
                 setBusinessUploading(false);
               }
@@ -291,8 +391,15 @@ export function AgentVerificationPage() {
           >
             <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-center text-sm text-zinc-600 hover:border-emerald-500 hover:bg-emerald-50/30 transition-colors">
               <CloudUpload className="mb-2 h-6 w-6" />
-              <span>{businessFile ? businessFile.name : 'Click to select a document image (max 5MB)'}</span>
-              <input type="file" accept="image/*" className="hidden" onChange={(e) => setBusinessFile(e.target.files?.[0] || null)} />
+              <span>
+                {businessFile ? businessFile.name : 'Click to select a document image (max 5MB)'}
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => setBusinessFile(e.target.files?.[0] || null)}
+              />
             </label>
             <textarea
               value={businessNote}
@@ -301,19 +408,32 @@ export function AgentVerificationPage() {
               rows={2}
               placeholder="Note (optional)"
             />
-            <Button type="submit" disabled={businessUploading} leftIcon={<FileText className="h-4 w-4" />}>
+            <Button
+              type="submit"
+              disabled={businessUploading}
+              leftIcon={<FileText className="h-4 w-4" />}
+            >
               {businessUploading ? 'Submitting...' : 'Submit business documents'}
             </Button>
           </form>
         )}
         {history?.businessVerifyEvidence?.length ? (
           <div className="mt-3 pt-3 border-t border-zinc-100">
-            <p className="text-xs font-mono font-semibold uppercase tracking-widest text-zinc-400 mb-2">Submitted</p>
+            <p className="text-xs font-mono font-semibold uppercase tracking-widest text-zinc-400 mb-2">
+              Submitted
+            </p>
             <div className="flex flex-wrap gap-2">
               {history.businessVerifyEvidence.map((ev, idx) => (
-                <a key={idx} href={ev.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-xs text-zinc-700 hover:border-emerald-500 hover:bg-emerald-50/30 transition-colors">
+                <a
+                  key={idx}
+                  href={ev.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-xs text-zinc-700 hover:border-emerald-500 hover:bg-emerald-50/30 transition-colors"
+                >
                   <FileText className="h-3.5 w-3.5" />
-                  {ev.note || 'Document'} {ev.uploadedAt ? `— ${new Date(ev.uploadedAt).toLocaleDateString()}` : ''}
+                  {ev.note || 'Document'}{' '}
+                  {ev.uploadedAt ? `— ${new Date(ev.uploadedAt).toLocaleDateString()}` : ''}
                 </a>
               ))}
             </div>

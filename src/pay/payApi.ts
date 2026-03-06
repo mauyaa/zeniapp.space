@@ -48,14 +48,25 @@ const REFRESH_KEY = 'pay_refresh_token';
 const USER_KEY = 'pay_user';
 
 export function getStoredPayAuth() {
-  const accessToken = localStorage.getItem(ACCESS_KEY);
-  const refreshToken = localStorage.getItem(REFRESH_KEY);
-  const userRaw = localStorage.getItem(USER_KEY);
-  const user = userRaw ? (JSON.parse(userRaw) as PayUser) : null;
-  return { accessToken, refreshToken, user };
+  try {
+    const accessToken = localStorage.getItem(ACCESS_KEY);
+    const refreshToken = localStorage.getItem(REFRESH_KEY);
+    const userRaw = localStorage.getItem(USER_KEY);
+    const user = userRaw ? (JSON.parse(userRaw) as PayUser) : null;
+    return { accessToken, refreshToken, user };
+  } catch (err) {
+    // Corrupt storage should not brick the pay portal; clear and continue.
+    console.warn('Resetting corrupted pay auth storage', err);
+    clearStoredPayAuth();
+    return { accessToken: null, refreshToken: null, user: null };
+  }
 }
 
-export function setStoredPayAuth(data: { accessToken: string; refreshToken: string; user: PayUser }) {
+export function setStoredPayAuth(data: {
+  accessToken: string;
+  refreshToken: string;
+  user: PayUser;
+}) {
   localStorage.setItem(ACCESS_KEY, data.accessToken);
   localStorage.setItem(REFRESH_KEY, data.refreshToken);
   localStorage.setItem(USER_KEY, JSON.stringify(data.user));
@@ -73,7 +84,7 @@ async function refreshAccessToken(): Promise<string | null> {
   const res = await fetch(payApiUrl('/auth/refresh'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken })
+    body: JSON.stringify({ refreshToken }),
   });
   if (!res.ok) return null;
   const data = await res.json();
@@ -81,7 +92,7 @@ async function refreshAccessToken(): Promise<string | null> {
     setStoredPayAuth({
       accessToken: data.accessToken,
       refreshToken: data.refreshToken,
-      user: data.user
+      user: data.user,
     });
     return data.accessToken as string;
   }
@@ -93,7 +104,7 @@ async function request<T>(path: string, options: RequestInit = {}, retry = true)
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    ...(options.headers || {})
+    ...(options.headers || {}),
   };
 
   const res = await fetch(payApiUrl(path), { ...options, headers });
@@ -128,14 +139,18 @@ export const payApi = {
     fetch(payApiUrl('/auth/login'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ emailOrPhone, password })
+      body: JSON.stringify({ emailOrPhone, password }),
     }).then((res) => {
       if (!res.ok) throw new Error('Login failed');
       return res.json() as Promise<{ accessToken: string; refreshToken: string; user: PayUser }>;
     }),
   me: () => request<{ user: PayUser }>('/auth/me'),
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
-  stepUp: (code: string) => request<{ ok: boolean; verifiedAt: string }>('/auth/step-up', { method: 'POST', body: JSON.stringify({ code }) }),
+  stepUp: (code: string) =>
+    request<{ ok: boolean; verifiedAt: string }>('/auth/step-up', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    }),
   sessions: () => request<PaySession[]>('/auth/sessions'),
   logoutAll: () => request<void>('/auth/logout-all', { method: 'POST' }),
   initiatePayment: (
@@ -152,24 +167,33 @@ export const payApi = {
     request<PayTransaction & { clientSecret?: string }>('/transactions/initiate', {
       method: 'POST',
       headers: { 'Idempotency-Key': idempotencyKey },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     }),
   listTransactions: () => request<PayTransaction[]>('/transactions'),
   getTransaction: (id: string) => request<PayTransaction>(`/transactions/${id}`),
   getReceipt: (id: string) => request<PayReceipt>(`/receipts/${id}`),
   getAccount: () => request('/account'),
-  updateAccount: (body: { defaultCurrency?: string; defaultMethod?: 'mpesa_stk' | 'card' | 'bank_transfer' }) =>
-    request('/account', { method: 'PATCH', body: JSON.stringify(body) }),
-  reconcile: () => request<{ pending: PayTransaction[]; failed: PayTransaction[] }>('/admin/reconcile'),
+  updateAccount: (body: {
+    defaultCurrency?: string;
+    defaultMethod?: 'mpesa_stk' | 'card' | 'bank_transfer';
+  }) => request('/account', { method: 'PATCH', body: JSON.stringify(body) }),
+  reconcile: () =>
+    request<{ pending: PayTransaction[]; failed: PayTransaction[] }>('/admin/reconcile'),
   resolve: (id: string, status: 'paid' | 'failed') =>
-    request<PayTransaction | { pendingApproval: boolean; tx: PayTransaction; message?: string }>(`/admin/resolve/${id}`, {
-      method: 'POST',
-      body: JSON.stringify({ status })
-    }),
+    request<PayTransaction | { pendingApproval: boolean; tx: PayTransaction; message?: string }>(
+      `/admin/resolve/${id}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ status }),
+      }
+    ),
   refund: (id: string) =>
-    request<PayTransaction | { pendingApproval: boolean; tx: PayTransaction; message?: string }>(`/admin/refund/${id}`, {
-      method: 'POST'
-    }),
+    request<PayTransaction | { pendingApproval: boolean; tx: PayTransaction; message?: string }>(
+      `/admin/refund/${id}`,
+      {
+        method: 'POST',
+      }
+    ),
   insights: () =>
     request<{
       pending: number;
@@ -178,5 +202,5 @@ export const payApi = {
       missingReceipts: number;
       lastStaleRun?: string;
       lastReceiptScan?: string;
-    }>('/admin/insights')
+    }>('/admin/insights'),
 };

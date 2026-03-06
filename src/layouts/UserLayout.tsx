@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutGrid,
@@ -12,7 +12,7 @@ import {
   ChevronRight,
   LogOut,
   CalendarClock,
-  Wallet
+  Wallet,
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useChat } from '../context/ChatContext';
@@ -33,7 +33,15 @@ const navLinks = [
   { to: '/pay/login', label: 'Payments', icon: Wallet },
 ];
 
-function SidebarItem({ icon: Icon, label, to, active, badge }: any) {
+type SidebarItemProps = {
+  icon: (typeof navLinks)[number]['icon'];
+  label: string;
+  to: string;
+  active: boolean;
+  badge?: number;
+};
+
+function SidebarItem({ icon: Icon, label, to, active, badge }: SidebarItemProps) {
   return (
     <NavLink
       to={to}
@@ -49,7 +57,9 @@ function SidebarItem({ icon: Icon, label, to, active, badge }: any) {
           <span className="absolute -top-0.5 right-0 w-2 h-2 bg-orange-500 rounded-full border-2 border-white animate-pulse" />
         )}
       </div>
-      <span className="text-[11px] font-bold uppercase tracking-[0.15em] hidden lg:block">{label}</span>
+      <span className="text-[11px] font-bold uppercase tracking-[0.15em] hidden lg:block">
+        {label}
+      </span>
     </NavLink>
   );
 }
@@ -62,19 +72,6 @@ export function UserLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
-
-  // 1. Real-time Kenya Clock Logic
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const timeString = currentTime.toLocaleTimeString('en-GB', { 
-    hour: '2-digit', 
-    minute: '2-digit',
-    timeZone: 'Africa/Nairobi' 
-  });
 
   const activeLabel = (() => {
     const matches = navLinks.filter(
@@ -91,7 +88,9 @@ export function UserLayout() {
       items.push(`${unreadMessages} unread message${unreadMessages === 1 ? '' : 's'} waiting`);
     }
     if (unreadNotifications > 0) {
-      items.push(`${unreadNotifications} new alert${unreadNotifications === 1 ? '' : 's'} in your inbox`);
+      items.push(
+        `${unreadNotifications} new alert${unreadNotifications === 1 ? '' : 's'} in your inbox`
+      );
     }
 
     items.push(`Workspace: ${activeLabel}`);
@@ -102,7 +101,11 @@ export function UserLayout() {
     return items;
   }, [unreadMessages, unreadNotifications, activeLabel]);
 
-  const displayName = user?.name?.trim()?.replace(/^buyer\s+/i, '')?.split(/\s+/)[0] ?? 'User';
+  const displayName =
+    user?.name
+      ?.trim()
+      ?.replace(/^buyer\s+/i, '')
+      ?.split(/\s+/)[0] ?? 'User';
   const initial = (displayName?.charAt(0) ?? 'U').toUpperCase();
 
   const handleSearchClick = () => {
@@ -147,32 +150,46 @@ export function UserLayout() {
       {/* Sidebar */}
       <aside className="w-20 lg:w-64 bg-white border-r border-black/10 flex flex-col justify-between py-8 z-30 flex-shrink-0">
         <div>
-          <NavLink to="/app/home" className="px-6 mb-12 flex items-center gap-3 justify-center lg:justify-start">
+          <NavLink
+            to="/app/home"
+            className="px-6 mb-12 flex items-center gap-3 justify-center lg:justify-start"
+          >
             <span className="text-3xl font-serif font-bold tracking-tight text-black">
               ZENI<span className="text-green-500">.</span>
             </span>
           </NavLink>
           <nav className="space-y-1 px-3">
             {visibleNavLinks.map((link) => (
-              <SidebarItem 
-                key={link.to} 
-                {...link} 
-                active={location.pathname === link.to || location.pathname.startsWith(`${link.to}/`)} 
-                badge={link.to === '/app/messages' ? unreadMessages : undefined} 
+              <SidebarItem
+                key={link.to}
+                {...link}
+                active={
+                  location.pathname === link.to || location.pathname.startsWith(`${link.to}/`)
+                }
+                badge={link.to === '/app/messages' ? unreadMessages : undefined}
               />
             ))}
           </nav>
         </div>
-        
+
         <div className="px-6">
-          <button onClick={logout} className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-black/60 hover:bg-black/5 hover:text-black transition-all mb-2">
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-black/60 hover:bg-black/5 hover:text-black transition-all mb-2"
+          >
             <LogOut className="w-5 h-5 flex-shrink-0" />
-            <span className="text-[11px] font-bold uppercase tracking-[0.15em] hidden lg:block">Log out</span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.15em] hidden lg:block">
+              Log out
+            </span>
           </button>
           <div className="flex items-center gap-3 pt-4 border-t border-black/10">
-            <div className="w-8 h-8 bg-black text-white flex items-center justify-center text-xs font-serif italic rounded-full flex-shrink-0">{initial}</div>
+            <div className="w-8 h-8 bg-black text-white flex items-center justify-center text-xs font-serif italic rounded-full flex-shrink-0">
+              {initial}
+            </div>
             <div className="hidden lg:block min-w-0">
-              <p className="text-xs font-bold text-black uppercase tracking-wide truncate">{displayName}</p>
+              <p className="text-xs font-bold text-black uppercase tracking-wide truncate">
+                {displayName}
+              </p>
               <p className="text-[10px] text-green-600 font-bold flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
                 Online
@@ -183,9 +200,11 @@ export function UserLayout() {
       </aside>
 
       {/* Main Content */}
-      <main id="main-content" className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden relative">
+      <main
+        id="main-content"
+        className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden relative"
+      >
         <header className="h-16 bg-white border-b border-black/10 flex items-center justify-between px-6 lg:px-8 flex-shrink-0 z-20 gap-8">
-          
           {/* Breadcrumbs */}
           <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-black/50 flex-shrink-0">
             <span>Workspace</span>
@@ -195,8 +214,13 @@ export function UserLayout() {
 
           {/* Ticker */}
           <div className="hidden md:flex items-center flex-1 min-w-0 max-w-3xl mx-auto">
-            <div className="sr-only" aria-live="polite">{tickerItems.join('. ')}</div>
-            <div aria-hidden="true" className="zeni-ticker-wrap relative flex-1 overflow-hidden border border-black/10 bg-white rounded-sm">
+            <div className="sr-only" aria-live="polite">
+              {tickerItems.join('. ')}
+            </div>
+            <div
+              aria-hidden="true"
+              className="zeni-ticker-wrap relative flex-1 overflow-hidden border border-black/10 bg-white rounded-sm"
+            >
               <div className="zeni-ticker-track py-1.5 text-[11px] font-mono text-black/60">
                 {tickerItems.map((item, idx) => (
                   <span key={`ticker-item-${idx}`} className="inline-flex items-center gap-2 mx-6">
@@ -205,7 +229,10 @@ export function UserLayout() {
                   </span>
                 ))}
                 {tickerItems.map((item, idx) => (
-                  <span key={`ticker-item-clone-${idx}`} className="zeni-ticker-clone inline-flex items-center gap-2 mx-6">
+                  <span
+                    key={`ticker-item-clone-${idx}`}
+                    className="zeni-ticker-clone inline-flex items-center gap-2 mx-6"
+                  >
                     <span className="w-1 h-1 rounded-full bg-green-500" />
                     {item}
                   </span>
@@ -214,19 +241,26 @@ export function UserLayout() {
             </div>
           </div>
 
-          {/* Clock & Actions */}
+          {/* Actions */}
           <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-            <div className="hidden lg:flex items-center gap-3 pr-2 border-r border-black/10">
-              <span className="text-[10px] font-bold uppercase text-black/50 tracking-widest">Kenya, KE</span>
-              <span className="font-mono text-xs font-medium bg-black/5 text-black/70 px-2 py-1 rounded-sm">{timeString}</span>
-            </div>
             <div className="flex items-center gap-1 sm:gap-2">
-              <button onClick={handleSearchClick} className="p-2 text-black/50 hover:text-green-600 transition-colors rounded-sm">
+              <button
+                onClick={handleSearchClick}
+                className="p-2 text-black/50 hover:text-green-600 transition-colors rounded-sm"
+              >
                 <Search className="w-5 h-5" />
               </button>
-              <button onClick={() => { markAllRead(); setDrawerOpen(true); }} className="p-2 text-black/50 hover:text-green-600 transition-colors rounded-sm relative">
+              <button
+                onClick={() => {
+                  markAllRead();
+                  setDrawerOpen(true);
+                }}
+                className="p-2 text-black/50 hover:text-green-600 transition-colors rounded-sm relative"
+              >
                 <Bell className="w-5 h-5" />
-                {unreadNotifications > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-orange-500 rounded-full border-2 border-white" />}
+                {unreadNotifications > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-orange-500 rounded-full border-2 border-white" />
+                )}
               </button>
             </div>
           </div>

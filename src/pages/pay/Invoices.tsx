@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 
 const invoices = [
   { id: 'inv-101', amount: 'KES 25,000', due: 'Feb 12', status: 'unpaid' as const },
-  { id: 'inv-099', amount: 'KES 25,000', due: 'Jan 12', status: 'paid' as const }
+  { id: 'inv-099', amount: 'KES 25,000', due: 'Jan 12', status: 'paid' as const },
 ];
 
 const statusConfig = {
@@ -48,11 +48,19 @@ export function PayInvoicesPage() {
           const StatusIcon = config.icon;
 
           return (
-            <Card key={inv.id} className="border-slate-800 bg-slate-900/70 overflow-hidden" padding="none">
+            <Card
+              key={inv.id}
+              className="border-slate-800 bg-slate-900/70 overflow-hidden"
+              padding="none"
+            >
               <div className="flex items-center gap-4 p-4">
                 {/* Status indicator */}
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${config.bg} flex-shrink-0`}>
-                  <StatusIcon className={`h-4 w-4 ${inv.status === 'paid' ? 'text-emerald-400' : 'text-amber-400'}`} />
+                <div
+                  className={`flex h-10 w-10 items-center justify-center rounded-xl ${config.bg} flex-shrink-0`}
+                >
+                  <StatusIcon
+                    className={`h-4 w-4 ${inv.status === 'paid' ? 'text-emerald-400' : 'text-amber-400'}`}
+                  />
                 </div>
 
                 {/* Invoice details */}

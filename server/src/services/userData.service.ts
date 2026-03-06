@@ -11,18 +11,22 @@ import { revokeAllSessionsForUser } from './auth.service';
 export async function exportUserData(userId: string): Promise<Record<string, unknown>> {
   const [user, savedListings, viewings, conversations, transactions] = await Promise.all([
     UserModel.findById(userId)
-      .select('name email phone emailOrPhone role status availability agentVerification notificationPrefs consentVersion consentAt createdAt')
+      .select(
+        'name email phone emailOrPhone role status availability agentVerification notificationPrefs consentVersion consentAt createdAt'
+      )
       .lean(),
     SavedListingModel.find({ userId }).select('listingId alert createdAt').lean(),
     ViewingRequestModel.find({ userId })
       .select('listingId agentId date status note createdAt')
       .lean(),
-    ConversationModel.find({ userId }).select('listingId agentId status lastMessageAt createdAt').lean(),
+    ConversationModel.find({ userId })
+      .select('listingId agentId status lastMessageAt createdAt')
+      .lean(),
     PayTransactionModel.find({ userId })
       .select('amount currency method status purpose referenceId createdAt')
       .sort({ createdAt: -1 })
       .limit(500)
-      .lean()
+      .lean(),
   ]);
   return {
     exportedAt: new Date().toISOString(),
@@ -34,25 +38,25 @@ export async function exportUserData(userId: string): Promise<Record<string, unk
           role: user.role,
           consentVersion: user.consentVersion,
           consentAt: user.consentAt,
-          createdAt: (user as { createdAt?: Date }).createdAt
+          createdAt: (user as { createdAt?: Date }).createdAt,
         }
       : null,
     savedListings: (savedListings || []).map((s) => ({
       listingId: s.listingId,
       alert: s.alert,
-      createdAt: (s as { createdAt?: Date }).createdAt
+      createdAt: (s as { createdAt?: Date }).createdAt,
     })),
     viewings: (viewings || []).map((v) => ({
       listingId: v.listingId,
       date: v.date,
       status: v.status,
-      createdAt: (v as { createdAt?: Date }).createdAt
+      createdAt: (v as { createdAt?: Date }).createdAt,
     })),
     conversations: (conversations || []).map((c) => ({
       listingId: c.listingId,
       agentId: c.agentId,
       lastMessageAt: c.lastMessageAt,
-      createdAt: (c as { createdAt?: Date }).createdAt
+      createdAt: (c as { createdAt?: Date }).createdAt,
     })),
     transactions: (transactions || []).map((t) => ({
       amount: t.amount,
@@ -60,8 +64,8 @@ export async function exportUserData(userId: string): Promise<Record<string, unk
       method: t.method,
       status: t.status,
       purpose: t.purpose,
-      createdAt: (t as { createdAt?: Date }).createdAt
-    }))
+      createdAt: (t as { createdAt?: Date }).createdAt,
+    })),
   };
 }
 
@@ -95,7 +99,7 @@ export async function deleteAccount(userId: string, req?: Request) {
         action: 'account_deleted',
         entityType: 'User',
         entityId: userId,
-        after: { deletedAt: new Date().toISOString() }
+        after: { deletedAt: new Date().toISOString() },
       },
       req
     );

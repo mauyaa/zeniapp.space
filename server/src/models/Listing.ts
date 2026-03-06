@@ -1,5 +1,9 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { listingStatuses, listingAvailabilityStatuses, listingRejectionCodes } from '../utils/constants';
+import {
+  listingStatuses,
+  listingAvailabilityStatuses,
+  listingRejectionCodes,
+} from '../utils/constants';
 
 interface Image {
   url: string;
@@ -24,7 +28,7 @@ export interface ListingDocument extends Document {
   sqm?: number;
   type?: string;
   amenities?: string[];
-  status: typeof listingStatuses[number];
+  status: (typeof listingStatuses)[number];
   agentId: mongoose.Types.ObjectId;
   location: {
     type: 'Point';
@@ -40,9 +44,11 @@ export interface ListingDocument extends Document {
   floorPlans?: FloorPlan[];
   catalogueUrl?: string;
   /** available | under_offer | sold | let; only 'available' is bookable. */
-  availabilityStatus?: typeof listingAvailabilityStatuses[number];
+  availabilityStatus?: (typeof listingAvailabilityStatuses)[number];
   rejectionReason?: string;
-  rejectionCode?: typeof listingRejectionCodes[number];
+  rejectionCode?: (typeof listingRejectionCodes)[number];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const ListingSchema = new Schema<ListingDocument>(
@@ -67,15 +73,20 @@ const ListingSchema = new Schema<ListingDocument>(
       city: String,
       area: String,
       county: String,
-      subCounty: String
+      subCounty: String,
     },
     images: [{ url: String, isPrimary: Boolean }],
     verified: { type: Boolean, default: false },
     floorPlans: [{ label: String, url: String, sizeBytes: Number }],
     catalogueUrl: String,
-    availabilityStatus: { type: String, enum: listingAvailabilityStatuses, default: 'available', index: true },
+    availabilityStatus: {
+      type: String,
+      enum: listingAvailabilityStatuses,
+      default: 'available',
+      index: true,
+    },
     rejectionReason: String,
-    rejectionCode: { type: String, enum: listingRejectionCodes }
+    rejectionCode: { type: String, enum: listingRejectionCodes },
   },
   { timestamps: true }
 );

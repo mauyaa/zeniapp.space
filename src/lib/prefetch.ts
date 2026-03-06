@@ -1,5 +1,5 @@
 /**
- * Route prefetching — preloads lazy route chunks on hover/focus so navigation feels instant.
+ * Route prefetching - preloads lazy route chunks on hover/focus so navigation feels instant.
  *
  * How it works:
  * 1. Maps URL path prefixes to dynamic import() calls (same ones used by React.lazy)
@@ -13,7 +13,6 @@ type Loader = () => Promise<unknown>;
 
 const routeModules: Record<string, Loader> = {
   // User portal
-  '/app/home': () => import('../pages/user/Home'),
   '/app/explore': () => import('../pages/user/Explore'),
   '/app/inventory': () => import('../pages/user/Inventory'),
   '/app/saved': () => import('../pages/user/Saved'),
@@ -45,21 +44,25 @@ const prefetched = new Set<string>();
 
 /**
  * Prefetch the JS chunk for a route path.
- * Safe to call multiple times — only fetches once.
+ * Safe to call multiple times - only fetches once.
  */
 export function prefetchRoute(path: string): void {
   if (prefetched.has(path)) return;
 
   // Find the best matching route (exact match first, then prefix)
-  const loader = routeModules[path] ?? Object.entries(routeModules).find(([prefix]) => path.startsWith(prefix))?.[1];
+  const loader =
+    routeModules[path] ??
+    Object.entries(routeModules).find(([prefix]) => path.startsWith(prefix))?.[1];
 
   if (loader) {
     prefetched.add(path);
-    // Use requestIdleCallback when available so prefetch doesn't compete with user interactions
+    // Use requestIdleCallback when available so prefetch does not compete with user interactions.
     if ('requestIdleCallback' in window) {
-      (window as unknown as { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(() => loader().catch(() => undefined));
+      (window as unknown as { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(
+        () => loader().catch(() => undefined)
+      );
     } else {
-      // Fallback: slight delay to avoid contention
+      // Fallback: slight delay to avoid contention.
       setTimeout(() => loader().catch(() => undefined), 100);
     }
   }
@@ -72,7 +75,7 @@ export function prefetchHandlers(to: string) {
   return {
     onMouseEnter: () => prefetchRoute(to),
     onFocus: () => prefetchRoute(to),
-    // Touch devices: prefetch on touch start for faster tap response
+    // Touch devices: prefetch on touch start for faster tap response.
     onTouchStart: () => prefetchRoute(to),
   };
 }

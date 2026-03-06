@@ -1,10 +1,16 @@
 import { useEffect, useRef } from 'react';
 
-type GSAP = typeof import('gsap');
+type GsapLike = {
+  quickTo: (
+    target: Element | object,
+    property: string,
+    vars: Record<string, unknown>
+  ) => (value: number) => void;
+};
 
 type UseCursorOptions = {
   enabled: boolean;
-  gsap: GSAP | null;
+  gsap: GsapLike | null;
 };
 
 export function useCursor(options: UseCursorOptions) {

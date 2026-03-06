@@ -41,4 +41,3 @@ export function PaymentProgressRing({ value, label }: { value: number; label: st
     </div>
   );
 }
-

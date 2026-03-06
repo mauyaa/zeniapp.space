@@ -5,7 +5,7 @@ export function StepUpModal({
   title,
   description,
   onClose,
-  onVerify
+  onVerify,
 }: {
   open: boolean;
   title: string;
@@ -50,8 +50,7 @@ export function StepUpModal({
             onClick={onClose}
             className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"
           >
-            <span className="sr-only">Close</span>
-            X
+            <span className="sr-only">Close</span>X
           </button>
         </div>
 

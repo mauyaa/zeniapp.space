@@ -40,14 +40,14 @@ export default {
       },
       letterSpacing: {
         widest: '0.15em',
-        'ultra': '0.2em',
+        ultra: '0.2em',
       },
       boxShadow: {
         'zeni-card': '0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06)',
         'zeni-card-hover': '0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06)',
       },
       transitionDuration: {
-        'zeni': '200ms',
+        zeni: '200ms',
       },
     },
   },

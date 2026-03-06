@@ -47,16 +47,25 @@ export function assessPayRisk(input: PayRiskInput): PayRiskResult {
     flags.push('new_user');
   }
 
-  const riskLevel: PayRiskResult['riskLevel'] = score >= 0.6 ? 'high' : score >= 0.3 ? 'medium' : 'low';
+  const riskLevel: PayRiskResult['riskLevel'] =
+    score >= 0.6 ? 'high' : score >= 0.3 ? 'medium' : 'low';
 
   // Metric: count flags emitted
   if (flags.length) {
-    const counter = getOrCreateCounter('pay_risk_flags_total', 'Count of pay transactions that triggered risk flags', ['level']);
+    const counter = getOrCreateCounter(
+      'pay_risk_flags_total',
+      'Count of pay transactions that triggered risk flags',
+      ['level']
+    );
     counter.inc({ level: riskLevel });
   }
 
   if (riskLevel === 'high') {
-    const anomalyCounter = getOrCreateCounter('pay_anomaly_flagged_total', 'Count of high-risk pay transactions flagged', []);
+    const anomalyCounter = getOrCreateCounter(
+      'pay_anomaly_flagged_total',
+      'Count of high-risk pay transactions flagged',
+      []
+    );
     anomalyCounter.inc();
   }
 

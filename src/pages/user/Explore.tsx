@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowRight,
@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
-  X
+  X,
 } from 'lucide-react';
 import {
   createSavedSearch,
@@ -20,12 +20,14 @@ import {
   searchListings,
   toggleSaveListing,
   type ListingCard,
-  type ListingSearchParams
+  type ListingSearchParams,
 } from '../../lib/api';
 import { cacheListingCard, uncacheListingCard } from '../../lib/savedListingsCache';
 import { ListingDrawer } from '../../components/listings/ListingDrawer';
 import { PropertyCard, PropertyCardSkeleton } from '../../components/PropertyCard';
-const PropertyMap = lazy(() => import('../../components/PropertyMap').then(m => ({ default: m.PropertyMap })));
+const PropertyMap = lazy(() =>
+  import('../../components/PropertyMap').then((m) => ({ default: m.PropertyMap }))
+);
 import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useChat } from '../../context/ChatContext';
@@ -43,7 +45,7 @@ import { useRecentlyViewed } from '../../hooks/useRecentlyViewed';
 import { CompareModal } from '../../components/listings/CompareModal';
 import { PriceRangeSlider } from '../../components/ui/PriceRangeSlider';
 
-const LIST_ROW_HEIGHT = 340;
+const LIST_ROW_HEIGHT = 180;
 const LIST_OVERSCAN = 2;
 
 const fallbackImage =
@@ -69,7 +71,7 @@ type Filters = {
 
 const defaultFilters: Filters = {
   verifiedOnly: true,
-  amenities: []
+  amenities: [],
 };
 
 /** All Kenya-relevant amenity filter pills */
@@ -86,7 +88,17 @@ const AMENITY_OPTIONS: { key: string; label: string; icon: string }[] = [
   { key: 'lift', label: 'Lift/Elevator', icon: '🔼' },
 ];
 
-const filterKeys = ['purpose', 'minPrice', 'maxPrice', 'beds', 'baths', 'type', 'verifiedOnly', 'amenities', 'q'] as const;
+const filterKeys = [
+  'purpose',
+  'minPrice',
+  'maxPrice',
+  'beds',
+  'baths',
+  'type',
+  'verifiedOnly',
+  'amenities',
+  'q',
+] as const;
 const propertyTypes = [
   'Apartment',
   'House',
@@ -99,15 +111,13 @@ const propertyTypes = [
   'Retail',
   'Warehouse',
   'Land',
-  'Other'
+  'Other',
 ];
 
 function toProperty(listing: ListingCard): PropertyWithMeta {
   const [lat, lng] = normalizeKenyaLatLng(
-    listing.location?.lat ??
-    ((listing as any).location?.coordinates?.[1] as number | undefined),
-    listing.location?.lng ??
-    ((listing as any).location?.coordinates?.[0] as number | undefined)
+    listing.location?.lat ?? listing.location?.coordinates?.[1],
+    listing.location?.lng ?? listing.location?.coordinates?.[0]
   );
   return {
     id: listing.id,
@@ -123,23 +133,24 @@ function toProperty(listing: ListingCard): PropertyWithMeta {
       neighborhood: listing.location?.neighborhood || '',
       city: listing.location?.city || '',
       lat,
-      lng
+      lng,
     },
     features: {
       bedrooms: listing.beds ?? 0,
       bathrooms: listing.baths ?? 0,
-      sqm: listing.sqm ?? 0
+      sqm: listing.sqm ?? 0,
     },
     floorPlans: listing.floorPlans?.map((plan) => ({ label: plan.label, url: plan.url })),
     amenities: listing.amenities,
     catalogueUrl: listing.catalogueUrl,
     isVerified: Boolean(listing.verified),
     imageUrl: listing.imageUrl || listing.agent?.image || fallbackImage,
+    images: listing.images || [{ url: listing.imageUrl || fallbackImage }],
     agent: {
       name: listing.agent?.name || 'Agent',
-      image: listing.agent?.image || fallbackImage
+      image: listing.agent?.image || fallbackImage,
     },
-    saved: listing.saved
+    saved: listing.saved,
   };
 }
 
@@ -165,7 +176,13 @@ export function ExplorePage() {
   const [sort, setSort] = useState<SortKey>('recommended');
 
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
-  const [mapBounds, setMapBounds] = useState<{ minLat: number; maxLat: number; minLng: number; maxLng: number } | null>(null);
+  const [resultMode, setResultMode] = useState<'recommended' | 'all'>('recommended');
+  const [mapBounds, setMapBounds] = useState<{
+    minLat: number;
+    maxLat: number;
+    minLng: number;
+    maxLng: number;
+  } | null>(null);
   const [searchThisArea, setSearchThisArea] = useState(false);
 
   const [items, setItems] = useState<PropertyWithMeta[]>([]);
@@ -194,7 +211,10 @@ export function ExplorePage() {
   }, []);
 
   const compareProperties = useMemo(
-    () => compareIds.map((id) => [...items, ...recommended].find((i) => i.id === id)).filter(Boolean) as PropertyWithMeta[],
+    () =>
+      compareIds
+        .map((id) => [...items, ...recommended].find((i) => i.id === id))
+        .filter(Boolean) as PropertyWithMeta[],
     [compareIds, items, recommended]
   );
 
@@ -218,13 +238,18 @@ export function ExplorePage() {
 
     if (!hydratedFromUrl.current || hasFilterParams(searchParams)) {
       setFilters({
-        purpose: searchParams.get('purpose') === 'buy' ? 'buy' : searchParams.get('purpose') === 'rent' ? 'rent' : undefined,
+        purpose:
+          searchParams.get('purpose') === 'buy'
+            ? 'buy'
+            : searchParams.get('purpose') === 'rent'
+              ? 'rent'
+              : undefined,
         minPrice: parseIntOrUndefined(searchParams.get('minPrice')),
         maxPrice: parseIntOrUndefined(searchParams.get('maxPrice')),
         beds: parseIntOrUndefined(searchParams.get('beds')),
         baths: parseIntOrUndefined(searchParams.get('baths')),
         type: searchParams.get('type') || undefined,
-        verifiedOnly: searchParams.get('verifiedOnly') === 'true'
+        verifiedOnly: searchParams.get('verifiedOnly') === 'true',
       });
       setQuery(searchParams.get('q') || '');
       hydratedFromUrl.current = true;
@@ -242,6 +267,15 @@ export function ExplorePage() {
     }
   }, [debouncedQuery, searchParams, setSearchParams]);
 
+  // Prefer recommended as the primary feed when available.
+  useEffect(() => {
+    if (recommended.length > 0) {
+      setResultMode('recommended');
+    } else {
+      setResultMode('all');
+    }
+  }, [recommended.length]);
+
   const searchPayload = useMemo(() => {
     const payload: ListingSearchParams = {
       minPrice: filters.minPrice,
@@ -250,7 +284,7 @@ export function ExplorePage() {
       baths: filters.baths,
       type: filters.type,
       verifiedOnly: filters.verifiedOnly,
-      limit: 48
+      limit: 8,
     };
 
     if (searchThisArea && mapBounds) {
@@ -270,7 +304,7 @@ export function ExplorePage() {
     }
 
     return payload;
-  }, [debouncedQuery, filters]);
+  }, [debouncedQuery, filters, mapBounds, searchThisArea]);
 
   useEffect(() => {
     let cancelled = false;
@@ -304,7 +338,7 @@ export function ExplorePage() {
     const recPayload: ListingSearchParams = {
       ...searchPayload,
       page: 1,
-      limit: 6
+      limit: 6,
     };
     searchListings(recPayload)
       .then((res) => {
@@ -350,29 +384,31 @@ export function ExplorePage() {
 
   const visibleItems = useMemo(() => {
     const normalizedQuery = debouncedQuery.trim().toLowerCase();
+    const source = resultMode === 'recommended' && recommended.length > 0 ? recommended : items;
     const filtered = normalizedQuery
-      ? items.filter((item) => {
-        const haystack = [
-          item.title,
-          item.location.neighborhood,
-          item.location.city,
-          item.agent.name
-        ]
-          .join(' ')
-          .toLowerCase();
-        return haystack.includes(normalizedQuery);
-      })
-      : items;
+      ? source.filter((item) => {
+          const haystack = [
+            item.title,
+            item.location.neighborhood,
+            item.location.city,
+            item.agent.name,
+          ]
+            .join(' ')
+            .toLowerCase();
+          return haystack.includes(normalizedQuery);
+        })
+      : source;
 
     const withScore = filtered.map((item) => ({
       ...item,
-      score: (item.saved ? 3 : 0) + (item.isVerified ? 2 : 0) + (item.features.bedrooms > 0 ? 1 : 0)
+      score:
+        (item.saved ? 3 : 0) + (item.isVerified ? 2 : 0) + (item.features.bedrooms > 0 ? 1 : 0),
     }));
 
     if (sort === 'price-asc') return withScore.sort((a, b) => a.price - b.price);
     if (sort === 'price-desc') return withScore.sort((a, b) => b.price - a.price);
     return withScore.sort((a, b) => (b.score || 0) - (a.score || 0));
-  }, [debouncedQuery, items, sort]);
+  }, [debouncedQuery, items, recommended, sort, resultMode]);
 
   const listScrollRef = useRef<HTMLDivElement>(null);
   const rowCount = Math.ceil(visibleItems.length / 2);
@@ -389,7 +425,8 @@ export function ExplorePage() {
       const result = await toggleSaveListing(id);
       setItems((prev) => prev.map((i) => (i.id === id ? { ...i, saved: result.saved } : i)));
       setRecommended((prev) => prev.map((i) => (i.id === id ? { ...i, saved: result.saved } : i)));
-      if (selectedDetail?.id === id) setSelectedDetail((d) => (d ? { ...d, saved: result.saved } : null));
+      if (selectedDetail?.id === id)
+        setSelectedDetail((d) => (d ? { ...d, saved: result.saved } : null));
       if (result.saved && item) {
         cacheListingCard({
           id: item.id,
@@ -400,19 +437,31 @@ export function ExplorePage() {
           location: item.location,
           type: item.type,
           beds: item.features?.bedrooms ?? 0,
-          baths: item.features?.bathrooms ?? 0
-        }).catch(() => { /* ignore */ });
+          baths: item.features?.bathrooms ?? 0,
+        }).catch(() => {
+          /* ignore */
+        });
       } else {
-        uncacheListingCard(id).catch(() => { /* ignore */ });
+        uncacheListingCard(id).catch(() => {
+          /* ignore */
+        });
       }
     } catch {
-      push({ title: 'Save failed', description: 'Could not update this listing right now.', tone: 'error' });
+      push({
+        title: 'Save failed',
+        description: 'Could not update this listing right now.',
+        tone: 'error',
+      });
     }
   };
 
   const handleMessage = async (property: PropertyWithMeta) => {
     if (!property.agentId) {
-      push({ title: 'Missing agent', description: 'This listing has no assigned agent yet.', tone: 'error' });
+      push({
+        title: 'Missing agent',
+        description: 'This listing has no assigned agent yet.',
+        tone: 'error',
+      });
       return;
     }
     try {
@@ -426,7 +475,11 @@ export function ExplorePage() {
 
   const handleViewing = async (payload: { date: string; note?: string }) => {
     if (!selectedDetail?.agentId) {
-      push({ title: 'Missing agent', description: 'Cannot request viewing for this listing.', tone: 'error' });
+      push({
+        title: 'Missing agent',
+        description: 'Cannot request viewing for this listing.',
+        tone: 'error',
+      });
       return;
     }
     try {
@@ -434,10 +487,17 @@ export function ExplorePage() {
         listingId: selectedDetail.id,
         agentId: selectedDetail.agentId,
         date: payload.date,
-        note: payload.note
+        note: payload.note,
       });
       const viewingId = response._id || (response as { id?: string }).id;
-      trackEvent({ name: 'viewing_requested', payload: { listingId: selectedDetail.id, viewingId: String(viewingId), hasFee: Boolean(response.needsViewingFee) } });
+      trackEvent({
+        name: 'viewing_requested',
+        payload: {
+          listingId: selectedDetail.id,
+          viewingId: String(viewingId),
+          hasFee: Boolean(response.needsViewingFee),
+        },
+      });
       if (response.needsViewingFee && response.viewingFeeAmount && viewingId) {
         try {
           const kyc = await getKycStatus();
@@ -445,34 +505,46 @@ export function ExplorePage() {
             push({
               title: 'Identity verification required',
               description: 'Verify your identity in your profile to make payments.',
-              tone: 'error'
+              tone: 'error',
             });
             navigate('/app/profile?kyc=required', { replace: false });
             return;
           }
         } catch {
-          push({ title: 'Could not verify identity', description: 'Complete verification in your profile to pay.', tone: 'error' });
+          push({
+            title: 'Could not verify identity',
+            description: 'Complete verification in your profile to pay.',
+            tone: 'error',
+          });
           navigate('/app/profile?kyc=required', { replace: false });
           return;
         }
         push({
           title: 'Pay viewing fee',
           description: `KES ${response.viewingFeeAmount} secures your viewing. You'll be redirected to pay.`,
-          tone: 'success'
+          tone: 'success',
         });
         setSelectedId(null);
         setSelectedDetail(null);
         const params = new URLSearchParams({
           purpose: 'viewing_fee',
           referenceId: String(viewingId),
-          amount: String(response.viewingFeeAmount)
+          amount: String(response.viewingFeeAmount),
         });
         navigate(`/pay/payments?${params.toString()}`, { replace: false });
       } else {
-        push({ title: 'Viewing requested', description: 'The agent will confirm shortly.', tone: 'success' });
+        push({
+          title: 'Viewing requested',
+          description: 'The agent will confirm shortly.',
+          tone: 'success',
+        });
       }
     } catch {
-      push({ title: 'Request failed', description: 'Could not submit your viewing request.', tone: 'error' });
+      push({
+        title: 'Request failed',
+        description: 'Could not submit your viewing request.',
+        tone: 'error',
+      });
     }
   };
 
@@ -484,13 +556,17 @@ export function ExplorePage() {
           push({
             title: 'Identity verification required',
             description: 'Verify your identity in your profile to buy or pay for property.',
-            tone: 'error'
+            tone: 'error',
           });
           navigate('/app/profile?kyc=required');
           return;
         }
       } catch {
-        push({ title: 'Could not verify identity', description: 'Complete verification in your profile to pay.', tone: 'error' });
+        push({
+          title: 'Could not verify identity',
+          description: 'Complete verification in your profile to pay.',
+          tone: 'error',
+        });
         navigate('/app/profile?kyc=required');
         return;
       }
@@ -498,7 +574,7 @@ export function ExplorePage() {
       const params = new URLSearchParams({
         purpose,
         referenceId: property.id,
-        amount: String(Math.round(property.price))
+        amount: String(Math.round(property.price)),
       });
       navigate(`/pay/payments?${params.toString()}`);
     },
@@ -517,7 +593,11 @@ export function ExplorePage() {
     }
     try {
       await navigator.clipboard.writeText(url);
-      push({ title: 'Link copied', description: 'Listing link copied to clipboard.', tone: 'success' });
+      push({
+        title: 'Link copied',
+        description: 'Listing link copied to clipboard.',
+        tone: 'success',
+      });
     } catch {
       push({ title: 'Share failed', description: 'Could not copy listing link.', tone: 'error' });
     }
@@ -526,7 +606,16 @@ export function ExplorePage() {
   const resetFilters = () => {
     setFilters(defaultFilters);
     setQuery('');
-    updateUrlParams({ purpose: null, minPrice: null, maxPrice: null, beds: null, baths: null, type: null, verifiedOnly: null, q: null });
+    updateUrlParams({
+      purpose: null,
+      minPrice: null,
+      maxPrice: null,
+      beds: null,
+      baths: null,
+      type: null,
+      verifiedOnly: null,
+      q: null,
+    });
   };
 
   const handleSaveSearch = async () => {
@@ -558,15 +647,55 @@ export function ExplorePage() {
     false;
 
   const activeChips: { key: string; label: string; onRemove: () => void }[] = [];
-  if (filters.purpose) activeChips.push({ key: 'purpose', label: filters.purpose === 'buy' ? 'Buy' : 'Rent', onRemove: () => setFilters((p) => ({ ...p, purpose: undefined })) });
-  if (filters.minPrice != null) activeChips.push({ key: 'minPrice', label: `Min ${filters.minPrice}`, onRemove: () => setFilters((p) => ({ ...p, minPrice: undefined })) });
-  if (filters.maxPrice != null) activeChips.push({ key: 'maxPrice', label: `Max ${filters.maxPrice}`, onRemove: () => setFilters((p) => ({ ...p, maxPrice: undefined })) });
-  if (filters.beds != null) activeChips.push({ key: 'beds', label: `${filters.beds}+ beds`, onRemove: () => setFilters((p) => ({ ...p, beds: undefined })) });
-  if (filters.baths != null) activeChips.push({ key: 'baths', label: `${filters.baths}+ baths`, onRemove: () => setFilters((p) => ({ ...p, baths: undefined })) });
-  if (filters.type) activeChips.push({ key: 'type', label: filters.type, onRemove: () => setFilters((p) => ({ ...p, type: undefined })) });
-  if (filters.verifiedOnly) activeChips.push({ key: 'verified', label: 'Verified only', onRemove: () => setFilters((p) => ({ ...p, verifiedOnly: false })) });
+  if (filters.purpose)
+    activeChips.push({
+      key: 'purpose',
+      label: filters.purpose === 'buy' ? 'Buy' : 'Rent',
+      onRemove: () => setFilters((p) => ({ ...p, purpose: undefined })),
+    });
+  if (filters.minPrice != null)
+    activeChips.push({
+      key: 'minPrice',
+      label: `Min ${filters.minPrice}`,
+      onRemove: () => setFilters((p) => ({ ...p, minPrice: undefined })),
+    });
+  if (filters.maxPrice != null)
+    activeChips.push({
+      key: 'maxPrice',
+      label: `Max ${filters.maxPrice}`,
+      onRemove: () => setFilters((p) => ({ ...p, maxPrice: undefined })),
+    });
+  if (filters.beds != null)
+    activeChips.push({
+      key: 'beds',
+      label: `${filters.beds}+ beds`,
+      onRemove: () => setFilters((p) => ({ ...p, beds: undefined })),
+    });
+  if (filters.baths != null)
+    activeChips.push({
+      key: 'baths',
+      label: `${filters.baths}+ baths`,
+      onRemove: () => setFilters((p) => ({ ...p, baths: undefined })),
+    });
+  if (filters.type)
+    activeChips.push({
+      key: 'type',
+      label: filters.type,
+      onRemove: () => setFilters((p) => ({ ...p, type: undefined })),
+    });
+  if (filters.verifiedOnly)
+    activeChips.push({
+      key: 'verified',
+      label: 'Verified only',
+      onRemove: () => setFilters((p) => ({ ...p, verifiedOnly: false })),
+    });
   const trimmedQuery = debouncedQuery.trim();
-  if (trimmedQuery) activeChips.push({ key: 'q', label: `"${trimmedQuery.slice(0, 12)}${trimmedQuery.length > 12 ? '...' : ''}"`, onRemove: () => setQuery('') });
+  if (trimmedQuery)
+    activeChips.push({
+      key: 'q',
+      label: `"${trimmedQuery.slice(0, 12)}${trimmedQuery.length > 12 ? '...' : ''}"`,
+      onRemove: () => setQuery(''),
+    });
 
   return (
     <div className="fade-in max-w-7xl mx-auto space-y-8">
@@ -630,7 +759,9 @@ export function ExplorePage() {
             onClick={() => setFilters((p) => ({ ...p, verifiedOnly: !p.verifiedOnly }))}
             className={cn(
               'px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide border transition-colors',
-              filters.verifiedOnly ? 'bg-black text-white border-black' : 'bg-white border-gray-200 hover:border-black'
+              filters.verifiedOnly
+                ? 'bg-black text-white border-black'
+                : 'bg-white border-gray-200 hover:border-black'
             )}
           >
             Verified Only
@@ -639,14 +770,26 @@ export function ExplorePage() {
       </section>
 
       {/* Compact toolbar: results count, Filters toggle, Sort */}
-      <div id="filter-bar" className="sticky top-0 z-20 flex flex-col gap-3 bg-[#F9FAFB]/95 backdrop-blur-sm -mx-1 px-1 pt-1 pb-2">
+      <div
+        id="filter-bar"
+        className="sticky top-0 z-20 flex flex-col gap-3 bg-[#F9FAFB]/95 backdrop-blur-sm -mx-1 px-1 pt-1 pb-2"
+      >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-4 flex-1">
-            <span className="text-sm font-medium text-gray-600 whitespace-nowrap" aria-live="polite">
-              {loading ? '…' : `${visibleItems.length} result${visibleItems.length !== 1 ? 's' : ''}`}
+            <span
+              className="text-sm font-medium text-gray-600 whitespace-nowrap"
+              aria-live="polite"
+            >
+              {loading
+                ? '…'
+                : `${visibleItems.length} result${visibleItems.length !== 1 ? 's' : ''}`}
             </span>
+            <div className="flex items-center gap-2" aria-hidden />
             <div className="relative hidden sm:block flex-1 max-w-[240px]">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" aria-hidden="true" />
+              <Search
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400"
+                aria-hidden="true"
+              />
               <input
                 type="text"
                 value={query}
@@ -663,77 +806,97 @@ export function ExplorePage() {
               />
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setFiltersOpen((o) => !o)}
-              className={cn(
-                'inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-bold uppercase tracking-widest transition-colors',
-                filtersOpen
-                  ? 'bg-black text-white border-black'
-                  : 'bg-white border-gray-200 text-gray-700 hover:border-gray-400'
+          <div className="flex flex-wrap items-center justify-between gap-y-3 gap-x-2">
+            <div className="flex items-center gap-2 flex-grow sm:flex-grow-0">
+              <button
+                type="button"
+                onClick={() => setFiltersOpen((o) => !o)}
+                className={cn(
+                  'inline-flex items-center gap-2 rounded-xl border px-3 sm:px-4 py-2 text-xs font-bold uppercase tracking-widest transition-colors',
+                  filtersOpen
+                    ? 'bg-black text-white border-black'
+                    : 'bg-white border-gray-200 text-gray-700 hover:border-gray-400'
+                )}
+                aria-expanded={filtersOpen}
+              >
+                <SlidersHorizontal className="w-4 h-4" aria-hidden />
+                <span className="hidden xs:inline">Filters</span>
+                {activeChips.length > 0 && (
+                  <span
+                    className={cn(
+                      'min-w-[1.25rem] h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-bold',
+                      filtersOpen ? 'bg-white/20' : 'bg-gray-200 text-gray-700'
+                    )}
+                  >
+                    {activeChips.length}
+                  </span>
+                )}
+                {filtersOpen ? (
+                  <ChevronUp className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveSearch}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-xs font-bold uppercase tracking-widest text-gray-500 hover:border-gray-400 hover:text-gray-800 transition-colors bg-white"
+                title="Save this search"
+              >
+                <Bookmark className="w-3.5 h-3.5" />
+                <span className="hidden lg:inline">Save</span>
+              </button>
+
+              {compareIds.length >= 2 && (
+                <button
+                  type="button"
+                  onClick={() => setCompareOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-bold uppercase tracking-widest text-emerald-700 hover:bg-emerald-100 transition-colors"
+                >
+                  <GitCompare className="w-3.5 h-3.5" />
+                  <span className="hidden xs:inline">({compareIds.length})</span>
+                </button>
               )}
-              aria-expanded={filtersOpen}
-              aria-controls="explore-filters-panel"
-            >
-              <SlidersHorizontal className="w-4 h-4" aria-hidden />
-              Filters
-              {activeChips.length > 0 && (
-                <span className={cn(
-                  'min-w-[1.25rem] h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-bold',
-                  filtersOpen ? 'bg-white/20' : 'bg-gray-200 text-gray-700'
-                )}>
-                  {activeChips.length}
-                </span>
-              )}
-              {filtersOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            </button>
-            <button
-              type="button"
-              onClick={handleSaveSearch}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-xs font-bold uppercase tracking-widest text-gray-500 hover:border-gray-400 hover:text-gray-800 transition-colors bg-white"
-              title="Save this search"
-              aria-label="Save search"
-            >
-              <Bookmark className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Save search</span>
-            </button>
-            {compareIds.length >= 2 && (
-              <button
-                type="button"
-                onClick={() => setCompareOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-bold uppercase tracking-widest text-emerald-700 hover:bg-emerald-100 transition-colors"
-                aria-label={`Compare ${compareIds.length} listings`}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortKey)}
+                className="rounded-xl border border-gray-200 bg-white px-2 py-2 text-[10px] sm:text-xs font-semibold text-gray-700 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
               >
-                <GitCompare className="w-3.5 h-3.5" />
-                Compare ({compareIds.length})
-              </button>
-            )}
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as SortKey)}
-              className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-              aria-label="Sort by"
-            >
-              <option value="recommended">Recommended</option>
-              <option value="price-asc">Price low–high</option>
-              <option value="price-desc">Price high–low</option>
-            </select>
-            <div className="flex bg-gray-100 rounded-xl p-0.5 ml-2">
-              <button
-                type="button"
-                className={cn("px-3 py-1.5 text-xs font-semibold rounded-lg transition-all", viewMode === 'list' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black')}
-                onClick={() => setViewMode('list')}
-              >
-                List
-              </button>
-              <button
-                type="button"
-                className={cn("px-3 py-1.5 text-xs font-semibold rounded-lg transition-all", viewMode === 'map' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black')}
-                onClick={() => setViewMode('map')}
-              >
-                Map
-              </button>
+                <option value="recommended">Recom.</option>
+                <option value="price-asc">Price ↑</option>
+                <option value="price-desc">Price ↓</option>
+              </select>
+
+              <div className="flex bg-gray-100 rounded-xl p-0.5">
+                <button
+                  type="button"
+                  className={cn(
+                    'px-2.5 sm:px-3 py-1.5 text-[10px] sm:text-xs font-semibold rounded-lg transition-all',
+                    viewMode === 'list'
+                      ? 'bg-white shadow-sm text-black'
+                      : 'text-gray-500 hover:text-black'
+                  )}
+                  onClick={() => setViewMode('list')}
+                >
+                  List
+                </button>
+                <button
+                  type="button"
+                  className={cn(
+                    'px-2.5 sm:px-3 py-1.5 text-[10px] sm:text-xs font-semibold rounded-lg transition-all',
+                    viewMode === 'map'
+                      ? 'bg-white shadow-sm text-black'
+                      : 'text-gray-500 hover:text-black'
+                  )}
+                  onClick={() => setViewMode('map')}
+                >
+                  Map
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -780,10 +943,17 @@ export function ExplorePage() {
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-6">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Purpose</label>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">
+                  Purpose
+                </label>
                 <select
                   value={filters.purpose || ''}
-                  onChange={(e) => setFilters((prev) => ({ ...prev, purpose: (e.target.value || undefined) as 'rent' | 'buy' | undefined }))}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      purpose: (e.target.value || undefined) as 'rent' | 'buy' | undefined,
+                    }))
+                  }
                   className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
                   aria-label="Purpose"
                 >
@@ -793,78 +963,108 @@ export function ExplorePage() {
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Property type</label>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">
+                  Property type
+                </label>
                 <select
                   value={filters.type || ''}
-                  onChange={(e) => setFilters((prev) => ({ ...prev, type: e.target.value || undefined }))}
+                  onChange={(e) =>
+                    setFilters((prev) => ({ ...prev, type: e.target.value || undefined }))
+                  }
                   className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
                   aria-label="Property type"
                 >
                   <option value="">Any type</option>
                   {propertyTypes.map((type) => (
-                    <option key={type} value={type}>{type}</option>
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
                   ))}
                 </select>
               </div>
               {/* Price Range Slider — replaces two separate number inputs */}
               <div className="col-span-2">
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3">Price range (KES)</label>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3">
+                  Price range (KES)
+                </label>
                 <PriceRangeSlider
                   min={0}
                   max={500_000}
                   step={5_000}
                   valueMin={filters.minPrice ?? 0}
                   valueMax={filters.maxPrice ?? 500_000}
-                  onChangeMin={(v) => setFilters((prev) => ({ ...prev, minPrice: v > 0 ? v : undefined }))}
-                  onChangeMax={(v) => setFilters((prev) => ({ ...prev, maxPrice: v < 500_000 ? v : undefined }))}
+                  onChangeMin={(v) =>
+                    setFilters((prev) => ({ ...prev, minPrice: v > 0 ? v : undefined }))
+                  }
+                  onChangeMax={(v) =>
+                    setFilters((prev) => ({ ...prev, maxPrice: v < 500_000 ? v : undefined }))
+                  }
                 />
               </div>
             </div>
             <div className="flex flex-wrap items-end gap-4">
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Bedrooms</label>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">
+                  Bedrooms
+                </label>
                 <select
                   value={filters.beds ?? ''}
-                  onChange={(e) => setFilters((prev) => ({ ...prev, beds: e.target.value ? Number(e.target.value) : undefined }))}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      beds: e.target.value ? Number(e.target.value) : undefined,
+                    }))
+                  }
                   className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
                   aria-label="Bedrooms"
                 >
                   <option value="">Any</option>
                   {[1, 2, 3, 4, 5].map((v) => (
-                    <option key={v} value={v}>{v}+</option>
+                    <option key={v} value={v}>
+                      {v}+
+                    </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">Bathrooms</label>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">
+                  Bathrooms
+                </label>
                 <select
                   value={filters.baths ?? ''}
-                  onChange={(e) => setFilters((prev) => ({ ...prev, baths: e.target.value ? Number(e.target.value) : undefined }))}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      baths: e.target.value ? Number(e.target.value) : undefined,
+                    }))
+                  }
                   className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
                   aria-label="Bathrooms"
                 >
                   <option value="">Any</option>
                   {[1, 2, 3, 4].map((v) => (
-                    <option key={v} value={v}>{v}+</option>
+                    <option key={v} value={v}>
+                      {v}+
+                    </option>
                   ))}
                 </select>
               </div>
               <button
                 type="button"
-                onClick={() => setFilters((prev) => ({ ...prev, verifiedOnly: !prev.verifiedOnly }))}
+                onClick={() =>
+                  setFilters((prev) => ({ ...prev, verifiedOnly: !prev.verifiedOnly }))
+                }
                 className={cn(
                   'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold uppercase tracking-widest transition-colors',
-                  filters.verifiedOnly ? 'border-black bg-black text-white' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-400'
+                  filters.verifiedOnly
+                    ? 'border-black bg-black text-white'
+                    : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-400'
                 )}
                 aria-pressed={filters.verifiedOnly}
               >
                 <ShieldCheck className="w-3.5 h-3.5" /> Verified only
               </button>
-              <button
-                type="button"
-                disabled
-                className="hidden"
-              />
+              <button type="button" disabled className="hidden" />
               {hasActiveFilters && (
                 <button
                   type="button"
@@ -918,224 +1118,371 @@ export function ExplorePage() {
         </div>
       </div>
 
-
-      {loadError ? (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-6 text-center">
-          <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Couldn&apos;t load listings.</p>
-          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">Check your connection and try again.</p>
-          <button
-            type="button"
-            onClick={() => setFetchKey((k) => k + 1)}
-            className="mt-4 rounded-xl bg-amber-600 text-white px-4 py-2 text-sm font-semibold hover:bg-amber-700 transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      ) : loading ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, idx) => (
-            <PropertyCardSkeleton key={`explore-loading-${idx}`} />
-          ))}
-        </div>
-      ) : visibleItems.length === 0 ? (
-        <EmptyState
-          variant="light"
-          size="lg"
-          illustration="search"
-          title="No listings found"
-          subtitle={hasActiveFilters
-            ? "Try adjusting your filters, expanding your search area, or removing 'Verified only'."
-            : 'No listings available right now — check back soon.'}
-          action={hasActiveFilters ? { label: 'Clear all filters', onClick: resetFilters, variant: 'primary' } : undefined}
-        />
-      ) : (
-        <div>
-          {/* Recently viewed strip */}
-          {recentlyViewed.length > 0 && !loading && (
-            <div className="mb-6">
-              <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-gray-400 mb-3">Recently viewed</p>
-              <div className="flex gap-3 overflow-x-auto pb-2 snap-x">
-                {recentlyViewed.slice(0, 5).map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => navigate(`/listing/${item.id}`)}
-                    className="flex-shrink-0 flex items-center gap-2 border border-zinc-200 rounded-xl bg-white px-3 py-2 hover:border-black transition-all snap-start text-left"
-                  >
-                    {item.imageUrl && (
-                      <img src={item.imageUrl} alt={item.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-zinc-800 truncate max-w-[120px]">{item.title}</p>
-                      <p className="text-[10px] font-mono text-zinc-400 truncate">{item.neighborhood || item.city || 'Kenya'}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          <div className="space-y-6">
-            <div
-              ref={listScrollRef}
-              className="overflow-auto max-h-[70vh] min-h-[400px] rounded-lg border border-zinc-200 bg-zinc-50/50"
-              aria-label="Listing results"
-            >
-              <div
-                className="relative w-full"
-                style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
+      {/* For You carousel always first */}
+      {recommended.length > 0 && (
+        <div className="mb-4">
+          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 mb-3">
+            <Sparkles className="w-4 h-4 text-amber-600" /> For you (based on your current filters)
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {recommended.slice(0, 6).map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  setSelectedId(item.id);
+                  updateUrlParams({ listing: item.id });
+                  setResultMode('recommended');
+                }}
+                className="rounded-lg border border-gray-200 bg-white p-3 text-left hover:border-black transition-all"
               >
-                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                  const i0 = virtualRow.index * 2;
-                  const i1 = i0 + 1;
-                  const item0 = visibleItems[i0];
-                  const item1 = visibleItems[i1];
-                  return (
-                    <div
-                      key={virtualRow.key}
-                      className="absolute left-0 top-0 grid w-full gap-4 md:grid-cols-2 pr-2"
-                      style={{
-                        transform: `translateY(${virtualRow.start}px)`,
-                        minHeight: `${virtualRow.size}px`,
-                      }}
+                <div className="w-full h-28 rounded-md overflow-hidden bg-gray-100">
+                  <img
+                    src={listingThumbUrl(item.imageUrl) || fallbackImage}
+                    alt={item.title}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div className="mt-2 line-clamp-1 text-sm font-serif font-semibold text-black">
+                  {item.title}
+                </div>
+                <div className="text-xs font-mono text-gray-600">
+                  {formatCompactPrice(item.price, item.currency)}
+                  {(item.purpose === 'rent' ||
+                    (item.category || '').toLowerCase().includes('rent')) &&
+                    ' per month'}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Show full results list only when no recommendations to show */}
+      {recommended.length === 0 &&
+        (loadError ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-6 text-center">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+              Couldn&apos;t load listings.
+            </p>
+            <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+              Check your connection and try again.
+            </p>
+            <button
+              type="button"
+              onClick={() => setFetchKey((k) => k + 1)}
+              className="mt-4 rounded-xl bg-amber-600 text-white px-4 py-2 text-sm font-semibold hover:bg-amber-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        ) : loading ? (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, idx) => (
+              <PropertyCardSkeleton key={`explore-loading-${idx}`} variant="compact" />
+            ))}
+          </div>
+        ) : visibleItems.length === 0 ? (
+          <EmptyState
+            variant="light"
+            size="lg"
+            illustration="search"
+            title="No listings found"
+            subtitle={
+              hasActiveFilters
+                ? "Try adjusting your filters, expanding your search area, or removing 'Verified only'."
+                : 'No listings available right now — check back soon.'
+            }
+            action={
+              hasActiveFilters
+                ? { label: 'Clear all filters', onClick: resetFilters, variant: 'primary' }
+                : undefined
+            }
+          />
+        ) : (
+          <div>
+            {/* Recently viewed strip */}
+            {recentlyViewed.length > 0 && !loading && (
+              <div className="mb-6">
+                <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-gray-400 mb-3">
+                  Recently viewed
+                </p>
+                <div className="flex gap-3 overflow-x-auto pb-2 snap-x">
+                  {recentlyViewed.slice(0, 5).map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => navigate(`/listing/${item.id}`)}
+                      className="flex-shrink-0 flex items-center gap-2 border border-zinc-200 rounded-xl bg-white px-3 py-2 hover:border-black transition-all snap-start text-left"
                     >
-                      {item0 ? (
-                        <div className="flex flex-col rounded-lg overflow-hidden border border-zinc-200 bg-zeni-surface">
-                          <PropertyCard
-                            property={item0}
-                            isSelected={selectedId === item0.id}
-                            onClick={() => { setSelectedId(item0.id); updateUrlParams({ listing: item0.id }); }}
-                            saved={item0.saved}
-                            onSaveToggle={() => handleSaveListing(item0.id)}
-                            onContact={() => handleMessage(item0)}
-                          />
-                          <div className="flex items-center gap-2 border-t border-zinc-100 px-3 py-2 bg-zinc-50/50">
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); toggleCompare(item0.id); }}
-                              className={cn(
-                                'inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-2 py-1.5 rounded-lg border transition-colors',
-                                compareIds.includes(item0.id)
-                                  ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
-                                  : comparing_disabled(compareIds, item0.id)
-                                    ? 'border-zinc-200 text-zinc-300 cursor-not-allowed'
-                                    : 'border-zinc-200 text-zinc-500 hover:border-zinc-400'
-                              )}
-                              disabled={comparing_disabled(compareIds, item0.id)}
-                              title={compareIds.includes(item0.id) ? 'Remove from compare' : compareIds.length >= 3 ? 'Max 3 listings' : 'Add to compare'}
-                            >
-                              <GitCompare className="w-3 h-3" />
-                              {compareIds.includes(item0.id) ? 'Comparing' : 'Compare'}
-                            </button>
-                            <button type="button" onClick={(e) => { e.stopPropagation(); handleShare(item0); }} className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 hover:border-zeni-foreground hover:text-zeni-foreground transition-colors" aria-label="Share listing" title="Share">
-                              <Sparkles className="w-4 h-4" />
-                            </button>
-                            <Button type="button" variant="zeni-primary" size="zeni-sm" className="ml-auto" onClick={() => { setSelectedId(item0.id); updateUrlParams({ listing: item0.id }); }}>
-                              Open
-                            </Button>
-                          </div>
-                        </div>
-                      ) : null}
-                      {item1 ? (
-                        <div className="flex flex-col rounded-lg overflow-hidden border border-zinc-200 bg-zeni-surface">
-                          <PropertyCard
-                            property={item1}
-                            isSelected={selectedId === item1.id}
-                            onClick={() => { setSelectedId(item1.id); updateUrlParams({ listing: item1.id }); }}
-                            saved={item1.saved}
-                            onSaveToggle={() => handleSaveListing(item1.id)}
-                            onContact={() => handleMessage(item1)}
-                          />
-                          <div className="flex items-center gap-2 border-t border-zinc-100 px-3 py-2 bg-zinc-50/50">
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); toggleCompare(item1.id); }}
-                              className={cn(
-                                'inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-2 py-1.5 rounded-lg border transition-colors',
-                                compareIds.includes(item1.id)
-                                  ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
-                                  : comparing_disabled(compareIds, item1.id)
-                                    ? 'border-zinc-200 text-zinc-300 cursor-not-allowed'
-                                    : 'border-zinc-200 text-zinc-500 hover:border-zinc-400'
-                              )}
-                              disabled={comparing_disabled(compareIds, item1.id)}
-                            >
-                              <GitCompare className="w-3 h-3" />
-                              {compareIds.includes(item1.id) ? 'Comparing' : 'Compare'}
-                            </button>
-                            <button type="button" onClick={(e) => { e.stopPropagation(); handleShare(item1); }} className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 hover:border-zeni-foreground hover:text-zeni-foreground transition-colors" aria-label="Share listing" title="Share">
-                              <Sparkles className="w-4 h-4" />
-                            </button>
-                            <Button type="button" variant="zeni-primary" size="zeni-sm" className="ml-auto" onClick={() => { setSelectedId(item1.id); updateUrlParams({ listing: item1.id }); }}>
-                              Open
-                            </Button>
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {viewMode === 'map' && (
-              <div className="h-[70vh] min-h-[400px] rounded-lg border border-zinc-200 overflow-hidden relative">
-                <div className="absolute top-4 left-4 z-[400] bg-white rounded-xl shadow-md p-2 flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="search_area"
-                    checked={searchThisArea}
-                    onChange={(e) => setSearchThisArea(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black"
-                  />
-                  <label htmlFor="search_area" className="text-sm font-semibold text-gray-800 cursor-pointer">
-                    Search this map area
-                  </label>
-                </div>
-                <Suspense fallback={<div className="h-full w-full bg-zinc-100 animate-pulse" />}>
-                  <PropertyMap
-                    properties={items}
-                    selectedId={selectedId}
-                    onSelect={(id: string) => { setSelectedId(id); updateUrlParams({ listing: id }); }}
-                    onBoundsChange={(b: { center: [number, number]; radiusKm: number }) => {
-                      if (!searchThisArea) return;
-                      // Estimate a basic box from center and radiusKm (1 deg ~ 111km)
-                      const degOffset = b.radiusKm / 111;
-                      setMapBounds({
-                        minLat: b.center[0] - degOffset,
-                        maxLat: b.center[0] + degOffset,
-                        minLng: b.center[1] - degOffset,
-                        maxLng: b.center[1] + degOffset
-                      });
-                    }}
-                  />
-                </Suspense>
-              </div>
-            )}
-
-            {recommended.length > 0 && !loadingRecommended && (
-              <div className="bg-white border border-gray-200 rounded-2xl p-6">
-                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 mb-4">
-                  <Sparkles className="w-4 h-4 text-amber-600" /> For you (based on your current filters)
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {recommended.slice(0, 3).map((item) => (
-                    <button key={item.id} type="button" onClick={() => { setSelectedId(item.id); updateUrlParams({ listing: item.id }); }} className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-left hover:border-black transition-all">
-                      <img src={listingThumbUrl(item.imageUrl) || fallbackImage} alt={item.title} className="h-24 w-full rounded-lg object-cover" />
-                      <div className="mt-2 line-clamp-1 text-sm font-serif font-semibold text-black">{item.title}</div>
-                      <div className="text-xs font-mono text-gray-600">{formatCompactPrice(item.price, item.currency)}</div>
+                      {item.imageUrl && (
+                        <img
+                          src={item.imageUrl}
+                          alt={item.title}
+                          className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                        />
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-zinc-800 truncate max-w-[120px]">
+                          {item.title}
+                        </p>
+                        <p className="text-[10px] font-mono text-zinc-400 truncate">
+                          {item.neighborhood || item.city || 'Kenya'}
+                        </p>
+                      </div>
                     </button>
                   ))}
                 </div>
               </div>
             )}
+            <div className="space-y-6">
+              <div
+                ref={listScrollRef}
+                className="overflow-auto max-h-[60vh] min-h-[360px] rounded-lg border border-zinc-200 bg-zinc-50/50"
+                aria-label="Listing results"
+              >
+                <div
+                  className="relative w-full"
+                  style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
+                >
+                  {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                    const i0 = virtualRow.index * 2;
+                    const i1 = i0 + 1;
+                    const item0 = visibleItems[i0];
+                    const item1 = visibleItems[i1];
+                    return (
+                      <div
+                        key={virtualRow.key}
+                        className="absolute left-0 top-0 grid w-full gap-4 md:grid-cols-2 pr-2"
+                        style={{
+                          transform: `translateY(${virtualRow.start}px)`,
+                          minHeight: `${virtualRow.size}px`,
+                        }}
+                      >
+                        {item0 ? (
+                          <div className="flex flex-col rounded-lg overflow-hidden border border-zinc-200 bg-zeni-surface">
+                            <PropertyCard
+                              property={item0}
+                              variant="compact"
+                              isSelected={selectedId === item0.id}
+                              onClick={() => {
+                                setSelectedId(item0.id);
+                                updateUrlParams({ listing: item0.id });
+                              }}
+                              saved={item0.saved}
+                              onSaveToggle={() => handleSaveListing(item0.id)}
+                              onContact={() => handleMessage(item0)}
+                            />
+                            <div className="flex items-center gap-2 border-t border-zinc-100 px-2.5 py-1.5 bg-zinc-50/50">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleCompare(item0.id);
+                                }}
+                                className={cn(
+                                  'inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-2 py-1.5 rounded-lg border transition-colors',
+                                  compareIds.includes(item0.id)
+                                    ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                                    : comparing_disabled(compareIds, item0.id)
+                                      ? 'border-zinc-200 text-zinc-300 cursor-not-allowed'
+                                      : 'border-zinc-200 text-zinc-500 hover:border-zinc-400'
+                                )}
+                                disabled={comparing_disabled(compareIds, item0.id)}
+                                title={
+                                  compareIds.includes(item0.id)
+                                    ? 'Remove from compare'
+                                    : compareIds.length >= 3
+                                      ? 'Max 3 listings'
+                                      : 'Add to compare'
+                                }
+                              >
+                                <GitCompare className="w-3 h-3" />
+                                {compareIds.includes(item0.id) ? 'Comparing' : 'Compare'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleShare(item0);
+                                }}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 hover:border-zeni-foreground hover:text-zeni-foreground transition-colors"
+                                aria-label="Share listing"
+                                title="Share"
+                              >
+                                <Sparkles className="w-4 h-4" />
+                              </button>
+                              <Button
+                                type="button"
+                                variant="zeni-primary"
+                                size="zeni-sm"
+                                className="ml-auto"
+                                onClick={() => {
+                                  setSelectedId(item0.id);
+                                  updateUrlParams({ listing: item0.id });
+                                }}
+                              >
+                                Open
+                              </Button>
+                            </div>
+                          </div>
+                        ) : null}
+                        {item1 ? (
+                          <div className="flex flex-col rounded-lg overflow-hidden border border-zinc-200 bg-zeni-surface">
+                            <PropertyCard
+                              property={item1}
+                              variant="compact"
+                              isSelected={selectedId === item1.id}
+                              onClick={() => {
+                                setSelectedId(item1.id);
+                                updateUrlParams({ listing: item1.id });
+                              }}
+                              saved={item1.saved}
+                              onSaveToggle={() => handleSaveListing(item1.id)}
+                              onContact={() => handleMessage(item1)}
+                            />
+                            <div className="flex items-center gap-2 border-t border-zinc-100 px-2.5 py-1.5 bg-zinc-50/50">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleCompare(item1.id);
+                                }}
+                                className={cn(
+                                  'inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-2 py-1.5 rounded-lg border transition-colors',
+                                  compareIds.includes(item1.id)
+                                    ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                                    : comparing_disabled(compareIds, item1.id)
+                                      ? 'border-zinc-200 text-zinc-300 cursor-not-allowed'
+                                      : 'border-zinc-200 text-zinc-500 hover:border-zinc-400'
+                                )}
+                                disabled={comparing_disabled(compareIds, item1.id)}
+                              >
+                                <GitCompare className="w-3 h-3" />
+                                {compareIds.includes(item1.id) ? 'Comparing' : 'Compare'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleShare(item1);
+                                }}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 hover:border-zeni-foreground hover:text-zeni-foreground transition-colors"
+                                aria-label="Share listing"
+                                title="Share"
+                              >
+                                <Sparkles className="w-4 h-4" />
+                              </button>
+                              <Button
+                                type="button"
+                                variant="zeni-primary"
+                                size="zeni-sm"
+                                className="ml-auto"
+                                onClick={() => {
+                                  setSelectedId(item1.id);
+                                  updateUrlParams({ listing: item1.id });
+                                }}
+                              >
+                                Open
+                              </Button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {viewMode === 'map' && (
+                <div className="h-[70vh] min-h-[400px] rounded-lg border border-zinc-200 overflow-hidden relative">
+                  <div className="absolute top-4 left-4 z-[400] bg-white rounded-xl shadow-md p-2 flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="search_area"
+                      checked={searchThisArea}
+                      onChange={(e) => setSearchThisArea(e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black"
+                    />
+                    <label
+                      htmlFor="search_area"
+                      className="text-sm font-semibold text-gray-800 cursor-pointer"
+                    >
+                      Search this map area
+                    </label>
+                  </div>
+                  <Suspense fallback={<div className="h-full w-full bg-zinc-100 animate-pulse" />}>
+                    <PropertyMap
+                      properties={items}
+                      selectedId={selectedId}
+                      onSelect={(id: string) => {
+                        setSelectedId(id);
+                        updateUrlParams({ listing: id });
+                      }}
+                      onBoundsChange={(b: { center: [number, number]; radiusKm: number }) => {
+                        if (!searchThisArea) return;
+                        // Estimate a basic box from center and radiusKm (1 deg ~ 111km)
+                        const degOffset = b.radiusKm / 111;
+                        setMapBounds({
+                          minLat: b.center[0] - degOffset,
+                          maxLat: b.center[0] + degOffset,
+                          minLng: b.center[1] - degOffset,
+                          maxLng: b.center[1] + degOffset,
+                        });
+                      }}
+                    />
+                  </Suspense>
+                </div>
+              )}
+
+              {recommended.length > 0 && !loadingRecommended && (
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 mb-3">
+                    <Sparkles className="w-4 h-4 text-amber-600" /> For you (based on your current
+                    filters)
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {recommended.slice(0, 6).map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedId(item.id);
+                          updateUrlParams({ listing: item.id });
+                        }}
+                        className="rounded-lg border border-gray-200 bg-white p-3 text-left hover:border-black transition-all"
+                      >
+                        <div className="w-full h-28 rounded-md overflow-hidden bg-gray-100">
+                          <img
+                            src={listingThumbUrl(item.imageUrl) || fallbackImage}
+                            alt={item.title}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <div className="mt-2 line-clamp-1 text-sm font-serif font-semibold text-black">
+                          {item.title}
+                        </div>
+                        <div className="text-xs font-mono text-gray-600">
+                          {formatCompactPrice(item.price, item.currency)}
+                          {(item.purpose === 'rent' ||
+                            (item.category || '').toLowerCase().includes('rent')) &&
+                            ' per month'}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        ))}
 
       <CompareModal
         properties={compareProperties}
         onRemove={(id) => setCompareIds((prev) => prev.filter((i) => i !== id))}
-        onClose={() => { setCompareOpen(false); }}
+        onClose={() => {
+          setCompareOpen(false);
+        }}
         open={compareOpen}
       />
 

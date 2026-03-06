@@ -26,7 +26,7 @@ export function GoogleSignInButton({
   clientId,
   onSuccess,
   onError,
-  disabled
+  disabled,
 }: {
   clientId: string;
   onSuccess: (credential: string) => void;
@@ -70,7 +70,7 @@ export function GoogleSignInButton({
       callback: (response) => {
         if (response?.credential) onSuccess(response.credential);
       },
-      auto_select: false
+      auto_select: false,
     });
 
     try {
@@ -79,7 +79,7 @@ export function GoogleSignInButton({
         size: 'large',
         text: 'signin_with',
         theme: 'outline',
-        width: 120
+        width: 120,
       });
     } catch (e) {
       onError?.('Failed to render Google button');

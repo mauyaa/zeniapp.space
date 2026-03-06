@@ -4,13 +4,16 @@ export async function listUserDocs(userId: string) {
   return UserDocModel.find({ userId }).sort({ createdAt: -1 });
 }
 
-export async function createUserDoc(userId: string, data: { type: string; url: string; note?: string; sharedListings?: string[] }) {
+export async function createUserDoc(
+  userId: string,
+  data: { type: string; url: string; note?: string; sharedListings?: string[] }
+) {
   return UserDocModel.create({
     userId,
     type: data.type,
     url: data.url,
     note: data.note,
-    sharedListings: data.sharedListings
+    sharedListings: data.sharedListings,
   });
 }
 

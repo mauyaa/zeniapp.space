@@ -11,12 +11,18 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
       message: 'Invalid request data',
       details: err.errors.map((e) => ({
         path: e.path.join('.'),
-        message: e.message
-      }))
+        message: e.message,
+      })),
     });
   }
 
-  const appErr = err as { status?: number; code?: string; message?: string; details?: unknown; stack?: string };
+  const appErr = err as {
+    status?: number;
+    code?: string;
+    message?: string;
+    details?: unknown;
+    stack?: string;
+  };
   const status = appErr?.status || 500;
   const code = appErr?.code || 'SERVER_ERROR';
   const message = appErr?.message || 'Internal error';
@@ -26,7 +32,7 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
     console.error('[Error]', {
       code,
       message,
-      stack: appErr?.stack
+      stack: appErr?.stack,
     });
   }
 

@@ -12,7 +12,7 @@ const DefaultIcon = L.icon({
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+  shadowSize: [41, 41],
 });
 
 const SelectedIcon = L.icon({
@@ -21,7 +21,7 @@ const SelectedIcon = L.icon({
   iconSize: [32, 52],
   iconAnchor: [16, 52],
   popupAnchor: [1, -44],
-  shadowSize: [52, 52]
+  shadowSize: [52, 52],
 });
 
 const isValidCoordinate = (lat?: number, lng?: number) => {
@@ -55,7 +55,7 @@ function MapController({
   zoom,
   skipInitialFly,
   fitBoundsWhenNoSelection,
-  bounds
+  bounds,
 }: {
   center: [number, number];
   zoom: number;
@@ -83,10 +83,10 @@ function MapController({
       try {
         map.flyTo(center, zoom, {
           duration: FLY_DURATION,
-          easeLinearity: FLY_EASE
+          easeLinearity: FLY_EASE,
         });
       } catch (error) {
-        logger.error('Map flyTo error:', error, { center, zoom });
+        logger.error('Map flyTo error', { error, center, zoom });
       }
     };
     if (skipInitialFly && !hasFlownRef.current) {
@@ -109,10 +109,12 @@ export function PropertyMap({
   onSelect,
   onBoundsChange,
   center,
-  zoom
+  zoom,
 }: PropertyMapProps) {
   const selectedProperty = properties.find((p) => p.id === selectedId);
-  const hasValidSelectedLocation = selectedProperty && isValidCoordinate(selectedProperty.location?.lat, selectedProperty.location?.lng);
+  const hasValidSelectedLocation =
+    selectedProperty &&
+    isValidCoordinate(selectedProperty.location?.lat, selectedProperty.location?.lng);
   const hasOverrideCenter =
     Array.isArray(center) && center.length === 2 && isValidCoordinate(center[0], center[1]);
 
@@ -120,22 +122,28 @@ export function PropertyMap({
 
   const resolvedCenter: [number, number] = overrideCenter
     ? overrideCenter
-    : hasValidSelectedLocation && selectedProperty?.location?.lat !== undefined && selectedProperty?.location?.lng !== undefined
-    ? [selectedProperty.location.lat, selectedProperty.location.lng]
-    : [-1.2921, 36.8219];
+    : hasValidSelectedLocation &&
+        selectedProperty?.location?.lat !== undefined &&
+        selectedProperty?.location?.lng !== undefined
+      ? [selectedProperty.location.lat, selectedProperty.location.lng]
+      : [-1.2921, 36.8219];
   const resolvedZoom = overrideCenter ? (zoom ?? 13) : hasValidSelectedLocation ? 15 : 13;
   const skipInitialFly = !selectedId;
-  const fitBoundsWhenNoSelection = !selectedId && properties.filter((p) => isValidCoordinate(p.location?.lat, p.location?.lng)).length > 0;
+  const fitBoundsWhenNoSelection =
+    !selectedId &&
+    properties.filter((p) => isValidCoordinate(p.location?.lat, p.location?.lng)).length > 0;
   const bounds: L.LatLngBoundsLiteral | null =
     fitBoundsWhenNoSelection && properties.length > 0
       ? (() => {
-          const valid = properties.filter((p) => isValidCoordinate(p.location?.lat, p.location?.lng));
+          const valid = properties.filter((p) =>
+            isValidCoordinate(p.location?.lat, p.location?.lng)
+          );
           if (valid.length === 0) return null;
           const lats = valid.map((p) => p.location?.lat ?? 0);
           const lngs = valid.map((p) => p.location?.lng ?? 0);
           return [
             [Math.min(...lats), Math.min(...lngs)],
-            [Math.max(...lats), Math.max(...lngs)]
+            [Math.max(...lats), Math.max(...lngs)],
           ];
         })()
       : null;
@@ -150,7 +158,6 @@ export function PropertyMap({
         zoomControl={false}
         attributionControl={false}
         scrollWheelZoom={true}
-        smoothWheelZoom={true}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -166,7 +173,11 @@ export function PropertyMap({
         />
         {onBoundsChange && <MapBoundsWatcher onBoundsChange={onBoundsChange} />}
         {properties
-          .filter((p) => isValidCoordinate(p.location?.lat, p.location?.lng) && isWithinKenya(p.location?.lat, p.location?.lng))
+          .filter(
+            (p) =>
+              isValidCoordinate(p.location?.lat, p.location?.lng) &&
+              isWithinKenya(p.location?.lat, p.location?.lng)
+          )
           .map((property) => {
             const isSelected = selectedId === property.id;
             return (
@@ -175,7 +186,7 @@ export function PropertyMap({
                 position={[property.location?.lat ?? 0, property.location?.lng ?? 0]}
                 icon={isSelected ? SelectedIcon : DefaultIcon}
                 eventHandlers={{
-                  click: () => onSelect(property.id)
+                  click: () => onSelect(property.id),
                 }}
                 opacity={selectedId && !isSelected ? 0.7 : 1}
                 zIndexOffset={isSelected ? 1000 : 0}
@@ -199,11 +210,10 @@ export function PropertyMap({
       </MapContainer>
     </div>
   );
-
 }
 
 function MapBoundsWatcher({
-  onBoundsChange
+  onBoundsChange,
 }: {
   onBoundsChange: (payload: { center: [number, number]; radiusKm: number }) => void;
 }) {

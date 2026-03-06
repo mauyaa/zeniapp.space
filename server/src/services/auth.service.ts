@@ -45,7 +45,7 @@ export async function createUser(input: CreateUserInput): Promise<UserDocument> 
     $or:
       identity.kind === 'email'
         ? [{ emailOrPhone: identity.value }, { email: identity.value }]
-        : [{ emailOrPhone: identity.value }, { phone: identity.value }]
+        : [{ emailOrPhone: identity.value }, { phone: identity.value }],
   });
   if (existing) {
     const error = new Error('User already exists with this email or phone');
@@ -58,7 +58,7 @@ export async function createUser(input: CreateUserInput): Promise<UserDocument> 
     name,
     emailOrPhone: identity.value,
     password,
-    role
+    role,
   };
 
   if (identity.kind === 'email') {
@@ -66,7 +66,7 @@ export async function createUser(input: CreateUserInput): Promise<UserDocument> 
   } else {
     userData.phone = identity.value;
   }
-  
+
   if (role === 'agent') {
     userData.agentVerification = 'pending';
   }
@@ -116,7 +116,7 @@ export async function authenticate(emailOrPhone: string, password: string): Prom
   }
 
   const user = await UserModel.findOne({ $or: orConditions });
-  
+
   if (!user) {
     const error = new Error('Invalid credentials');
     (error as any).status = 401;
@@ -152,7 +152,10 @@ export async function authenticate(emailOrPhone: string, password: string): Prom
 /**
  * Find user by email or create one for Google sign-in (with random password).
  */
-export async function findOrCreateUserFromGoogle(email: string, name: string): Promise<UserDocument> {
+export async function findOrCreateUserFromGoogle(
+  email: string,
+  name: string
+): Promise<UserDocument> {
   const normalized = email.trim().toLowerCase();
   if (!normalized || !normalized.includes('@')) {
     const err = new Error('Invalid Google email');
@@ -162,7 +165,7 @@ export async function findOrCreateUserFromGoogle(email: string, name: string): P
   }
 
   let user = await UserModel.findOne({
-    $or: [{ emailOrPhone: normalized }, { email: normalized }]
+    $or: [{ emailOrPhone: normalized }, { email: normalized }],
   });
 
   if (user) {
@@ -187,7 +190,7 @@ export async function findOrCreateUserFromGoogle(email: string, name: string): P
     emailOrPhone: normalized,
     email: normalized,
     password: randomPassword,
-    role: 'user'
+    role: 'user',
   });
 
   try {
@@ -212,11 +215,11 @@ export function signAccessToken(user: UserDocument, sessionId?: string): string 
   const payload = {
     sub: user.id,
     role: user.role,
-    sid
+    sid,
   };
 
   return jwt.sign(payload, env.jwtSecret, {
-    expiresIn: ACCESS_TTL
+    expiresIn: ACCESS_TTL,
   });
 }
 
@@ -237,7 +240,7 @@ export async function createAuthSession(
     userAgent: meta.userAgent,
     ip: meta.ip,
     lastUsedAt: new Date(),
-    expiresAt
+    expiresAt,
   });
 
   const accessToken = signAccessToken(user, session.id);
@@ -308,12 +311,22 @@ export async function revokeAllSessionsForUser(userId: string) {
   await AuthSessionModel.deleteMany({ userId });
 }
 
-export async function requestPasswordReset(emailOrPhone: string, meta: { ip?: string; userAgent?: string }) {
+export async function requestPasswordReset(
+  emailOrPhone: string,
+  meta: { ip?: string; userAgent?: string }
+) {
   const identity = normalizeIdentity(emailOrPhone);
   const query =
     identity.kind === 'email'
       ? { $or: [{ emailOrPhone: identity.value }, { email: identity.value }] }
-      : { $or: [{ emailOrPhone: identity.value }, { phone: identity.value }, { emailOrPhone: identity.raw }, { phone: identity.raw }] };
+      : {
+          $or: [
+            { emailOrPhone: identity.value },
+            { phone: identity.value },
+            { emailOrPhone: identity.raw },
+            { phone: identity.raw },
+          ],
+        };
 
   const user = await UserModel.findOne(query);
   if (!user) {
@@ -330,18 +343,22 @@ export async function requestPasswordReset(emailOrPhone: string, meta: { ip?: st
     tokenHash,
     expiresAt,
     ip: meta.ip,
-    userAgent: meta.userAgent
+    userAgent: meta.userAgent,
   });
 
   return { sent: true, user, token, expiresAt };
 }
 
-export async function resetPassword(token: string, newPassword: string, meta: { ip?: string; userAgent?: string }) {
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+  meta: { ip?: string; userAgent?: string }
+) {
   const tokenHash = hashToken(token);
   const record = await PasswordResetTokenModel.findOne({
     tokenHash,
     expiresAt: { $gt: new Date() },
-    usedAt: { $exists: false }
+    usedAt: { $exists: false },
   });
   if (!record) {
     const error = new Error('Invalid or expired token');

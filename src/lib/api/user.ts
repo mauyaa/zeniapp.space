@@ -15,3 +15,10 @@ export function submitKyc(url: string, note?: string): Promise<unknown> {
 export function getKycStatus(): Promise<UserKycStatus> {
   return request('/user/kyc');
 }
+
+export function updateAvatar(avatarUrl: string): Promise<{ avatarUrl: string }> {
+  return request('/user/avatar', {
+    method: 'PATCH',
+    body: JSON.stringify({ avatarUrl }),
+  });
+}

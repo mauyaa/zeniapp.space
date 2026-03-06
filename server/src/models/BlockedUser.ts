@@ -9,10 +9,13 @@ export interface BlockedUserDocument extends Document {
 const BlockedUserSchema = new Schema<BlockedUserDocument>(
   {
     blockerId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    blockedId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true }
+    blockedId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   },
   { timestamps: true }
 );
 BlockedUserSchema.index({ blockerId: 1, blockedId: 1 }, { unique: true });
 
-export const BlockedUserModel = mongoose.model<BlockedUserDocument>('BlockedUser', BlockedUserSchema);
+export const BlockedUserModel = mongoose.model<BlockedUserDocument>(
+  'BlockedUser',
+  BlockedUserSchema
+);

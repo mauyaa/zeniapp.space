@@ -34,21 +34,43 @@ export function AgentViewingsPage() {
   }, []);
 
   const total = items.length;
-  const requested = useMemo(() => items.filter((item) => item.status === 'requested').length, [items]);
-  const confirmed = useMemo(() => items.filter((item) => item.status === 'confirmed').length, [items]);
+  const requested = useMemo(
+    () => items.filter((item) => item.status === 'requested').length,
+    [items]
+  );
+  const confirmed = useMemo(
+    () => items.filter((item) => item.status === 'confirmed').length,
+    [items]
+  );
 
-  const templates: Record<'confirmed' | 'declined', { label: string; message: string; reason?: string }[]> = {
+  const templates: Record<
+    'confirmed' | 'declined',
+    { label: string; message: string; reason?: string }[]
+  > = {
     confirmed: [
       { label: 'Standard confirm', message: 'Confirmed. See you at the scheduled time!' },
-      { label: 'Bring ID', message: 'Confirmed. Please bring ID to the viewing.' }
+      { label: 'Bring ID', message: 'Confirmed. Please bring ID to the viewing.' },
     ],
     declined: [
-      { label: 'Conflict', reason: 'Scheduling conflict', message: 'Sorry, I have a conflict. Let us pick another time.' },
-      { label: 'Already under offer', reason: 'Under offer', message: 'This home is under offer. I will suggest alternatives.' }
-    ]
+      {
+        label: 'Conflict',
+        reason: 'Scheduling conflict',
+        message: 'Sorry, I have a conflict. Let us pick another time.',
+      },
+      {
+        label: 'Already under offer',
+        reason: 'Under offer',
+        message: 'This home is under offer. I will suggest alternatives.',
+      },
+    ],
   };
 
-  const updateStatus = async (id: string, status: 'confirmed' | 'declined', reason?: string, message?: string) => {
+  const updateStatus = async (
+    id: string,
+    status: 'confirmed' | 'declined',
+    reason?: string,
+    message?: string
+  ) => {
     setActioning(id);
     try {
       await updateAgentViewing(id, status, reason, message);
@@ -78,7 +100,8 @@ export function AgentViewingsPage() {
       <div>
         <h1 className="text-3xl font-serif text-black mb-2">Viewings</h1>
         <p className="text-sm text-gray-500">
-          Confirm or decline visits and keep buyers updated. Total: {loading ? '—' : total} requests.
+          Confirm or decline visits and keep buyers updated. Total: {loading ? '—' : total}{' '}
+          requests.
         </p>
       </div>
 
@@ -88,11 +111,15 @@ export function AgentViewingsPage() {
           <div className="text-2xl font-semibold text-black mt-1">{loading ? '—' : total}</div>
         </div>
         <div className="rounded-sm border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Requested</div>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+            Requested
+          </div>
           <div className="text-2xl font-semibold text-black mt-1">{loading ? '—' : requested}</div>
         </div>
         <div className="rounded-sm border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Confirmed</div>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+            Confirmed
+          </div>
           <div className="text-2xl font-semibold text-black mt-1">{loading ? '—' : confirmed}</div>
         </div>
       </div>
@@ -139,14 +166,18 @@ export function AgentViewingsPage() {
                         v.status === 'confirmed'
                           ? 'bg-green-100 text-green-700'
                           : v.status === 'declined'
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-amber-100 text-amber-700'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-amber-100 text-amber-700'
                       }`}
                     >
                       {v.status}
                     </span>
-                    {v.agentReason && <div className="text-[11px] text-gray-500">Reason: {v.agentReason}</div>}
-                    {v.agentMessage && <div className="text-[11px] text-gray-500">Message: {v.agentMessage}</div>}
+                    {v.agentReason && (
+                      <div className="text-[11px] text-gray-500">Reason: {v.agentReason}</div>
+                    )}
+                    {v.agentMessage && (
+                      <div className="text-[11px] text-gray-500">Message: {v.agentMessage}</div>
+                    )}
                   </div>
 
                   <div className="flex flex-col items-end gap-2 text-xs text-gray-500">

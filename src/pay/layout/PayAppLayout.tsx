@@ -25,7 +25,8 @@ export function PayAppLayout() {
 }
 
 function titleForPath(pathname: string): string {
-  if (pathname.includes('/pay/transactions') || pathname === '/pay/transactions') return 'Transaction Ledger';
+  if (pathname.includes('/pay/transactions') || pathname === '/pay/transactions')
+    return 'Transaction Ledger';
   if (pathname.includes('/pay/payments') || pathname === '/pay/payments') return 'Payment Gateway';
   if (pathname.includes('/pay/profile') || pathname === '/pay/profile') return 'Profile';
   if (pathname.includes('/pay/admin')) return 'Admin';

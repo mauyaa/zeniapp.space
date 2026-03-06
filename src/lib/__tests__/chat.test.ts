@@ -7,7 +7,7 @@ describe('formatSummary', () => {
       budget: '2M',
       moveIn: 'March',
       viewing: 'in-person',
-      mustHaves: 'parking'
+      mustHaves: 'parking',
     });
     expect(result).toContain('budget 2M');
     expect(result).toContain('move-in March');

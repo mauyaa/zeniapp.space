@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   searchListings,
   fetchListing,
   fetchMyViewings,
   fetchRecommendations,
+  fetchSavedListings,
   toggleSaveListing,
   createViewingRequest,
 } from '../lib/api';
@@ -17,8 +18,15 @@ import { errors as errMsg, success as successMsg } from '../constants/messages';
 import { dedupeById, dedupeListingsByContent } from '../utils/dedupeById';
 import type { Property } from '../utils/mockData';
 import type { ActivityItem } from '../pages/user/home/ActivityFeed';
+import {
+  resolveUserContactLabel,
+  getAgentOtherPartyKey,
+  getAdminOtherPartyKey,
+} from '../pages/messages/contactLabels';
+import type { Conversation } from '../types/chat';
 
 type PropertyWithMeta = Property & { saved?: boolean };
+type ConversationWithOtherParty = Conversation & { otherParty?: { name?: string } };
 
 type Viewing = {
   _id: string;
@@ -75,6 +83,7 @@ export function useHomeData() {
   const { push } = useToast();
   const { startConversation, setActiveConversation, conversations, messages } = useChat();
   const { notifications } = useNotifications();
+  const role = user?.role;
 
   const [items, setItems] = useState<PropertyWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,52 +92,98 @@ export function useHomeData() {
   const [viewings, setViewings] = useState<Viewing[]>([]);
   const [nextViewingListing, setNextViewingListing] = useState<ListingCard | null>(null);
   const [recommendations, setRecommendations] = useState<PropertyWithMeta[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [savedItems, setSavedItems] = useState<PropertyWithMeta[]>([]);
+
+  // Deduplicate conversations by the visible other party so counts/feed don't double up.
+  const dedupedConversations = useMemo(() => {
+    const map = new Map<string, Conversation>();
+    const sorted = [...conversations].sort(
+      (a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
+    );
+    sorted.forEach((c) => {
+      let key = c.id;
+      if (role === 'user') {
+        key = resolveUserContactLabel(c.agentSnapshot?.name);
+      } else if (role === 'agent') {
+        key = getAgentOtherPartyKey(c);
+      } else if (role === 'admin') {
+        key = getAdminOtherPartyKey(c);
+      }
+      if (!map.has(key)) map.set(key, c);
+    });
+    return Array.from(map.values());
+  }, [conversations, role]);
+
+  const fetchAll = useCallback(async (silent = false, signal?: AbortSignal) => {
+    if (!silent) setLoading(true);
+    setRefreshing(true);
+    try {
+      const listingsPromise = searchListings({ limit: 8, verifiedOnly: true }, { signal });
+      const viewingsPromise = fetchMyViewings({ signal });
+      const recsPromise = fetchRecommendations({ signal });
+      const savedPromise = fetchSavedListings({ signal });
+      const [listingsResult, viewingsResult, recsResult, savedResult] = await Promise.allSettled([
+        listingsPromise,
+        viewingsPromise,
+        recsPromise,
+        savedPromise,
+      ]);
+
+      if (signal?.aborted) return;
+
+      if (listingsResult.status === 'fulfilled') {
+        const raw = listingsResult.value.items ?? [];
+        const unique = dedupeListingsByContent(dedupeById(raw));
+        setItems(unique.map(mapToProperty));
+      }
+
+      if (viewingsResult.status === 'fulfilled') {
+        setViewings((viewingsResult.value as Viewing[]) ?? []);
+      }
+
+      if (recsResult.status === 'fulfilled') {
+        const raw = recsResult.value.items ?? [];
+        const unique = dedupeListingsByContent(dedupeById(raw));
+        setRecommendations(unique.map(mapToProperty));
+      }
+
+      if (savedResult.status === 'fulfilled') {
+        const raw = savedResult.value.items ?? [];
+        const unique = dedupeListingsByContent(dedupeById(raw));
+        setSavedItems(unique.map(mapToProperty));
+      }
+
+      setLastUpdated(new Date());
+    } finally {
+      if (!silent) setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
   // Parallel data fetching — fire all requests at once, abort on unmount
   useEffect(() => {
     const controller = new AbortController();
     const { signal } = controller;
-    setLoading(true);
-
-    // Fire all three requests in parallel for faster initial load
-    const listingsPromise = searchListings({ limit: 8, verifiedOnly: true }, { signal });
-    const viewingsPromise = fetchMyViewings({ signal });
-    const recsPromise = fetchRecommendations({ signal });
-
-    Promise.allSettled([listingsPromise, viewingsPromise, recsPromise]).then(
-      ([listingsResult, viewingsResult, recsResult]) => {
-        if (signal.aborted) return;
-
-        if (listingsResult.status === 'fulfilled') {
-          const raw = listingsResult.value.items ?? [];
-          const unique = dedupeListingsByContent(dedupeById(raw));
-          setItems(unique.map(mapToProperty));
-        } else {
-          setItems([]);
-        }
-
-        if (viewingsResult.status === 'fulfilled') {
-          setViewings((viewingsResult.value as Viewing[]) ?? []);
-        } else {
-          setViewings([]);
-        }
-
-        if (recsResult.status === 'fulfilled') {
-          const raw = recsResult.value.items ?? [];
-          const unique = dedupeListingsByContent(dedupeById(raw));
-          setRecommendations(unique.map(mapToProperty));
-        } else {
-          setRecommendations([]);
-        }
-
-        setLoading(false);
-      }
-    );
+    fetchAll(false, signal);
 
     return () => {
       controller.abort();
     };
-  }, []);
+  }, [fetchAll]);
+
+  // Lightweight polling for live feel
+  useEffect(() => {
+    const controller = new AbortController();
+    const id = window.setInterval(() => {
+      fetchAll(true, controller.signal);
+    }, 15_000);
+    return () => {
+      controller.abort();
+      window.clearInterval(id);
+    };
+  }, [fetchAll]);
 
   // Upcoming viewings
   const upcomingViewings = useMemo(() => {
@@ -184,13 +239,17 @@ export function useHomeData() {
   }, [selectedId, items, recommendations]);
 
   // Derived user display info
-  const displayName = user?.name?.trim()?.replace(/^buyer\s+/i, '')?.split(/\s+/)[0] ?? 'there';
+  const displayName =
+    user?.name
+      ?.trim()
+      ?.replace(/^buyer\s+/i, '')
+      ?.split(/\s+/)[0] ?? 'there';
   const hour = new Date().getHours();
   const timeGreeting = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
 
   // Derived stats
   const verifiedCount = useMemo(() => items.filter((p) => p.isVerified).length, [items]);
-  const savedCount = useMemo(() => items.filter((p) => p.saved).length, [items]);
+  const savedCount = useMemo(() => savedItems.length, [savedItems]);
   const averagePrice = useMemo(() => {
     if (!items.length) return null;
     const total = items.reduce((sum, p) => sum + (p.price || 0), 0);
@@ -217,25 +276,44 @@ export function useHomeData() {
         type: 'notification',
       });
     });
-    conversations.slice(0, 3).forEach((conv) => {
-      const list = messages[conv.id] ?? [];
-      const last = list[list.length - 1];
-      const content =
-        last && typeof (last as { content?: string }).content === 'string'
-          ? (last as { content: string }).content
-          : 'New message';
-      out.push({
-        id: conv.id,
-        title: conv.otherParty?.name ?? 'Agent',
-        desc: content.slice(0, 60) + (content.length > 60 ? '...' : ''),
-        time: new Date(conv.lastMessageAt).toLocaleString(),
-        type: 'message',
-        href: `/app/messages/${conv.id}`,
+    dedupedConversations
+      .slice(0, 3)
+      .sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime())
+      .forEach((conv) => {
+        const list = messages[conv.id] ?? [];
+        const last = list[list.length - 1];
+        const content =
+          last && typeof (last as { content?: string }).content === 'string'
+            ? (last as { content: string }).content
+            : 'New message';
+        const withOtherParty = conv as ConversationWithOtherParty;
+        const otherName =
+          withOtherParty.otherParty?.name ||
+          conv.agentSnapshot?.name ||
+          conv.userSnapshot?.name ||
+          'Agent';
+        out.push({
+          id: conv.id,
+          title: otherName,
+          desc: content.slice(0, 60) + (content.length > 60 ? '...' : ''),
+          time: new Date(conv.lastMessageAt).toLocaleString(),
+          type: 'message',
+          href: `/app/messages/${conv.id}`,
+        });
       });
-    });
     out.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-    return out.slice(0, 5);
-  }, [notifications, conversations, messages]);
+
+    const deduped: ActivityItem[] = [];
+    const seen = new Set<string>();
+    out.forEach((item) => {
+      const key = `${item.type}:${item.title}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      deduped.push(item);
+    });
+
+    return deduped.slice(0, 5);
+  }, [notifications, dedupedConversations, messages]);
 
   // Action handlers
   const handleSaveToggle = async (id: string) => {
@@ -283,10 +361,7 @@ export function useHomeData() {
     }
   };
 
-  const handleMessage = async (
-    property: PropertyWithMeta,
-    navigate: (path: string) => void
-  ) => {
+  const handleMessage = async (property: PropertyWithMeta, navigate: (path: string) => void) => {
     if (!property?.agentId) {
       push({ title: 'Missing agent', description: errMsg.auth.missingAgent, tone: 'error' });
       return;
@@ -304,7 +379,11 @@ export function useHomeData() {
     const url = `${window.location.origin}/listing/${property.id}`;
     if (navigator.share) {
       try {
-        await navigator.share({ title: property?.title ?? 'Listing', text: 'Check out this listing', url });
+        await navigator.share({
+          title: property?.title ?? 'Listing',
+          text: 'Check out this listing',
+          url,
+        });
         return;
       } catch {
         /* ignore */
@@ -322,6 +401,8 @@ export function useHomeData() {
     // State
     items,
     loading,
+    refreshing,
+    lastUpdated,
     selectedId,
     setSelectedId,
     selectedDetail,
@@ -341,6 +422,7 @@ export function useHomeData() {
     nextViewing: upcomingViewings[0],
     newMatch: recommendations[0],
     activeUpdates: activityFeed.length,
+    newMatchesCount: recommendations.length,
     // Actions
     handleSaveToggle,
     handleViewing,

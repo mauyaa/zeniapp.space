@@ -4,7 +4,7 @@ const allowedTransitions: Record<PayStatus, PayStatus[]> = {
   pending: ['paid', 'failed'],
   paid: ['reversed'],
   failed: [],
-  reversed: []
+  reversed: [],
 };
 
 export function canTransition(current: PayStatus, next: PayStatus) {
@@ -14,7 +14,10 @@ export function canTransition(current: PayStatus, next: PayStatus) {
 
 export function assertTransition(current: PayStatus, next: PayStatus) {
   if (!canTransition(current, next)) {
-    const error = new Error(`Invalid state transition ${current} -> ${next}`) as Error & { status?: number; code?: string };
+    const error = new Error(`Invalid state transition ${current} -> ${next}`) as Error & {
+      status?: number;
+      code?: string;
+    };
     error.status = 409;
     error.code = 'INVALID_STATE';
     throw error;

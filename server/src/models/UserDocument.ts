@@ -16,7 +16,7 @@ const UserDocSchema = new Schema<UserDocDocument>(
     type: { type: String, enum: ['preapproval', 'pof', 'id'], required: true },
     url: { type: String, required: true },
     note: String,
-    sharedListings: [{ type: Schema.Types.ObjectId, ref: 'Listing' }]
+    sharedListings: [{ type: Schema.Types.ObjectId, ref: 'Listing' }],
   },
   { timestamps: true }
 );

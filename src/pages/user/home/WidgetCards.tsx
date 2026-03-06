@@ -35,17 +35,15 @@ export const ScheduleWidget = React.memo(function ScheduleWidget({
           {nextViewing && nextViewingTitle ? 'Next Viewing' : 'No Viewings'}
         </h3>
         <p className="text-xs text-green-600 mt-1">
-  {nextViewing && nextViewingTitle
-    ? `${nextViewingTitle} — ${new Date(nextViewing.date).toLocaleString()}`
-    : 'Book a viewing from a listing'}
-</p>
+          {nextViewing && nextViewingTitle
+            ? `${nextViewingTitle} — ${new Date(nextViewing.date).toLocaleString()}`
+            : 'Book a viewing from a listing'}
+        </p>
       </div>
       <div className="mt-6 relative z-10">
         <div className="flex justify-between text-[10px] font-bold uppercase text-zinc-500 mb-2">
           <span>Today&apos;s capacity</span>
-          <span>
-            {upcomingCount === 0 ? '100% Free' : `${upcomingCount} scheduled`}
-          </span>
+          <span>{upcomingCount === 0 ? '100% Free' : `${upcomingCount} scheduled`}</span>
         </div>
         <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
           <div
@@ -142,6 +140,8 @@ export const NewMatchWidget = React.memo(function NewMatchWidget({
       <p className="text-xs text-zinc-600 mb-4">
         {match.features?.bedrooms ?? 0} Bed &bull; {match.features?.bathrooms ?? 0} Bath &bull;{' '}
         {formatCompactPrice(match.price, match.currency)}
+        {(match.purpose === 'rent' || (match.category || '').toLowerCase().includes('rent')) &&
+          ' per month'}
       </p>
       <button
         type="button"

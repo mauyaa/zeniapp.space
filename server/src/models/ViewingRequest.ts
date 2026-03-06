@@ -41,7 +41,7 @@ const ViewingRequestSchema = new Schema<ViewingRequestDocument>(
     viewingFeeAmount: { type: Number, default: 0 },
     viewingFeeTxId: { type: Schema.Types.ObjectId, ref: 'PayTransaction', index: true },
     viewingFeeStatus: { type: String, enum: viewingFeeStatuses, index: true },
-    tenantConfirmedAt: { type: Date }
+    tenantConfirmedAt: { type: Date },
   },
   { timestamps: true }
 );
@@ -51,4 +51,7 @@ ViewingRequestSchema.index({ agentId: 1, date: 1, status: 1 });
 ViewingRequestSchema.index({ userId: 1, createdAt: -1 });
 ViewingRequestSchema.index({ agentId: 1, createdAt: -1 });
 
-export const ViewingRequestModel = mongoose.model<ViewingRequestDocument>('ViewingRequest', ViewingRequestSchema);
+export const ViewingRequestModel = mongoose.model<ViewingRequestDocument>(
+  'ViewingRequest',
+  ViewingRequestSchema
+);

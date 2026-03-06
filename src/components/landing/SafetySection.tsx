@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 const checks = [
   'Verified badges show listings reviewed by ZENI (Kenyan Real Estate Management System).',
   'Report suspicious listings directly from any card.',
-  'Schedule safe viewings and use in-app chat first.'
+  'Schedule safe viewings and use in-app chat first.',
 ];
 
 export function SafetySection() {
@@ -20,14 +20,23 @@ export function SafetySection() {
             Anti-scam checks and verified agents across Kenya reduce risk for everyone.
           </p>
         </div>
-        <Link to="/login" className="text-sm text-[rgb(var(--accent))] underline underline-offset-4">
+        <Link
+          to="/login"
+          className="text-sm text-[rgb(var(--accent))] underline underline-offset-4"
+        >
           Learn how verification works &rarr;
         </Link>
       </div>
       <div className="mt-6 grid gap-3 sm:grid-cols-3 text-sm text-[rgb(var(--muted))]">
         {checks.map((check) => (
           <div key={check} className="flex items-start gap-2">
-            <svg viewBox="0 0 24 24" className="mt-0.5 h-4 w-4 text-[rgb(var(--accent))]" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg
+              viewBox="0 0 24 24"
+              className="mt-0.5 h-4 w-4 text-[rgb(var(--accent))]"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
               <path d="M5 12l4 4L19 6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <span>{check}</span>

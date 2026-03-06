@@ -26,10 +26,18 @@ export function BoostPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedId) {
-      push({ title: 'Campaign requested', description: 'We’ll contact you to set up your promotion.', tone: 'success' });
+      push({
+        title: 'Campaign requested',
+        description: 'We’ll contact you to set up your promotion.',
+        tone: 'success',
+      });
       navigate('/agent/dashboard');
     } else {
-      push({ title: 'Select a listing', description: 'Choose a listing to promote.', tone: 'error' });
+      push({
+        title: 'Select a listing',
+        description: 'Choose a listing to promote.',
+        tone: 'error',
+      });
     }
   };
 
@@ -51,28 +59,40 @@ export function BoostPage() {
           </div>
           <div>
             <h1 className="text-2xl font-serif font-medium">Boost your reach</h1>
-            <p className="text-sm text-zinc-400">Promote your listings to top-tier tenants and increase visibility.</p>
+            <p className="text-sm text-zinc-400">
+              Promote your listings to top-tier tenants and increase visibility.
+            </p>
           </div>
         </div>
         <p className="text-sm text-zinc-400">
-          Select a listing below and we’ll help you run a targeted campaign. Campaigns can include featured placement in Explore and notifications to matching tenants.
+          Select a listing below and we’ll help you run a targeted campaign. Campaigns can include
+          featured placement in Explore and notifications to matching tenants.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-lg p-6 space-y-6">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white border border-gray-200 rounded-lg p-6 space-y-6"
+      >
         <div>
-          <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3">Choose a listing to promote</label>
+          <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3">
+            Choose a listing to promote
+          </label>
           {isLoading ? (
             <div className="h-24 bg-gray-100 rounded animate-pulse" />
           ) : activeListings.length === 0 ? (
-            <p className="text-sm text-gray-500 py-4">You have no active listings. Create one from Listings first.</p>
+            <p className="text-sm text-gray-500 py-4">
+              You have no active listings. Create one from Listings first.
+            </p>
           ) : (
             <div className="space-y-2">
               {activeListings.map((l) => (
                 <label
                   key={l._id}
                   className={`flex items-center gap-3 p-4 min-h-[56px] rounded-lg border cursor-pointer transition-colors touch-manipulation ${
-                    selectedId === l._id ? 'border-black bg-gray-50' : 'border-gray-200 hover:border-gray-300'
+                    selectedId === l._id
+                      ? 'border-black bg-gray-50'
+                      : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
                   <input
@@ -89,7 +109,10 @@ export function BoostPage() {
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-black truncate">{l.title}</p>
                     <p className="text-xs text-gray-500">
-                      {l.currency} {Number(l.price).toLocaleString()} / mo
+                      {l.currency} {Number(l.price).toLocaleString()}
+                      {(l.purpose === 'rent' ||
+                        (l.category || '').toLowerCase().includes('rent')) &&
+                        ' per month'}
                     </p>
                   </div>
                 </label>

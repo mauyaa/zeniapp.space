@@ -95,25 +95,47 @@ export function AnalyticsPage() {
             Real-time lead pipeline, viewings, and conversion from your activity.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={load} disabled={loading} leftIcon={<RefreshCw className={loading ? 'animate-spin' : ''} />}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={load}
+          disabled={loading}
+          leftIcon={<RefreshCw className={loading ? 'animate-spin' : ''} />}
+        >
           {loading ? 'Refreshing…' : 'Refresh'}
         </Button>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         <div className="rounded-sm border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Viewings</div>
-          <div className="text-2xl font-semibold text-black mt-1">{typeof stats?.viewings === 'number' ? stats.viewings : '—'}</div>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+            Viewings
+          </div>
+          <div className="text-2xl font-semibold text-black mt-1">
+            {typeof stats?.viewings === 'number' ? stats.viewings : '—'}
+          </div>
         </div>
         <div className="rounded-sm border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Lead → Viewing</div>
-          <div className="text-2xl font-semibold text-black mt-1">{leadToViewing?.value ?? '—'}</div>
-          {leadToViewing?.hint && <div className="text-xs text-gray-500 mt-0.5">{leadToViewing.hint}</div>}
+          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+            Lead → Viewing
+          </div>
+          <div className="text-2xl font-semibold text-black mt-1">
+            {leadToViewing?.value ?? '—'}
+          </div>
+          {leadToViewing?.hint && (
+            <div className="text-xs text-gray-500 mt-0.5">{leadToViewing.hint}</div>
+          )}
         </div>
         <div className="rounded-sm border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Viewing → Offer</div>
-          <div className="text-2xl font-semibold text-black mt-1">{viewingToOffer?.value ?? '—'}</div>
-          {viewingToOffer?.hint && <div className="text-xs text-gray-500 mt-0.5">{viewingToOffer.hint}</div>}
+          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+            Viewing → Offer
+          </div>
+          <div className="text-2xl font-semibold text-black mt-1">
+            {viewingToOffer?.value ?? '—'}
+          </div>
+          {viewingToOffer?.hint && (
+            <div className="text-xs text-gray-500 mt-0.5">{viewingToOffer.hint}</div>
+          )}
         </div>
       </div>
 
@@ -140,7 +162,10 @@ export function AnalyticsPage() {
       {loading ? (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="rounded-sm border border-gray-200 bg-white shadow-sm p-4 animate-pulse">
+            <div
+              key={i}
+              className="rounded-sm border border-gray-200 bg-white shadow-sm p-4 animate-pulse"
+            >
               <div className="h-16 bg-gray-100 rounded" />
             </div>
           ))}
@@ -152,15 +177,18 @@ export function AnalyticsPage() {
             {metrics.map((item) => {
               const Icon = item.icon;
               return (
-                <div key={item.label} className="rounded-sm border border-gray-200 bg-white shadow-sm p-4">
+                <div
+                  key={item.label}
+                  className="rounded-sm border border-gray-200 bg-white shadow-sm p-4"
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{item.label}</div>
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                        {item.label}
+                      </div>
                       <div className="mt-1 text-2xl font-semibold text-black">{item.value}</div>
                       {item.delta && (
-                        <div className="mt-1.5 text-xs text-gray-500">
-                          {item.delta}
-                        </div>
+                        <div className="mt-1.5 text-xs text-gray-500">{item.delta}</div>
                       )}
                     </div>
                     <div className="inline-flex h-9 w-9 items-center justify-center rounded-sm bg-gray-100 text-gray-600 flex-shrink-0">
@@ -177,8 +205,12 @@ export function AnalyticsPage() {
             <div className="lg:col-span-3 rounded-sm border border-gray-200 bg-white shadow-sm p-5">
               <div className="flex items-center justify-between mb-5">
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Momentum</div>
-                  <div className="text-base font-semibold text-black">New leads by month (last 12 months)</div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                    Momentum
+                  </div>
+                  <div className="text-base font-semibold text-black">
+                    New leads by month (last 12 months)
+                  </div>
                 </div>
                 <span className="text-xs font-semibold text-gray-500">Real-time</span>
               </div>
@@ -189,18 +221,26 @@ export function AnalyticsPage() {
                 </div>
               ) : (
                 <div className="flex gap-3">
-                  <div className="flex flex-col justify-between text-[10px] text-gray-400 tabular-nums py-0.5" style={{ height: '150px' }}>
+                  <div
+                    className="flex flex-col justify-between text-[10px] text-gray-400 tabular-nums py-0.5"
+                    style={{ height: '150px' }}
+                  >
                     <span>{maxTrend}</span>
                     <span>{Math.round(maxTrend / 2)}</span>
                     <span>0</span>
                   </div>
-                  <div className="flex-1 grid grid-cols-12 gap-1.5 items-end" style={{ height: '150px' }}>
+                  <div
+                    className="flex-1 grid grid-cols-12 gap-1.5 items-end"
+                    style={{ height: '150px' }}
+                  >
                     {trend.map((t, idx) => {
                       const height = Math.max(8, Math.round((t.count / maxTrend) * 140));
                       const isLatest = idx === trend.length - 1;
                       return (
                         <div key={t.month} className="flex flex-col items-center gap-1.5">
-                          <span className="text-[10px] font-semibold text-gray-500 tabular-nums">{t.count}</span>
+                          <span className="text-[10px] font-semibold text-gray-500 tabular-nums">
+                            {t.count}
+                          </span>
                           <div
                             className={cn(
                               'w-full rounded-t transition-all',
@@ -209,7 +249,9 @@ export function AnalyticsPage() {
                             style={{ height: `${height}px` }}
                             title={`${t.label}: ${t.count} leads`}
                           />
-                          <span className="text-[9px] uppercase tracking-wide text-gray-400">{t.label}</span>
+                          <span className="text-[9px] uppercase tracking-wide text-gray-400">
+                            {t.label}
+                          </span>
                         </div>
                       );
                     })}
@@ -222,7 +264,9 @@ export function AnalyticsPage() {
             <div className="lg:col-span-2 rounded-sm border border-gray-200 bg-white shadow-sm p-5">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Pipeline health</div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                    Pipeline health
+                  </div>
                   <div className="text-base font-semibold text-black">Current funnel</div>
                 </div>
                 <span className="text-xs font-semibold text-gray-500">{totalPipeline} total</span>
@@ -233,14 +277,21 @@ export function AnalyticsPage() {
               ) : (
                 <>
                   <div className="flex rounded-sm overflow-hidden h-3 mb-5">
-                    {pipeline.filter((p) => p.count > 0).map((item) => (
-                      <div
-                        key={item.stage}
-                        className={cn(pipelineColors[item.stage] || 'bg-gray-400', 'transition-all')}
-                        style={{ width: `${totalPipeline > 0 ? (item.count / totalPipeline) * 100 : 0}%` }}
-                        title={`${item.stage}: ${item.count}`}
-                      />
-                    ))}
+                    {pipeline
+                      .filter((p) => p.count > 0)
+                      .map((item) => (
+                        <div
+                          key={item.stage}
+                          className={cn(
+                            pipelineColors[item.stage] || 'bg-gray-400',
+                            'transition-all'
+                          )}
+                          style={{
+                            width: `${totalPipeline > 0 ? (item.count / totalPipeline) * 100 : 0}%`,
+                          }}
+                          title={`${item.stage}: ${item.count}`}
+                        />
+                      ))}
                   </div>
 
                   <div className="space-y-3">
@@ -248,20 +299,34 @@ export function AnalyticsPage() {
                       <div key={item.stage}>
                         <div className="mb-1.5 flex items-center justify-between text-xs">
                           <div className="flex items-center gap-2">
-                            <span className={cn('h-2.5 w-2.5 rounded-full', pipelineColors[item.stage] || 'bg-gray-400')} />
+                            <span
+                              className={cn(
+                                'h-2.5 w-2.5 rounded-full',
+                                pipelineColors[item.stage] || 'bg-gray-400'
+                              )}
+                            />
                             <span className="text-gray-700 font-medium">{item.stage}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-[10px] text-gray-400">
-                              {totalPipeline > 0 ? `${Math.round((item.count / totalPipeline) * 100)}%` : '0%'}
+                              {totalPipeline > 0
+                                ? `${Math.round((item.count / totalPipeline) * 100)}%`
+                                : '0%'}
                             </span>
-                            <span className="font-bold text-black w-6 text-right tabular-nums">{item.count}</span>
+                            <span className="font-bold text-black w-6 text-right tabular-nums">
+                              {item.count}
+                            </span>
                           </div>
                         </div>
                         <div className="h-1.5 rounded-full bg-gray-100">
                           <div
-                            className={cn('h-1.5 rounded-full transition-all', pipelineColors[item.stage] || 'bg-gray-400')}
-                            style={{ width: `${maxPipeline > 0 ? Math.round((item.count / maxPipeline) * 100) : 0}%` }}
+                            className={cn(
+                              'h-1.5 rounded-full transition-all',
+                              pipelineColors[item.stage] || 'bg-gray-400'
+                            )}
+                            style={{
+                              width: `${maxPipeline > 0 ? Math.round((item.count / maxPipeline) * 100) : 0}%`,
+                            }}
                           />
                         </div>
                       </div>

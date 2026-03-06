@@ -33,9 +33,7 @@ export const DrawerImageGallery = React.memo(function DrawerImageGallery({
       className="relative overflow-hidden rounded-2xl border border-[#E9E2D8]"
     >
       {/* Loading skeleton */}
-      {isLoading && (
-        <div className="absolute inset-0 z-10 animate-pulse bg-amber-100/80" />
-      )}
+      {isLoading && <div className="absolute inset-0 z-10 animate-pulse bg-amber-100/80" />}
 
       <img
         src={images[currentImage]}
@@ -68,9 +66,7 @@ export const DrawerImageGallery = React.memo(function DrawerImageGallery({
                 key={idx}
                 onClick={() => onSelect(idx)}
                 className={`h-2 rounded-full transition-all ${
-                  idx === currentImage
-                    ? 'w-4 bg-white'
-                    : 'w-2 bg-white/60 hover:bg-white/80'
+                  idx === currentImage ? 'w-4 bg-white' : 'w-2 bg-white/60 hover:bg-white/80'
                 }`}
                 aria-label={`View image ${idx + 1}`}
               />

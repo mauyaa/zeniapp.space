@@ -4,7 +4,12 @@ import { env } from '../config/env';
 import { recordAudit } from '../utils/audit';
 
 export type PrivilegedSurface = 'admin' | 'pay_admin';
-export type NetworkDecisionReason = 'test_bypass' | 'ip_missing' | 'ip_not_allowed' | 'tailnet_required' | 'allowed';
+export type NetworkDecisionReason =
+  | 'test_bypass'
+  | 'ip_missing'
+  | 'ip_not_allowed'
+  | 'tailnet_required'
+  | 'allowed';
 
 type AllowlistMode = 'open' | 'restricted';
 
@@ -143,7 +148,7 @@ const bitsForVersion = (version: 4 | 6) => (version === 4 ? 32 : 128);
 const subnetMask = (bits: number, prefix: number) => {
   if (prefix === 0) return 0n;
   const fullMask = (1n << BigInt(bits)) - 1n;
-  return ((fullMask << BigInt(bits - prefix)) & fullMask);
+  return (fullMask << BigInt(bits - prefix)) & fullMask;
 };
 
 const parseCidr = (input: string): ParsedCidr | null => {
@@ -199,7 +204,8 @@ const getClientIp = (req: Request): string | undefined => {
   return sanitized || undefined;
 };
 
-const isTailnetRequired = (surface: PrivilegedSurface) => (surface === 'admin' ? env.adminRequireTailnet : env.payAdminRequireTailnet);
+const isTailnetRequired = (surface: PrivilegedSurface) =>
+  surface === 'admin' ? env.adminRequireTailnet : env.payAdminRequireTailnet;
 
 const evaluateAccess = (req: Request, surface: PrivilegedSurface): AccessDecision => {
   const sourceIp = getClientIp(req);
@@ -213,7 +219,7 @@ const evaluateAccess = (req: Request, surface: PrivilegedSurface): AccessDecisio
     allowlistMode,
     allowlistMatched: allowlistMode === 'open',
     tailnetRequired: isTailnetRequired(surface),
-    tailnetDetected: false
+    tailnetDetected: false,
   };
 
   if (env.nodeEnv === 'test' && process.env.ENFORCE_NETWORK_ACCESS_IN_TEST !== 'true') {
@@ -225,7 +231,8 @@ const evaluateAccess = (req: Request, surface: PrivilegedSurface): AccessDecisio
   const parsed = parseIp(sourceIp);
   if (!parsed) return base;
 
-  const allowlistMatched = allowlistMode === 'open' ? true : matchParsedCidrs(parsed, parsedAdminAllowlist);
+  const allowlistMatched =
+    allowlistMode === 'open' ? true : matchParsedCidrs(parsed, parsedAdminAllowlist);
   const tailnetDetected = matchParsedCidrs(parsed, parsedTailnetCidrs);
 
   if (!allowlistMatched) {
@@ -241,11 +248,15 @@ const evaluateAccess = (req: Request, surface: PrivilegedSurface): AccessDecisio
     allowed: true,
     reason: 'allowed',
     allowlistMatched,
-    tailnetDetected
+    tailnetDetected,
   };
 };
 
-const recordDecision = (req: RequestWithUser, surface: PrivilegedSurface, decision: AccessDecision) => {
+const recordDecision = (
+  req: RequestWithUser,
+  surface: PrivilegedSurface,
+  decision: AccessDecision
+) => {
   void recordAudit(
     {
       actorId: req.user?.id,
@@ -262,8 +273,8 @@ const recordDecision = (req: RequestWithUser, surface: PrivilegedSurface, decisi
         allowlistMode: decision.allowlistMode,
         allowlistMatched: decision.allowlistMatched,
         tailnetRequired: decision.tailnetRequired,
-        tailnetDetected: decision.tailnetDetected
-      }
+        tailnetDetected: decision.tailnetDetected,
+      },
     },
     req
   ).catch((err) => {
@@ -277,7 +288,7 @@ const deny = (res: Response, reason: NetworkDecisionReason) => {
   if (reason === 'tailnet_required') {
     return res.status(403).json({
       code: 'TAILNET_REQUIRED',
-      message: 'Tailscale network access is required for this route'
+      message: 'Tailscale network access is required for this route',
     });
   }
 
@@ -304,12 +315,12 @@ export function getPrivilegedNetworkPolicySnapshot() {
     tailnetExpectedCidrs: env.tailnetExpectedCidrs,
     adminIpAllowlist: {
       mode: env.adminIpAllowlist.length === 0 || hasWildcardAllowlist ? 'open' : 'restricted',
-      entries: env.adminIpAllowlist
+      entries: env.adminIpAllowlist,
     },
     enforcement: {
       adminTailnetRequired: env.adminRequireTailnet,
-      payAdminTailnetRequired: env.payAdminRequireTailnet
-    }
+      payAdminTailnetRequired: env.payAdminRequireTailnet,
+    },
   };
 }
 
@@ -322,11 +333,11 @@ export function evaluatePrivilegedRequest(req: Request) {
     tailnetDetected: admin.tailnetDetected || payAdmin.tailnetDetected,
     admin: {
       allowed: admin.allowed,
-      reason: admin.reason
+      reason: admin.reason,
     },
     payAdmin: {
       allowed: payAdmin.allowed,
-      reason: payAdmin.reason
-    }
+      reason: payAdmin.reason,
+    },
   };
 }

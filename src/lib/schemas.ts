@@ -4,21 +4,21 @@ export const listingSnapshotSchema = z.object({
   title: z.string(),
   price: z.string(),
   locationText: z.string(),
-  thumbUrl: z.string().url().or(z.string())
+  thumbUrl: z.string().url().or(z.string()),
 });
 
 export const agentSnapshotSchema = z.object({
   id: z.string(),
   name: z.string(),
   avatarUrl: z.string().optional(),
-  verified: z.boolean().optional()
+  verified: z.boolean().optional(),
 });
 
 export const userSnapshotSchema = z.object({
   id: z.string(),
   name: z.string(),
   avatarUrl: z.string().optional(),
-  role: z.enum(['user', 'agent', 'admin', 'finance']).optional()
+  role: z.enum(['user', 'agent', 'admin', 'finance']).optional(),
 });
 
 export const conversationSchema = z.object({
@@ -37,13 +37,13 @@ export const conversationSchema = z.object({
   listingSnapshot: listingSnapshotSchema.nullable(),
   agentSnapshot: agentSnapshotSchema,
   userSnapshot: userSnapshotSchema.optional(),
-  lastMessagePreview: z.string().optional()
+  lastMessagePreview: z.string().optional(),
 });
 
 const messageContentSchema = z.union([
   z.string(),
-  z.record(z.unknown()),
-  z.array(z.unknown())
+  z.record(z.string(), z.unknown()),
+  z.array(z.unknown()),
 ]);
 
 export const messageSchema = z.object({
@@ -53,7 +53,7 @@ export const messageSchema = z.object({
   type: z.enum(['text', 'quickReply', 'schedule', 'summary', 'attachment', 'system']),
   content: messageContentSchema,
   createdAt: z.string(),
-  status: z.enum(['sending', 'sent', 'delivered', 'read', 'failed'])
+  status: z.enum(['sending', 'sent', 'delivered', 'read', 'failed']),
 });
 
 export type ConversationParsed = z.infer<typeof conversationSchema>;

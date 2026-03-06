@@ -8,7 +8,8 @@ import {
   unblock,
   listBlocked,
   exportData,
-  deleteMyAccount
+  deleteMyAccount,
+  updateAvatar,
 } from '../controllers/user.controller';
 import { submitKyc, getKycStatus } from '../controllers/verification.controller';
 
@@ -22,4 +23,5 @@ router.get('/export', auth, asyncHandler(exportData));
 router.delete('/account', auth, asyncHandler(deleteMyAccount));
 router.post('/kyc', auth, asyncHandler(submitKyc));
 router.get('/kyc', auth, asyncHandler(getKycStatus));
+router.patch('/avatar', auth, asyncHandler(updateAvatar));
 export default router;

@@ -1,0 +1,52 @@
+{
+  "count": 6,
+  "listings": [
+    {
+      "_id": "698dcb90385945ff12dc0fad",
+      "title": "Riverside Suites - Corner 3BR",
+      "description": "Light-filled 3 bedroom with wrap-around balcony, study nook, and skyline views.",
+      "price": 25500000,
+      "agentId": "698dcb90385945ff12dc0fa1",
+      "createdAt": "2026-02-12T12:46:08.757Z"
+    },
+    {
+      "_id": "698dcb90385945ff12dc0fb2",
+      "title": "Valley View Studio",
+      "description": "Compact studio awaiting verification.",
+      "price": 35000,
+      "agentId": "698dcb90385945ff12dc0fa4",
+      "createdAt": "2026-02-12T12:46:08.764Z"
+    },
+    {
+      "_id": "6992c8003a2f295a6da8ca25",
+      "title": "Zeni Support",
+      "description": "Get help from the Zeni team. We’re here for account, listings, and general questions.",
+      "price": 0,
+      "agentId": "6992c7ff3a2f295a6da8ca19",
+      "createdAt": "2026-02-16T07:32:16.079Z"
+    },
+    {
+      "_id": "6992c8003a2f295a6da8ca28",
+      "title": "Riverside Suites - Corner 3BR",
+      "description": "Light-filled 3 bedroom with wrap-around balcony, study nook, and skyline views.",
+      "price": 25500000,
+      "agentId": "6992c7ff3a2f295a6da8ca1c",
+      "createdAt": "2026-02-16T07:32:16.161Z"
+    },
+    {
+      "_id": "69930964892de7acbe90fab8",
+      "title": "Riverside Suites - Corner 3BR",
+      "description": "Light-filled 3 bedroom with wrap-around balcony, study nook, and skyline views.",
+      "price": 25500000,
+      "agentId": "69930964892de7acbe90faaf",
+      "createdAt": "2026-02-16T12:11:16.606Z"
+    },
+    {
+      "_id": "69a2a2b67c044fc3398e30ae",
+      "title": "Two-story detached home in Ngong, Kenya",
+      "price": 2000000,
+      "agentId": "69930964892de7acbe90faaf",
+      "createdAt": "2026-02-28T08:09:26.069Z"
+    }
+  ]
+}

@@ -17,14 +17,15 @@ function generateRefreshToken() {
 }
 
 export function signPayAccessToken(user: UserDocument, sessionId: string) {
-  return jwt.sign(
-    { sub: user.id, role: user.role, aud: 'pay', sid: sessionId },
-    env.jwtSecret,
-    { expiresIn: PAY_ACCESS_TTL }
-  );
+  return jwt.sign({ sub: user.id, role: user.role, aud: 'pay', sid: sessionId }, env.jwtSecret, {
+    expiresIn: PAY_ACCESS_TTL,
+  });
 }
 
-export async function createPaySession(user: UserDocument, meta: { userAgent?: string; ip?: string }) {
+export async function createPaySession(
+  user: UserDocument,
+  meta: { userAgent?: string; ip?: string }
+) {
   const refreshToken = generateRefreshToken();
   const refreshTokenHash = hashToken(refreshToken);
   const expiresAt = new Date(Date.now() + PAY_REFRESH_TTL_MS);
@@ -34,7 +35,7 @@ export async function createPaySession(user: UserDocument, meta: { userAgent?: s
     userAgent: meta.userAgent,
     ip: meta.ip,
     lastUsedAt: new Date(),
-    expiresAt
+    expiresAt,
   });
   const accessToken = signPayAccessToken(user, session.id);
   return { accessToken, refreshToken, sessionId: session.id, expiresAt };

@@ -11,7 +11,7 @@ export const LISTING_TYPES = [
   'Retail',
   'Warehouse',
   'Land',
-  'Other'
+  'Other',
 ] as const;
 
 export type ListingType = (typeof LISTING_TYPES)[number];

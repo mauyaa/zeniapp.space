@@ -32,7 +32,7 @@ export function formatKnownContactLabel(name?: string | null): string {
 export function resolveUserContactLabel(name?: string | null): string {
   if (isAdminSupportLabel(name)) return 'Zeni Admin';
   if (isAgentLabel(name)) return 'Zeni Agent';
-  return name?.trim() || 'Zeni Agent';
+  return 'Zeni Agent';
 }
 
 /** Agent inbox/thread: show the user's actual name, or "Zeni Admin" for admin contacts. */

@@ -1,8 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useState, lazy, Suspense } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
-  ChevronLeft, MapPin, AlertTriangle, MessageCircle,
-  FileDown, BookOpen, ShieldCheck, Share2, Flag, Phone
+  ChevronLeft,
+  MapPin,
+  AlertTriangle,
+  MessageCircle,
+  FileDown,
+  BookOpen,
+  ShieldCheck,
+  Share2,
+  Flag,
+  Phone,
 } from 'lucide-react';
 import { api, fetchListing, toggleSaveListing, type ListingCard } from '../lib/api';
 import { listingDetailUrl, listingLqipUrl } from '../lib/cloudinary';
@@ -46,7 +54,7 @@ type ListingDetail = ListingCard & {
 
 function formatPrice(price: number, currency: string, isRent: boolean): string {
   const sym = currency?.startsWith('KES') || currency === 'KES' ? 'KES' : currency || 'KES';
-  if (isRent) return `${sym} ${(price / THOUSAND).toFixed(0)}K/mo`;
+  if (isRent) return `${sym} ${(price / THOUSAND).toFixed(0)}K per month`;
   if (price >= MILLION) return `${sym} ${(price / MILLION).toFixed(1)}M`;
   if (price >= THOUSAND) return `${sym} ${(price / THOUSAND).toFixed(0)}K`;
   return `${sym} ${price.toLocaleString()}`;
@@ -59,7 +67,8 @@ function timeAgo(dateStr?: string): string | null {
   if (days === 0) return 'Updated today';
   if (days === 1) return 'Updated yesterday';
   if (days < DAYS_IN_WEEK) return `Updated ${days} days ago`;
-  if (days < DAYS_IN_MONTH) return `Updated ${Math.floor(days / DAYS_IN_WEEK)} week${days >= 14 ? 's' : ''} ago`;
+  if (days < DAYS_IN_MONTH)
+    return `Updated ${Math.floor(days / DAYS_IN_WEEK)} week${days >= 14 ? 's' : ''} ago`;
   return `Updated ${Math.floor(days / DAYS_IN_MONTH)} month${days >= 60 ? 's' : ''} ago`;
 }
 
@@ -110,7 +119,11 @@ export function PropertyDetailsPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!id) { setLoading(false); setError(true); return; }
+    if (!id) {
+      setLoading(false);
+      setError(true);
+      return;
+    }
     const ac = new AbortController();
     setLoading(true);
     setError(false);
@@ -181,7 +194,11 @@ export function PropertyDetailsPage() {
 
   const onMessage = useCallback(async () => {
     if (!listing?.agent?.id) {
-      push({ title: 'Missing agent', description: 'Cannot start chat without agent id', tone: 'error' });
+      push({
+        title: 'Missing agent',
+        description: 'Cannot start chat without agent id',
+        tone: 'error',
+      });
       return;
     }
     try {
@@ -197,7 +214,12 @@ export function PropertyDetailsPage() {
     const url = window.location.href;
     const text = listing?.title ?? 'Check out this listing on Zeni';
     if (navigator.share) {
-      try { await navigator.share({ title: text, url }); return; } catch { /* fallthrough */ }
+      try {
+        await navigator.share({ title: text, url });
+        return;
+      } catch {
+        /* fallthrough */
+      }
     }
     // WhatsApp fallback
     const wa = `https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`;
@@ -227,33 +249,40 @@ export function PropertyDetailsPage() {
   const handleRequestViewing = useCallback(() => {
     if (listing?.id) navigate(`/explore?listing=${listing.id}`);
   }, [listing?.id, navigate]);
-  const mapOnSelect = useCallback(() => { }, []);
+  const mapOnSelect = useCallback(() => undefined, []);
 
   const { purpose, isRent, propertyType, locationLine } = useMemo(() => {
-    if (!listing) return { purpose: 'buy' as const, isRent: false, propertyType: 'Property', locationLine: '' };
+    if (!listing)
+      return { purpose: 'buy' as const, isRent: false, propertyType: 'Property', locationLine: '' };
     const p =
       (listing as ListingDetail).purpose ??
-      (String((listing as ListingDetail).category || '').toLowerCase().includes('rent') ? 'rent' : 'buy');
+      (String((listing as ListingDetail).category || '')
+        .toLowerCase()
+        .includes('rent')
+        ? 'rent'
+        : 'buy');
     return {
       purpose: p,
       isRent: p === 'rent',
-      propertyType: (listing as ListingDetail).type || (listing as ListingDetail).category || 'Property',
+      propertyType:
+        (listing as ListingDetail).type || (listing as ListingDetail).category || 'Property',
       locationLine:
-        [listing.location?.neighborhood, listing.location?.city].filter(Boolean).join(', ') || 'Kenya',
+        [listing.location?.neighborhood, listing.location?.city].filter(Boolean).join(', ') ||
+        'Kenya',
     };
   }, [listing]);
 
   useListingSEO(
     listing
       ? {
-        id: listing.id,
-        title: listing.title,
-        price: listing.price,
-        currency: listing.currency,
-        imageUrl: listing.imageUrl,
-        location: listing.location,
-        purpose,
-      }
+          id: listing.id,
+          title: listing.title,
+          price: listing.price,
+          currency: listing.currency,
+          imageUrl: listing.imageUrl,
+          location: listing.location,
+          purpose,
+        }
       : null
   );
 
@@ -320,7 +349,9 @@ export function PropertyDetailsPage() {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4 text-center px-4">
         <p className="text-lg font-serif font-semibold text-zinc-900">Listing not found</p>
-        <p className="text-sm text-zinc-500">This listing may have been removed or the link is invalid.</p>
+        <p className="text-sm text-zinc-500">
+          This listing may have been removed or the link is invalid.
+        </p>
         <Link
           to="/explore"
           className="inline-flex items-center justify-center h-11 px-6 text-xs font-mono font-semibold uppercase tracking-widest rounded-xl border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 transition-colors"
@@ -332,7 +363,11 @@ export function PropertyDetailsPage() {
   }
 
   const isVerified = Boolean(listing.verified);
-  const verificationLabel = isVerified ? 'Verified' : listing.verified === false ? 'Unverified' : 'Pending Verification';
+  const verificationLabel = isVerified
+    ? 'Verified'
+    : listing.verified === false
+      ? 'Unverified'
+      : 'Pending Verification';
   const neighborhood = listing.location?.neighborhood;
 
   return (
@@ -391,10 +426,11 @@ export function PropertyDetailsPage() {
 
             {/* Trust strip */}
             <div
-              className={`mx-4 mt-4 border rounded-xl px-4 py-2.5 flex items-center justify-between text-xs font-mono ${isVerified
-                ? 'bg-emerald-50/90 border-emerald-200 text-emerald-700'
-                : 'bg-amber-50/90 border-amber-200/60 text-amber-700'
-                }`}
+              className={`mx-4 mt-4 border rounded-xl px-4 py-2.5 flex items-center justify-between text-xs font-mono ${
+                isVerified
+                  ? 'bg-emerald-50/90 border-emerald-200 text-emerald-700'
+                  : 'bg-amber-50/90 border-amber-200/60 text-amber-700'
+              }`}
             >
               <div className="flex items-center gap-2">
                 {isVerified ? (
@@ -404,7 +440,10 @@ export function PropertyDetailsPage() {
                 )}
                 <span className="font-semibold uppercase tracking-widest">{verificationLabel}</span>
                 {isVerified && (
-                  <span className="text-emerald-600 normal-case tracking-normal"> — ID &amp; documents checked</span>
+                  <span className="text-emerald-600 normal-case tracking-normal">
+                    {' '}
+                    — ID &amp; documents checked
+                  </span>
                 )}
               </div>
               {updatedLabel && (
@@ -418,8 +457,9 @@ export function PropertyDetailsPage() {
                 <div>
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span
-                      className={`px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-widest rounded-md ${isRent ? 'bg-emerald-600 text-white' : 'bg-zinc-900 text-white'
-                        }`}
+                      className={`px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-widest rounded-md ${
+                        isRent ? 'bg-emerald-600 text-white' : 'bg-zinc-900 text-white'
+                      }`}
                     >
                       {isRent ? 'For Rent' : 'For Sale'}
                     </span>
@@ -436,22 +476,37 @@ export function PropertyDetailsPage() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl lg:text-3xl font-mono font-semibold text-zinc-900">{priceDisplay}</p>
+                  <p className="text-2xl lg:text-3xl font-mono font-semibold text-zinc-900">
+                    {priceDisplay}
+                  </p>
+                  <p className="text-[11px] font-mono uppercase tracking-widest text-emerald-600 mt-1">
+                    {isRent ? 'Monthly rent' : 'Sale price'}
+                  </p>
                 </div>
               </div>
 
               {/* Specs */}
               <div className="grid grid-cols-3 gap-4 border border-zinc-200 rounded-xl p-5 bg-zinc-50/50">
                 <div className="text-center sm:text-left">
-                  <div className="text-xs font-mono uppercase tracking-widest text-zinc-500">Beds</div>
-                  <p className="text-xl font-mono font-semibold text-zinc-900 mt-1">{listing.beds ?? '—'}</p>
+                  <div className="text-xs font-mono uppercase tracking-widest text-zinc-500">
+                    Beds
+                  </div>
+                  <p className="text-xl font-mono font-semibold text-zinc-900 mt-1">
+                    {listing.beds ?? '—'}
+                  </p>
                 </div>
                 <div className="text-center sm:text-left border-l border-zinc-200">
-                  <div className="text-xs font-mono uppercase tracking-widest text-zinc-500">Baths</div>
-                  <p className="text-xl font-mono font-semibold text-zinc-900 mt-1">{listing.baths ?? '—'}</p>
+                  <div className="text-xs font-mono uppercase tracking-widest text-zinc-500">
+                    Baths
+                  </div>
+                  <p className="text-xl font-mono font-semibold text-zinc-900 mt-1">
+                    {listing.baths ?? '—'}
+                  </p>
                 </div>
                 <div className="text-center sm:text-left border-l border-zinc-200">
-                  <div className="text-xs font-mono uppercase tracking-widest text-zinc-500">Area</div>
+                  <div className="text-xs font-mono uppercase tracking-widest text-zinc-500">
+                    Area
+                  </div>
                   <p className="text-xl font-mono font-semibold text-zinc-900 mt-1">
                     {listing.sqm != null ? `${listing.sqm} m²` : '—'}
                   </p>
@@ -460,19 +515,25 @@ export function PropertyDetailsPage() {
 
               {listing.description?.trim() ? (
                 <div className="space-y-2 border-t border-zinc-200 pt-6">
-                  <h2 className="text-sm font-mono uppercase tracking-widest text-zinc-500">Description</h2>
-                  <p className="text-zinc-700 leading-relaxed whitespace-pre-line">{listing.description.trim()}</p>
+                  <h2 className="text-sm font-mono uppercase tracking-widest text-zinc-500">
+                    Description
+                  </h2>
+                  <p className="text-zinc-700 leading-relaxed whitespace-pre-line">
+                    {listing.description.trim()}
+                  </p>
                 </div>
               ) : null}
 
               <p className="text-xs font-mono text-zinc-400 border-l-2 border-zinc-200 pl-3">
-                Anti-scam: verify documents, meet at the property, use in-app chat, and never pay cash before
-                viewing.
+                Anti-scam: verify documents, meet at the property, use in-app chat, and never pay
+                cash before viewing.
               </p>
 
               {listing.amenities?.length ? (
                 <div className="space-y-3 border-t border-zinc-200 pt-6">
-                  <h2 className="text-sm font-mono uppercase tracking-widest text-zinc-500">Amenities</h2>
+                  <h2 className="text-sm font-mono uppercase tracking-widest text-zinc-500">
+                    Amenities
+                  </h2>
                   <div className="flex flex-wrap gap-2">
                     {listing.amenities.map((a: string, idx: number) => (
                       <span
@@ -505,7 +566,9 @@ export function PropertyDetailsPage() {
                         {plan.label}
                       </span>
                       {plan.sizeBytes && (
-                        <span className="text-xs text-zinc-400">{Math.round(plan.sizeBytes / 1024)} KB</span>
+                        <span className="text-xs text-zinc-400">
+                          {Math.round(plan.sizeBytes / 1024)} KB
+                        </span>
                       )}
                     </a>
                   ))}
@@ -543,7 +606,11 @@ export function PropertyDetailsPage() {
                     </div>
                   }
                 >
-                  <PropertyMap properties={mapProps} selectedId={listing.id} onSelect={mapOnSelect} />
+                  <PropertyMap
+                    properties={mapProps}
+                    selectedId={listing.id}
+                    onSelect={mapOnSelect}
+                  />
                 </Suspense>
               </div>
             </div>
@@ -571,8 +638,12 @@ export function PropertyDetailsPage() {
                 decoding="async"
               />
               <div>
-                <div className="font-serif font-semibold text-zinc-900">{listing.agent?.name || 'Agent'}</div>
-                <div className="text-xs font-mono uppercase tracking-widest text-zinc-500 mt-0.5">Listing agent</div>
+                <div className="font-serif font-semibold text-zinc-900">
+                  {listing.agent?.name || 'Agent'}
+                </div>
+                <div className="text-xs font-mono uppercase tracking-widest text-zinc-500 mt-0.5">
+                  Listing agent
+                </div>
               </div>
             </div>
 
@@ -619,8 +690,8 @@ export function PropertyDetailsPage() {
           </div>
 
           <p className="text-xs font-mono text-zinc-400">
-            Safety: verify documents, meet at the property, keep payments digital. Report suspicious activity from
-            the listing.
+            Safety: verify documents, meet at the property, keep payments digital. Report suspicious
+            activity from the listing.
           </p>
 
           {/* Mortgage calculator — only for sale listings */}

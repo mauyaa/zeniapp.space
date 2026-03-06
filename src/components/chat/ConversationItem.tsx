@@ -58,7 +58,9 @@ export function ConversationItem({
       case 'active':
         return {
           label: 'Active',
-          classes: isDark ? 'bg-emerald-500/15 text-emerald-200' : 'bg-emerald-100 text-emerald-700',
+          classes: isDark
+            ? 'bg-emerald-500/15 text-emerald-200'
+            : 'bg-emerald-100 text-emerald-700',
           icon: null,
         };
       case 'scheduled':
@@ -83,7 +85,8 @@ export function ConversationItem({
   };
 
   const statusConfig = getStatusConfig(conversation.status);
-  const buyerName = conversation.userSnapshot?.name || `Buyer ${conversation.userId?.slice(-4) || ''}`.trim();
+  const buyerName =
+    conversation.userSnapshot?.name || `Buyer ${conversation.userId?.slice(-4) || ''}`.trim();
   const buyerRole = conversation.userSnapshot?.role;
   const buyerLabel = buyerRole === 'admin' ? 'Zeni Admin' : buyerName;
   const agentName = conversation.agentSnapshot?.name || 'Zeni Agent';
@@ -97,11 +100,15 @@ export function ConversationItem({
     role === 'agent'
       ? buyerLabel || 'User'
       : role === 'admin'
-      ? buyerRole === 'user' ? buyerName : agentLabel
-      : listingTitle || agentLabel || 'Chat';
+        ? buyerRole === 'user'
+          ? buyerName
+          : agentLabel
+        : listingTitle || agentLabel || 'Chat';
   const secondaryLabel =
     role === 'agent' || role === 'admin'
-      ? listingTitle ? `Listing: ${listingTitle}` : conversation.agentSnapshot?.name || 'Agent'
+      ? listingTitle
+        ? `Listing: ${listingTitle}`
+        : conversation.agentSnapshot?.name || 'Agent'
       : agentLabel;
 
   return (
@@ -118,8 +125,8 @@ export function ConversationItem({
             ? 'border-emerald-500/40 bg-gradient-to-r from-[#0F1914] to-[#0B1410] shadow-[0_18px_48px_rgba(0,0,0,0.4)]'
             : 'border-amber-200/80 bg-gradient-to-r from-[#F7F2EA] to-[#FFFCFA] shadow-[0_18px_48px_rgba(17,24,39,0.06)]'
           : isDark
-          ? 'border-slate-800/80 bg-[#0B1512]/70 hover:border-slate-700 hover:bg-[#0B1512]/90'
-          : 'border-[#E9E2D8] bg-[#FFFBF7]/90 shadow-[0_10px_30px_rgba(17,24,39,0.05)] hover:border-amber-200 hover:shadow-[0_16px_40px_rgba(17,24,39,0.08)]'
+            ? 'border-slate-800/80 bg-[#0B1512]/70 hover:border-slate-700 hover:bg-[#0B1512]/90'
+            : 'border-[#E9E2D8] bg-[#FFFBF7]/90 shadow-[0_10px_30px_rgba(17,24,39,0.05)] hover:border-amber-200 hover:shadow-[0_16px_40px_rgba(17,24,39,0.08)]'
       }`}
     >
       <div className="flex items-start gap-3">
@@ -128,11 +135,7 @@ export function ConversationItem({
           {isAdmin ? (
             <div
               className={`flex h-14 w-14 items-center justify-center rounded-2xl text-xs font-semibold text-white ring-2 ${
-                active
-                  ? 'ring-amber-400/60'
-                  : isDark
-                  ? 'ring-slate-800/70'
-                  : 'ring-[#EFE6DA]'
+                active ? 'ring-amber-400/60' : isDark ? 'ring-slate-800/70' : 'ring-[#EFE6DA]'
               } bg-gradient-to-br from-emerald-600 to-emerald-800 shadow-[0_8px_20px_rgba(16,185,129,0.25)]`}
             >
               {agentInitials}
@@ -142,11 +145,7 @@ export function ConversationItem({
               src={conversation.listingSnapshot.thumbUrl}
               alt={conversation.listingSnapshot.title || 'Listing'}
               className={`h-14 w-14 rounded-2xl object-cover ring-2 ${
-                active
-                  ? 'ring-amber-400/60'
-                  : isDark
-                  ? 'ring-slate-800/70'
-                  : 'ring-[#EFE6DA]'
+                active ? 'ring-amber-400/60' : isDark ? 'ring-slate-800/70' : 'ring-[#EFE6DA]'
               }`}
             />
           ) : (
@@ -155,8 +154,8 @@ export function ConversationItem({
                 active
                   ? 'ring-amber-400/60'
                   : isDark
-                  ? 'ring-slate-800/70 bg-slate-800/80 text-slate-300'
-                  : 'ring-[#EFE6DA] bg-amber-100/80 text-amber-700'
+                    ? 'ring-slate-800/70 bg-slate-800/80 text-slate-300'
+                    : 'ring-[#EFE6DA] bg-amber-100/80 text-amber-700'
               }`}
             >
               💬
@@ -210,11 +209,7 @@ export function ConversationItem({
           {/* Location and agent */}
           <div className="mt-1.5 space-y-1">
             {!isAdmin && (listingLocation != null || listingTitle != null) && (
-              <p
-                className={`truncate text-xs ${
-                  isDark ? 'text-slate-400' : 'text-slate-500'
-                }`}
-              >
+              <p className={`truncate text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 {listingLocation ?? listingTitle ?? '—'}
               </p>
             )}
@@ -226,9 +221,7 @@ export function ConversationItem({
               <span>{secondaryLabel}</span>
               {role === 'user' && conversation.agentSnapshot.verified && (
                 <BadgeCheck
-                  className={`h-3 w-3 ${
-                    isDark ? 'text-emerald-400' : 'text-emerald-600'
-                  }`}
+                  className={`h-3 w-3 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}
                 />
               )}
             </div>
@@ -240,8 +233,8 @@ export function ConversationItem({
                       ? 'text-slate-200'
                       : 'text-slate-700'
                     : isDark
-                    ? 'text-slate-400'
-                    : 'text-slate-500'
+                      ? 'text-slate-400'
+                      : 'text-slate-500'
                 }`}
               >
                 {isTyping ? (
@@ -249,8 +242,14 @@ export function ConversationItem({
                     <span className="italic text-amber-500">Typing</span>
                     <span className="flex items-center gap-0.5">
                       <span className="h-1 w-1 animate-bounce rounded-full bg-amber-500" />
-                      <span className="h-1 w-1 animate-bounce rounded-full bg-amber-500" style={{ animationDelay: '0.1s' }} />
-                      <span className="h-1 w-1 animate-bounce rounded-full bg-amber-500" style={{ animationDelay: '0.2s' }} />
+                      <span
+                        className="h-1 w-1 animate-bounce rounded-full bg-amber-500"
+                        style={{ animationDelay: '0.1s' }}
+                      />
+                      <span
+                        className="h-1 w-1 animate-bounce rounded-full bg-amber-500"
+                        style={{ animationDelay: '0.2s' }}
+                      />
                     </span>
                   </span>
                 ) : (

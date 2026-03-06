@@ -41,7 +41,9 @@ export function useI18n(): I18nContextValue {
   if (!ctx) {
     return {
       locale: 'en',
-      setLocale: () => { /* no-op when outside provider */ },
+      setLocale: () => {
+        /* no-op when outside provider */
+      },
       t: (key: string) => getTranslation('en', key),
     };
   }

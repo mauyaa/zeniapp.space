@@ -16,7 +16,9 @@ export function NavLink({ href, label, active = false, onClick }: NavLinkProps) 
       aria-current={active ? 'page' : undefined}
       className={clsx(
         'relative pb-1 text-[11px] uppercase tracking-[0.25em] transition-colors',
-        active ? 'text-[rgb(var(--accent))]' : 'text-[rgb(var(--muted))] hover:text-[rgb(var(--text))]'
+        active
+          ? 'text-[rgb(var(--accent))]'
+          : 'text-[rgb(var(--muted))] hover:text-[rgb(var(--text))]'
       )}
     >
       {label}

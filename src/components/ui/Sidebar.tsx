@@ -26,16 +26,27 @@ interface SidebarProps {
   variant?: SidebarVariant;
 }
 
-export function Sidebar({ links, title = 'ZENI', logo, onLogout, showIcons = false, variant = 'dark' }: SidebarProps) {
+export function Sidebar({
+  links,
+  title = 'ZENI',
+  logo,
+  onLogout,
+  showIcons = false,
+  variant = 'dark',
+}: SidebarProps) {
   const location = useLocation();
   const reduceMotion = useReducedMotion();
 
   const isDark = variant === 'dark';
-  const bgClass = isDark ? 'bg-slate-950/95 border-slate-800/50 text-slate-100' : 'bg-white border-slate-200 text-slate-800';
+  const bgClass = isDark
+    ? 'bg-slate-950/95 border-slate-800/50 text-slate-100'
+    : 'bg-white border-slate-200 text-slate-800';
   const headerBorder = isDark ? 'border-slate-800/50' : 'border-slate-200';
   const subText = isDark ? 'text-slate-500' : 'text-slate-400';
   const activeText = isDark ? 'text-slate-100' : 'text-emerald-700';
-  const inactiveText = isDark ? 'text-slate-400 hover:text-slate-100' : 'text-slate-500 hover:text-slate-900';
+  const inactiveText = isDark
+    ? 'text-slate-400 hover:text-slate-100'
+    : 'text-slate-500 hover:text-slate-900';
   const activeBorder = isDark ? 'border-emerald-300' : 'border-emerald-500';
   const footerBorder = isDark ? 'border-slate-800/50' : 'border-slate-200';
 
@@ -49,7 +60,12 @@ export function Sidebar({ links, title = 'ZENI', logo, onLogout, showIcons = fal
       {/* Header */}
       <div className={clsx('flex flex-col gap-1 border-b px-4 py-5', headerBorder)}>
         {logo || (
-          <div className={clsx('text-2xl font-heading font-semibold tracking-tight', isDark ? 'text-slate-100' : 'text-slate-900')}>
+          <div
+            className={clsx(
+              'text-2xl font-heading font-semibold tracking-tight',
+              isDark ? 'text-slate-100' : 'text-slate-900'
+            )}
+          >
             {title}
           </div>
         )}
@@ -59,18 +75,18 @@ export function Sidebar({ links, title = 'ZENI', logo, onLogout, showIcons = fal
       {/* Navigation */}
       <nav className="flex-1 space-y-1 p-3">
         {links.map((link, index) => {
-          const isActive = location.pathname === link.to || location.pathname.startsWith(`${link.to}/`);
+          const isActive =
+            location.pathname === link.to || location.pathname.startsWith(`${link.to}/`);
 
           return (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              className="relative block"
-            >
+            <NavLink key={link.to} to={link.to} className="relative block">
               <motion.div
                 initial={reduceMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: reduceMotion ? 0 : index * 0.05, duration: reduceMotion ? 0 : 0.2 }}
+                transition={{
+                  delay: reduceMotion ? 0 : index * 0.05,
+                  duration: reduceMotion ? 0 : 0.2,
+                }}
                 className={clsx(
                   'group flex items-center py-3 text-sm tracking-wide transition-all duration-300',
                   showIcons ? 'gap-3' : 'gap-0',
@@ -80,9 +96,7 @@ export function Sidebar({ links, title = 'ZENI', logo, onLogout, showIcons = fal
                     : clsx(inactiveText, 'pl-0 hover:pl-2')
                 )}
               >
-                {showIcons && (
-                  <link.icon className="h-4 w-4 text-current" />
-                )}
+                {showIcons && <link.icon className="h-4 w-4 text-current" />}
                 <span className="flex-1">{link.label}</span>
 
                 {/* Badge */}
@@ -91,7 +105,6 @@ export function Sidebar({ links, title = 'ZENI', logo, onLogout, showIcons = fal
                     {link.badge > 99 ? '99+' : link.badge}
                   </span>
                 )}
-
               </motion.div>
             </NavLink>
           );
@@ -120,7 +133,9 @@ export function Sidebar({ links, title = 'ZENI', logo, onLogout, showIcons = fal
       <div
         className={clsx(
           'absolute right-0 top-0 h-full w-px',
-          isDark ? 'bg-gradient-to-b from-emerald-500/30 via-transparent to-emerald-500/30' : 'bg-gradient-to-b from-emerald-300/40 via-transparent to-emerald-300/40'
+          isDark
+            ? 'bg-gradient-to-b from-emerald-500/30 via-transparent to-emerald-500/30'
+            : 'bg-gradient-to-b from-emerald-300/40 via-transparent to-emerald-300/40'
         )}
       />
     </motion.aside>
@@ -218,7 +233,9 @@ export function MobileSidebar({ isOpen, onClose, ...props }: MobileSidebarProps)
             initial={{ x: '-100%' }}
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
-            transition={reduceMotion ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 300 }}
+            transition={
+              reduceMotion ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 300 }
+            }
             className="absolute inset-y-0 left-0 w-72"
           >
             <Sidebar {...props} />

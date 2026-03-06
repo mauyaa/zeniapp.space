@@ -1,6 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { MapPin, BedDouble, Bath, Maximize2, Heart, FileDown } from 'lucide-react';
+import {
+  MapPin,
+  BedDouble,
+  Bath,
+  Maximize2,
+  Heart,
+  FileDown,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import clsx from 'clsx';
 import { listingThumbUrl } from '../lib/cloudinary';
 import type { Property } from '../utils/mockData';
@@ -24,11 +33,21 @@ function formatPrice(property: Property) {
 }
 
 function formatUnit(property: Property) {
-  if (property.currency.includes('/')) {
-    const unit = property.currency.split('/')[1];
-    return unit ? `/${unit}` : '';
+  const normalizedCurrency = (property.currency || '').toLowerCase();
+  const currencyUnit = property.currency.includes('/') ? property.currency.split('/')[1] : '';
+  const isRent =
+    property.purpose === 'rent' ||
+    normalizedCurrency.includes('/mo') ||
+    normalizedCurrency.includes('per month') ||
+    normalizedCurrency.includes('monthly');
+
+  if (isRent) return 'per month';
+  if (currencyUnit) {
+    const unit = currencyUnit.toLowerCase();
+    if (unit.startsWith('mo')) return 'per month';
+    return `per ${currencyUnit}`;
   }
-  return property.purpose === 'rent' ? '/ mo' : '';
+  return '';
 }
 
 function formatLocation(property: Property) {
@@ -45,9 +64,10 @@ export function PropertyCard({
   onSaveToggle,
   onContact,
   loading,
-  variant = 'default'
+  variant = 'default',
 }: PropertyCardProps) {
   const reduceMotion = useReducedMotion();
+  const [currentImageIdx, setCurrentImageIdx] = useState(0);
 
   if (loading) {
     return <PropertyCardSkeleton />;
@@ -55,6 +75,23 @@ export function PropertyCard({
 
   const statusLabel = property.purpose === 'rent' ? 'For Rent' : 'For Sale';
   const isCompact = variant === 'compact';
+  const contentPadding = isCompact ? 'p-2.5' : 'p-4';
+
+  const images = property.images?.length
+    ? property.images.map((i) => i.url || property.imageUrl)
+    : [property.imageUrl];
+
+  const handleNextImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setCurrentImageIdx((prev) => (prev + 1) % images.length);
+  };
+
+  const handlePrevImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setCurrentImageIdx((prev) => (prev - 1 + images.length) % images.length);
+  };
 
   return (
     <motion.article
@@ -81,13 +118,47 @@ export function PropertyCard({
       aria-label={`${property.title}, ${formatPrice(property)}`}
     >
       {/* Image block with overlay for badges */}
-      <div className="relative w-full aspect-video overflow-hidden bg-zinc-100">
+      <div
+        className={clsx(
+          'relative w-full overflow-hidden bg-zinc-100 group/image',
+          isCompact ? 'aspect-square' : 'aspect-video'
+        )}
+      >
         <img
-          src={listingThumbUrl(property.imageUrl)}
+          src={listingThumbUrl(images[currentImageIdx])}
           alt={property.title}
           className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
           loading="lazy"
         />
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={handlePrevImage}
+              className="absolute z-[2] left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/90 shadow text-zinc-800 opacity-0 group-hover/image:opacity-100 transition-opacity flex items-center justify-center hover:bg-white hover:scale-105"
+              aria-label="Previous image"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              onClick={handleNextImage}
+              className="absolute z-[2] right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/90 shadow text-zinc-800 opacity-0 group-hover/image:opacity-100 transition-opacity flex items-center justify-center hover:bg-white hover:scale-105"
+              aria-label="Next image"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+            <div className="absolute z-[2] bottom-2 left-1/2 -translate-x-1/2 flex gap-1 items-center bg-black/20 rounded-full px-2 py-1 backdrop-blur-sm">
+              {images.map((_, idx) => (
+                <div
+                  key={idx}
+                  className={clsx(
+                    'h-1.5 rounded-full bg-white transition-all',
+                    idx === currentImageIdx ? 'w-3 opacity-100' : 'w-1.5 opacity-60'
+                  )}
+                />
+              ))}
+            </div>
+          </>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
         <div className="absolute left-3 top-3 flex items-center gap-2">
           <span className="rounded-sm bg-zeni-foreground/90 px-2.5 py-1 text-[10px] font-mono font-semibold uppercase tracking-widest text-white">
@@ -115,10 +186,15 @@ export function PropertyCard({
       </div>
 
       {/* Content */}
-      <div className="flex flex-1 flex-col p-4">
+      <div className={clsx('flex flex-1 flex-col', contentPadding)}>
         <div className="flex justify-between items-start gap-3">
           <div className="min-w-0 flex-1">
-            <h3 className="text-lg font-serif font-semibold text-zeni-foreground leading-tight group-hover:text-zinc-700 transition-colors line-clamp-1">
+            <h3
+              className={clsx(
+                'font-serif font-semibold text-zeni-foreground leading-tight group-hover:text-zinc-700 transition-colors line-clamp-1',
+                isCompact ? 'text-sm' : 'text-lg'
+              )}
+            >
               {property.title}
             </h3>
             <div className="mt-1 flex items-center gap-1.5 text-xs font-mono text-zinc-500">
@@ -127,10 +203,17 @@ export function PropertyCard({
             </div>
           </div>
           <div className="text-right flex-shrink-0">
-            <p className="text-base font-mono font-semibold text-zeni-foreground">
+            <p
+              className={clsx(
+                'font-mono font-semibold text-zeni-foreground',
+                isCompact ? 'text-sm' : 'text-base'
+              )}
+            >
               {formatPrice(property)}
             </p>
-            <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">{formatUnit(property)}</p>
+            <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">
+              {formatUnit(property)}
+            </p>
           </div>
         </div>
 
@@ -155,7 +238,8 @@ export function PropertyCard({
               {property.floorPlans?.length ? (
                 <div className="flex items-center gap-1.5 text-[11px] font-mono text-zinc-400">
                   <FileDown className="h-3 w-3" />
-                  {property.floorPlans.length} floor plan{property.floorPlans.length !== 1 ? 's' : ''}
+                  {property.floorPlans.length} floor plan
+                  {property.floorPlans.length !== 1 ? 's' : ''}
                 </div>
               ) : (
                 <span className="text-[11px] font-mono text-zinc-300">—</span>
@@ -189,29 +273,47 @@ export function PropertyCardSkeleton({ variant = 'default' }: { variant?: 'defau
   return (
     <div
       className={clsx(
-        'flex bg-zeni-surface border border-zinc-200 rounded-lg overflow-hidden',
+        'flex bg-white border border-zinc-100 rounded-2xl overflow-hidden shadow-sm',
         isCompact ? 'flex-row' : 'flex-col'
       )}
     >
-      <div className={clsx(
-        "zeni-skeleton-shimmer",
-        isCompact ? "w-2/5 aspect-[3/2] flex-shrink-0" : "w-full aspect-video"
-      )} />
-      <div className="flex flex-1 flex-col p-4 gap-2">
-        <div className="flex justify-between gap-3">
-          <div className="flex-1 space-y-2">
-            <div className="h-5 zeni-skeleton-shimmer rounded w-3/4" />
-            <div className="h-3 zeni-skeleton-shimmer rounded w-1/2" />
+      <div
+        className={clsx(
+          'bg-zinc-100 relative overflow-hidden',
+          isCompact ? 'w-2/5 aspect-[3/2] flex-shrink-0' : 'w-full aspect-video'
+        )}
+      >
+        <div className="absolute inset-0 zeni-skeleton-shimmer" />
+      </div>
+      <div className="flex flex-1 flex-col p-5 gap-3">
+        <div className="flex justify-between items-start gap-3">
+          <div className="flex-1 space-y-2.5">
+            <div className="h-5 bg-zinc-100 relative overflow-hidden rounded-md w-3/4">
+              <div className="absolute inset-0 zeni-skeleton-shimmer" />
+            </div>
+            <div className="h-3 bg-zinc-50 relative overflow-hidden rounded-md w-1/2">
+              <div className="absolute inset-0 zeni-skeleton-shimmer" />
+            </div>
           </div>
-          <div className="h-5 zeni-skeleton-shimmer rounded w-20" />
+          <div className="h-6 bg-zinc-100 relative overflow-hidden rounded-md w-24">
+            <div className="absolute inset-0 zeni-skeleton-shimmer" />
+          </div>
         </div>
-        <div className="flex gap-4">
-          <div className="h-3 zeni-skeleton-shimmer rounded w-16" />
-          <div className="h-3 zeni-skeleton-shimmer rounded w-16" />
-          <div className="h-3 zeni-skeleton-shimmer rounded w-14" />
+        <div className="flex gap-4 mt-1">
+          <div className="h-3 bg-zinc-50 relative overflow-hidden rounded-full w-16">
+            <div className="absolute inset-0 zeni-skeleton-shimmer" />
+          </div>
+          <div className="h-3 bg-zinc-50 relative overflow-hidden rounded-full w-16">
+            <div className="absolute inset-0 zeni-skeleton-shimmer" />
+          </div>
         </div>
-        <div className="pt-3 border-t border-zinc-100">
-          <div className="h-3 zeni-skeleton-shimmer rounded w-24" />
+        <div className="pt-4 border-t border-zinc-50 flex justify-between items-center">
+          <div className="h-4 bg-zinc-50 relative overflow-hidden rounded-md w-32">
+            <div className="absolute inset-0 zeni-skeleton-shimmer" />
+          </div>
+          <div className="h-8 w-8 bg-zinc-100 relative overflow-hidden rounded-full">
+            <div className="absolute inset-0 zeni-skeleton-shimmer" />
+          </div>
         </div>
       </div>
     </div>

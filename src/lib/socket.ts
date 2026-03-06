@@ -28,7 +28,7 @@ export function getSocket(token: string): Socket {
     reconnectionDelay: 1000,
     reconnectionDelayMax: 15000,
     randomizationFactor: 0.3,
-    timeout: 15000
+    timeout: 15000,
   });
 
   // Add connection state logging for debugging

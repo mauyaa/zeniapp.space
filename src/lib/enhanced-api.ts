@@ -65,7 +65,8 @@ function isRetryableError(error: unknown): boolean {
     const status = e.response.status;
     return status === 408 || status === 429 || status >= 500;
   }
-  if (!isOnline || (typeof e?.message === 'string' && e.message.includes('Network Error'))) return true;
+  if (!isOnline || (typeof e?.message === 'string' && e.message.includes('Network Error')))
+    return true;
   return false;
 }
 
@@ -149,19 +150,19 @@ export const enhancedApi = {
   async request<T>(method: () => Promise<T>, options: { retries?: number } = {}) {
     const maxRetries = options.retries ?? RETRY_CONFIG.maxRetries;
     return retryWithBackoff(method, maxRetries);
-  }
+  },
 };
 
 // Network status utilities
 export const network = {
   isOnline: () => isOnline,
-  
+
   getRetryQueueLength: () => retryQueue.length,
-  
+
   clearRetryQueue: () => {
     retryQueue = [];
   },
-  
+
   addOnlineListener: (callback: () => void) => {
     const handler = () => {
       if (isOnline) callback();
@@ -169,14 +170,14 @@ export const network = {
     window.addEventListener('online', handler);
     return () => window.removeEventListener('online', handler);
   },
-  
+
   addOfflineListener: (callback: () => void) => {
     const handler = () => {
       if (!isOnline) callback();
     };
     window.addEventListener('offline', handler);
     return () => window.removeEventListener('offline', handler);
-  }
+  },
 };
 
 export { RETRY_CONFIG, isRetryableError, retryWithBackoff };

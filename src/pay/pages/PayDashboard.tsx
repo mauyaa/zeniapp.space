@@ -69,7 +69,9 @@ export function PayDashboard() {
       } else {
         setTransactions((prev) => {
           const next = prev.map((tx) =>
-            tx._id === payload.id ? { ...tx, status: payload.status, receiptId: payload.receiptId } : tx
+            tx._id === payload.id
+              ? { ...tx, status: payload.status, receiptId: payload.receiptId }
+              : tx
           );
           if (!next.find((tx) => tx._id === payload.id)) {
             next.unshift({
@@ -86,7 +88,9 @@ export function PayDashboard() {
       }
     };
     socket.on('pay:transaction', onTx);
-    return () => socket.off('pay:transaction', onTx);
+    return () => {
+      socket.off('pay:transaction', onTx);
+    };
   }, [accessToken, success, fetchData]);
 
   const stats = useMemo(() => {
@@ -99,8 +103,17 @@ export function PayDashboard() {
       .map((t) => (t.createdAt ? new Date(t.createdAt).getTime() : Number.POSITIVE_INFINITY))
       .filter((ts) => Number.isFinite(ts));
     const nextDue =
-      pendingDates.length > 0 ? new Date(Math.min(...pendingDates)).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' }) : '--';
-    const progressPct = totalPaid + totalOutstanding > 0 ? Math.round((totalPaid / (totalPaid + totalOutstanding)) * 100) : 68;
+      pendingDates.length > 0
+        ? new Date(Math.min(...pendingDates)).toLocaleDateString('en-KE', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+          })
+        : '--';
+    const progressPct =
+      totalPaid + totalOutstanding > 0
+        ? Math.round((totalPaid / (totalPaid + totalOutstanding)) * 100)
+        : 68;
     return { balance: totalOutstanding, nextDue, progressPct };
   }, [transactions]);
 
@@ -218,7 +231,9 @@ export function PayDashboard() {
               </div>
               <div>
                 <p className="text-xs font-bold text-white uppercase">
-                  {account?.defaultMethod ? String(account.defaultMethod).replace('_', '-') : 'M-Pesa'}
+                  {account?.defaultMethod
+                    ? String(account.defaultMethod).replace('_', '-')
+                    : 'M-Pesa'}
                 </p>
                 <p className="text-[10px] font-mono text-emerald-400">•••• 9021</p>
               </div>
@@ -256,7 +271,10 @@ export function PayDashboard() {
                 <div className="col-span-2 text-sm text-emerald-400 font-medium">
                   {tx.purpose === 'property_purchase' ? 'Property purchase' : 'Rent (first month)'}
                 </div>
-                <div className="col-span-1 text-xs text-zinc-500 font-mono truncate" title={tx.referenceId}>
+                <div
+                  className="col-span-1 text-xs text-zinc-500 font-mono truncate"
+                  title={tx.referenceId}
+                >
                   {tx.referenceId?.slice(-8) || '—'}
                 </div>
                 <div className="col-span-1 text-right text-sm font-mono text-white">
@@ -307,26 +325,26 @@ export function PayDashboard() {
             </div>
           ) : (
             recentRows.map((tx) => (
-                <button
-                  key={tx._id}
-                  type="button"
-                  onClick={() => navigate('/pay/transactions')}
-                  className="grid grid-cols-5 p-4 border-b border-zinc-800/50 hover:bg-zinc-900 transition-colors cursor-pointer group w-full text-left"
-                >
-                  <div className="col-span-1 text-xs text-zinc-400 font-mono">
-                    {formatDateTime(tx.createdAt)}
-                  </div>
-                  <div className="col-span-2 text-sm text-white font-medium">
-                    {tx.ref || tx.method?.replace('_', ' ') || 'Payment'}
-                  </div>
-                  <div className="col-span-1 text-xs text-zinc-500 font-mono group-hover:text-emerald-400 transition-colors">
-                    {tx.ref || tx._id.slice(0, 8)}
-                  </div>
-                  <div className="col-span-1 text-right text-sm font-mono text-white">
-                    {formatCurrency(tx.amount, tx.currency)}
-                  </div>
-                </button>
-              ))
+              <button
+                key={tx._id}
+                type="button"
+                onClick={() => navigate('/pay/transactions')}
+                className="grid grid-cols-5 p-4 border-b border-zinc-800/50 hover:bg-zinc-900 transition-colors cursor-pointer group w-full text-left"
+              >
+                <div className="col-span-1 text-xs text-zinc-400 font-mono">
+                  {formatDateTime(tx.createdAt)}
+                </div>
+                <div className="col-span-2 text-sm text-white font-medium">
+                  {tx.ref || tx.method?.replace('_', ' ') || 'Payment'}
+                </div>
+                <div className="col-span-1 text-xs text-zinc-500 font-mono group-hover:text-emerald-400 transition-colors">
+                  {tx.ref || tx._id.slice(0, 8)}
+                </div>
+                <div className="col-span-1 text-right text-sm font-mono text-white">
+                  {formatCurrency(tx.amount, tx.currency)}
+                </div>
+              </button>
+            ))
           )}
         </div>
       </div>

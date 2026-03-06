@@ -15,7 +15,7 @@ export function getPaySocket(token: string): Socket {
   paySocket = io(SOCKET_URL ?? '/', {
     path: '/api/socket.io',
     auth: { token },
-    transports: ['polling', 'websocket']
+    transports: ['polling', 'websocket'],
   });
   return paySocket;
 }

@@ -24,12 +24,15 @@ const DEFAULT_FILTERS: FilterState = { purpose: 'rent', verifiedOnly: false };
 
 export function FilterBar({
   onChange,
-  className
+  className,
 }: {
   onChange: (filters: FilterState) => void;
   className?: string;
 }) {
-  const [storedFilters, setStoredFilters] = useLocalStorage<FilterState>(STORAGE_KEY, DEFAULT_FILTERS);
+  const [storedFilters, setStoredFilters] = useLocalStorage<FilterState>(
+    STORAGE_KEY,
+    DEFAULT_FILTERS
+  );
   const [filters, setFilters] = useState<FilterState>(storedFilters);
 
   // Price validation error
@@ -45,15 +48,12 @@ export function FilterBar({
   }, [filters.minPrice, filters.maxPrice]);
 
   // Debounce filter changes to avoid excessive API calls
-  const debouncedOnChange = useDebouncedCallback(
-    (f: FilterState) => {
-      // Only emit if price range is valid
-      if (f.minPrice !== undefined && f.maxPrice !== undefined && f.minPrice > f.maxPrice) return;
-      onChange(f);
-      setStoredFilters(f);
-    },
-    300
-  );
+  const debouncedOnChange = useDebouncedCallback((f: FilterState) => {
+    // Only emit if price range is valid
+    if (f.minPrice !== undefined && f.maxPrice !== undefined && f.minPrice > f.maxPrice) return;
+    onChange(f);
+    setStoredFilters(f);
+  }, 300);
 
   useEffect(() => {
     debouncedOnChange(filters);
@@ -66,7 +66,8 @@ export function FilterBar({
       className={clsx(
         'flex flex-wrap items-center gap-2 rounded-2xl border border-[#E9E2D8] bg-[#FFFBF7] px-3 py-2 shadow-[0_10px_30px_rgba(17,24,39,0.06)]',
         className
-      )}>
+      )}
+    >
       <div className="flex items-center gap-2 pr-3 text-xs font-semibold uppercase text-slate-500">
         <SlidersHorizontal className="h-4 w-4" />
         Filters
@@ -80,7 +81,8 @@ export function FilterBar({
             className={clsx(
               'rounded-xl px-3 py-1 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300',
               filters.purpose === p ? 'bg-[#FFFBF7] shadow text-slate-900' : 'text-slate-600'
-            )}>
+            )}
+          >
             {p === 'rent' ? 'Rent' : 'Buy'}
           </button>
         ))}
@@ -110,7 +112,9 @@ export function FilterBar({
           aria-label="Minimum price"
           className={clsx(
             'w-20 rounded-lg border px-2 py-1 text-sm focus:outline-none',
-            priceError ? 'border-red-400 focus:border-red-500' : 'border-[#E9E2D8] focus:border-amber-400'
+            priceError
+              ? 'border-red-400 focus:border-red-500'
+              : 'border-[#E9E2D8] focus:border-amber-400'
           )}
         />
         <span className="text-slate-400">-</span>
@@ -123,7 +127,9 @@ export function FilterBar({
           aria-label="Maximum price"
           className={clsx(
             'w-20 rounded-lg border px-2 py-1 text-sm focus:outline-none',
-            priceError ? 'border-red-400 focus:border-red-500' : 'border-[#E9E2D8] focus:border-amber-400'
+            priceError
+              ? 'border-red-400 focus:border-red-500'
+              : 'border-[#E9E2D8] focus:border-amber-400'
           )}
         />
         {priceError && (
@@ -138,7 +144,8 @@ export function FilterBar({
         <select
           className="bg-transparent text-sm focus:outline-none"
           value={filters.type ?? ''}
-          onChange={(e) => set({ type: e.target.value || undefined })}>
+          onChange={(e) => set({ type: e.target.value || undefined })}
+        >
           <option value="">Any type</option>
           {TYPES.map((t) => (
             <option key={t} value={t}>
@@ -155,14 +162,16 @@ export function FilterBar({
           filters.verifiedOnly
             ? 'border-emerald-500/40 bg-emerald-50 text-emerald-700'
             : 'border-[#E9E2D8] bg-[#FFFBF7] text-slate-600'
-        )}>
+        )}
+      >
         <ShieldCheck className="h-4 w-4" />
         Verified only
       </button>
 
       <button
         onClick={() => setFilters(DEFAULT_FILTERS)}
-        className="ml-auto text-xs font-semibold text-amber-700 transition hover:text-amber-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">
+        className="ml-auto text-xs font-semibold text-amber-700 transition hover:text-amber-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+      >
         Reset
       </button>
     </div>
@@ -173,7 +182,7 @@ function SelectChip({
   label,
   value,
   options,
-  onSelect
+  onSelect,
 }: {
   label: string;
   value?: number;
@@ -191,7 +200,8 @@ function SelectChip({
             className={clsx(
               'rounded-lg px-2 py-1 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300',
               value === opt ? 'bg-amber-100 text-amber-800' : 'bg-[#F7F2EA] text-slate-600'
-            )}>
+            )}
+          >
             {opt}+
           </button>
         ))}

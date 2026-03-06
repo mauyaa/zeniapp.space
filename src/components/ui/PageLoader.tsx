@@ -14,7 +14,11 @@ interface PageLoaderProps {
  * Use for route-level or section-level loading states.
  * Includes the Zeni branding for full-page variant.
  */
-export function PageLoader({ message = 'Loading...', className = '', fullPage = false }: PageLoaderProps) {
+export function PageLoader({
+  message = 'Loading...',
+  className = '',
+  fullPage = false,
+}: PageLoaderProps) {
   return (
     <div
       className={cn(
@@ -27,12 +31,18 @@ export function PageLoader({ message = 'Loading...', className = '', fullPage = 
       aria-label={message}
     >
       {fullPage && (
-        <div className="text-2xl font-serif font-bold tracking-tight text-zeni-foreground dark:text-white mb-2" aria-hidden="true">
-  ZENI<span className="text-green-500">.</span>
-</div>
+        <div
+          className="text-2xl font-serif font-bold tracking-tight text-zeni-foreground dark:text-white mb-2"
+          aria-hidden="true"
+        >
+          ZENI<span className="text-green-500">.</span>
+        </div>
       )}
       <div className="relative">
-        <Loader2 className="h-8 w-8 animate-spin text-zeni-muted dark:text-slate-500" aria-hidden="true" />
+        <Loader2
+          className="h-8 w-8 animate-spin text-zeni-muted dark:text-slate-500"
+          aria-hidden="true"
+        />
       </div>
       {message && (
         <p className="text-sm text-zeni-muted dark:text-slate-400 font-medium">{message}</p>

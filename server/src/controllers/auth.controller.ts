@@ -11,7 +11,7 @@ import {
   requestPasswordReset,
   resetPassword as resetUserPassword,
   findOrCreateUserFromGoogle,
-  REFRESH_TTL_MS
+  REFRESH_TTL_MS,
 } from '../services/auth.service';
 import { UserModel, UserDocument } from '../models/User';
 import { env } from '../config/env';
@@ -20,48 +20,50 @@ import { getIO } from '../socket';
 import { AuthRequest } from '../middlewares/auth';
 import { AuthSessionModel } from '../models/AuthSession';
 import { evaluatePrivilegedRequest } from '../middlewares/ipAllowlist';
+import { renderBrandEmail, sendMail } from '../services/email.service';
+import { logger } from '../utils/logger';
 
 const registerSchema = z.object({
   body: z.object({
     name: z.string().min(2),
     emailOrPhone: z.string().email().or(z.string().min(7)), // email or phone-ish
     password: z.string().min(8),
-    role: z.enum(['user', 'agent', 'admin', 'finance']).optional()
-  })
+    role: z.enum(['user', 'agent', 'admin', 'finance']).optional(),
+  }),
 });
 
 const loginSchema = z.object({
   body: z.object({
     emailOrPhone: z.string(),
     password: z.string(),
-    otp: z.string().optional()
-  })
+    otp: z.string().optional(),
+  }),
 });
 
 const forgotSchema = z.object({
   body: z.object({
-    emailOrPhone: z.string()
-  })
+    emailOrPhone: z.string(),
+  }),
 });
 
 const resetSchema = z.object({
   body: z.object({
     token: z.string().min(10),
-    password: z.string().min(8)
-  })
+    password: z.string().min(8),
+  }),
 });
 
 const googleSchema = z.object({
   body: z.object({
-    credential: z.string().min(10)
-  })
+    credential: z.string().min(10),
+  }),
 });
 
 const adminStepUpSchema = z.object({
   body: z.object({
     // Accept number or string from clients; coerce to trimmed string for comparison
-    code: z.union([z.string(), z.number()]).transform((v) => String(v).trim())
-  })
+    code: z.union([z.string(), z.number()]).transform((v) => String(v).trim()),
+  }),
 });
 
 function cookieOptions() {
@@ -70,8 +72,13 @@ function cookieOptions() {
     sameSite: 'lax' as const,
     secure: env.nodeEnv === 'production',
     maxAge: REFRESH_TTL_MS,
-    path: '/api/auth'
+    path: '/api/auth',
   };
+}
+
+function appBaseUrl() {
+  const firstOrigin = (env.corsOrigin || '').split(',')[0]?.trim();
+  return process.env.APP_URL || firstOrigin || 'http://localhost:5173';
 }
 
 function getRefreshTokenFromRequest(req: Request): string | null {
@@ -92,7 +99,9 @@ export async function register(req: Request, res: Response) {
   const { body } = registerSchema.parse(req);
   const requestedRole = body.role;
   const isAdminEmail = (emailOrPhone: string) =>
-    env.adminDomains.some((domain) => domain === '*' || emailOrPhone.toLowerCase().endsWith(`@${domain.toLowerCase()}`));
+    env.adminDomains.some(
+      (domain) => domain === '*' || emailOrPhone.toLowerCase().endsWith(`@${domain.toLowerCase()}`)
+    );
 
   const allowPrivileged = env.allowPrivilegedSignup && isAdminEmail(body.emailOrPhone);
 
@@ -114,8 +123,23 @@ export async function register(req: Request, res: Response) {
   const user = await createUser({ ...body, role });
   const { accessToken, refreshToken, expiresAt } = await createAuthSession(user, {
     userAgent: req.headers['user-agent'],
-    ip: req.ip
+    ip: req.ip,
   });
+  const email = user.emailOrPhone?.includes('@') ? user.emailOrPhone : null;
+  if (email) {
+    const firstName = (user.name || '').split(' ')[0] || 'there';
+    const url = `${appBaseUrl()}/login`;
+    sendMail(
+      email,
+      'Welcome to ZENI',
+      renderBrandEmail({
+        title: 'Welcome to ZENI',
+        body: `Hi ${firstName},<br/>Your account is ready. Explore verified listings, live maps, and guided viewings.`,
+        ctaLabel: 'Log in',
+        ctaHref: url,
+      })
+    ).catch((err) => logger.warn('[auth] welcome email failed', err));
+  }
   getIO()?.to('role:admin').emit('user:created', pickUser(user));
   res
     .cookie('refreshToken', refreshToken, cookieOptions())
@@ -139,7 +163,12 @@ export async function login(req: Request, res: Response) {
     const network = evaluatePrivilegedRequest(req).admin;
     if (!network.allowed) {
       if (network.reason === 'tailnet_required') {
-        return res.status(403).json({ code: 'TAILNET_REQUIRED', message: 'Tailscale network access is required for admin' });
+        return res
+          .status(403)
+          .json({
+            code: 'TAILNET_REQUIRED',
+            message: 'Tailscale network access is required for admin',
+          });
       }
       return res.status(403).json({ code: 'FORBIDDEN', message: 'IP not allowed for admin' });
     }
@@ -163,12 +192,14 @@ export async function login(req: Request, res: Response) {
     }
   }
   if (user.role === 'agent' && user.agentVerification !== 'verified') {
-    return res.status(403).json({ code: 'AGENT_UNVERIFIED', message: 'Agent account pending verification' });
+    return res
+      .status(403)
+      .json({ code: 'AGENT_UNVERIFIED', message: 'Agent account pending verification' });
   }
 
   const { accessToken, refreshToken, expiresAt } = await createAuthSession(user, {
     userAgent: req.headers['user-agent'],
-    ip: req.ip
+    ip: req.ip,
   });
 
   if (user.role === 'admin') {
@@ -179,7 +210,7 @@ export async function login(req: Request, res: Response) {
         action: 'admin_login',
         entityType: 'user',
         entityId: user.id,
-        after: { ip: req.ip, ua: req.headers['user-agent'] }
+        after: { ip: req.ip, ua: req.headers['user-agent'] },
       },
       req
     );
@@ -200,20 +231,30 @@ export async function me(req: AuthRequest, res: Response) {
 
 export async function refresh(req: Request, res: Response) {
   const refreshToken = getRefreshTokenFromRequest(req);
-  if (!refreshToken) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing refresh token' });
-  const rotated = await rotateAuthSession(refreshToken, { userAgent: req.headers['user-agent'], ip: req.ip });
-  if (!rotated) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Invalid refresh token' });
+  if (!refreshToken)
+    return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing refresh token' });
+  const rotated = await rotateAuthSession(refreshToken, {
+    userAgent: req.headers['user-agent'],
+    ip: req.ip,
+  });
+  if (!rotated)
+    return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Invalid refresh token' });
   if (rotated.ok === false && rotated.reused) {
     res.clearCookie('refreshToken', { path: '/api/auth' });
     return res.status(401).json({
       code: 'REFRESH_TOKEN_REUSED',
-      message: 'Token was already used. All sessions have been revoked for security. Please sign in again.'
+      message:
+        'Token was already used. All sessions have been revoked for security. Please sign in again.',
     });
   }
   if (rotated.ok === true) {
     res
       .cookie('refreshToken', rotated.refreshToken, cookieOptions())
-      .json({ token: rotated.accessToken, refreshToken: rotated.refreshToken, user: pickUser(rotated.user) });
+      .json({
+        token: rotated.accessToken,
+        refreshToken: rotated.refreshToken,
+        user: pickUser(rotated.user),
+      });
   }
 }
 
@@ -244,7 +285,10 @@ export async function adminStepUp(req: AuthRequest, res: Response) {
   let ok = false;
   if (hasMfa && user.mfaSecret) {
     ok = verifyTOTP(normalizedCode, user.mfaSecret);
-    if (!ok && user.mfaRecoveryCodes?.some((c) => c.toUpperCase() === normalizedCode.toUpperCase())) {
+    if (
+      !ok &&
+      user.mfaRecoveryCodes?.some((c) => c.toUpperCase() === normalizedCode.toUpperCase())
+    ) {
       user.mfaRecoveryCodes = user.mfaRecoveryCodes.filter(
         (c) => c.toUpperCase() !== normalizedCode.toUpperCase()
       );
@@ -274,7 +318,7 @@ export async function adminStepUp(req: AuthRequest, res: Response) {
       action: 'admin_step_up',
       entityType: 'AuthSession',
       entityId: session.id,
-      after: { verifiedAt: session.stepUpVerifiedAt }
+      after: { verifiedAt: session.stepUpVerifiedAt },
     },
     req
   );
@@ -353,7 +397,7 @@ export async function logout(req: Request, res: Response) {
         action: 'session_logout',
         entityType: 'AuthSession',
         entityId: 'self',
-        after: { ip: req.ip }
+        after: { ip: req.ip },
       },
       req as unknown as AuthRequest
     );
@@ -381,7 +425,7 @@ export async function revokeSession(req: AuthRequest, res: Response) {
       actorRole: req.user.role,
       action: 'session_revoke',
       entityType: 'AuthSession',
-      entityId: req.params.id
+      entityId: req.params.id,
     },
     req
   );
@@ -397,7 +441,7 @@ export async function revokeAllSessions(req: AuthRequest, res: Response) {
       actorRole: req.user.role,
       action: 'session_revoke_all',
       entityType: 'AuthSession',
-      entityId: String(req.user.id)
+      entityId: String(req.user.id),
     },
     req
   );
@@ -407,8 +451,25 @@ export async function revokeAllSessions(req: AuthRequest, res: Response) {
 
 export async function forgotPassword(req: Request, res: Response) {
   const { body } = forgotSchema.parse(req);
-  const result = await requestPasswordReset(body.emailOrPhone, { ip: req.ip, userAgent: req.headers['user-agent'] });
+  const result = await requestPasswordReset(body.emailOrPhone, {
+    ip: req.ip,
+    userAgent: req.headers['user-agent'],
+  });
   const payload: Record<string, unknown> = { status: 'sent' };
+  if (result.user && result.token && result.user.emailOrPhone?.includes('@')) {
+    const url = `${appBaseUrl()}/reset?token=${result.token}`;
+    const firstName = (result.user.name || '').split(' ')[0] || 'there';
+    sendMail(
+      result.user.emailOrPhone,
+      'Reset your ZENI password',
+      renderBrandEmail({
+        title: 'Reset your password',
+        body: `Hi ${firstName},<br/>We received a request to reset your password. This link will expire soon for security.`,
+        ctaLabel: 'Reset password',
+        ctaHref: url,
+      })
+    ).catch((err) => logger.warn('[auth] reset email failed', err));
+  }
   if (env.nodeEnv !== 'production' && result.token) {
     payload.resetToken = result.token;
     payload.expiresAt = result.expiresAt;
@@ -418,10 +479,13 @@ export async function forgotPassword(req: Request, res: Response) {
 
 export async function resetPassword(req: Request, res: Response) {
   const { body } = resetSchema.parse(req);
-  const user = await resetUserPassword(body.token, body.password, { ip: req.ip, userAgent: req.headers['user-agent'] });
+  const user = await resetUserPassword(body.token, body.password, {
+    ip: req.ip,
+    userAgent: req.headers['user-agent'],
+  });
   const { accessToken, refreshToken, expiresAt } = await createAuthSession(user, {
     userAgent: req.headers['user-agent'],
-    ip: req.ip
+    ip: req.ip,
   });
   res
     .cookie('refreshToken', refreshToken, cookieOptions())
@@ -430,7 +494,9 @@ export async function resetPassword(req: Request, res: Response) {
 
 export async function googleLogin(req: Request, res: Response) {
   if (!env.googleClientId) {
-    return res.status(503).json({ code: 'GOOGLE_DISABLED', message: 'Google sign-in is not configured' });
+    return res
+      .status(503)
+      .json({ code: 'GOOGLE_DISABLED', message: 'Google sign-in is not configured' });
   }
   const { body } = googleSchema.parse(req);
   const client = new OAuth2Client(env.googleClientId);
@@ -438,26 +504,50 @@ export async function googleLogin(req: Request, res: Response) {
   try {
     ticket = await client.verifyIdToken({
       idToken: body.credential,
-      audience: env.googleClientId
+      audience: env.googleClientId,
     });
   } catch (err) {
-    return res.status(401).json({ code: 'INVALID_GOOGLE_TOKEN', message: 'Invalid or expired Google credential' });
+    return res
+      .status(401)
+      .json({ code: 'INVALID_GOOGLE_TOKEN', message: 'Invalid or expired Google credential' });
   }
   const payload = ticket.getPayload();
   if (!payload || !payload.email) {
-    return res.status(400).json({ code: 'MISSING_EMAIL', message: 'Google account email is required' });
+    return res
+      .status(400)
+      .json({ code: 'MISSING_EMAIL', message: 'Google account email is required' });
   }
   if (payload.email_verified === false) {
     return res.status(400).json({
       code: 'EMAIL_NOT_VERIFIED',
-      message: 'Google account email must be verified. Please verify your email in Google account settings.'
+      message:
+        'Google account email must be verified. Please verify your email in Google account settings.',
     });
   }
   const user = await findOrCreateUserFromGoogle(payload.email, payload.name || '');
   const { accessToken, refreshToken, expiresAt } = await createAuthSession(user, {
     userAgent: req.headers['user-agent'],
-    ip: req.ip
+    ip: req.ip,
   });
+
+  // Send welcome email for newly created Google users (created within last 10 seconds)
+  const userCreatedAt = (user as unknown as { createdAt?: Date }).createdAt;
+  const isNewUser = userCreatedAt ? Date.now() - new Date(userCreatedAt).getTime() < 10_000 : false;
+  if (isNewUser && payload.email) {
+    const firstName = (user.name || '').split(' ')[0] || 'there';
+    const url = `${appBaseUrl()}/login`;
+    sendMail(
+      payload.email,
+      'Welcome to ZENI',
+      renderBrandEmail({
+        title: 'Welcome to ZENI',
+        body: `Hi ${firstName},<br/>Your account is ready. Explore verified listings, live maps, and guided viewings.`,
+        ctaLabel: 'Get started',
+        ctaHref: url,
+      })
+    ).catch((err) => logger.warn('[auth] Google welcome email failed', err));
+  }
+
   getIO()?.to('role:admin').emit('user:created', pickUser(user));
   res
     .cookie('refreshToken', refreshToken, cookieOptions())
@@ -471,6 +561,7 @@ function pickUser(u: UserDocument) {
     role: u.role,
     availability: u.availability,
     agentVerification: u.agentVerification,
-    mfaEnabled: u.mfaEnabled
+    mfaEnabled: u.mfaEnabled,
+    avatarUrl: u.avatarUrl,
   };
 }

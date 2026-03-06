@@ -20,7 +20,7 @@ function StatusIcon({ status }: { status: Message['status'] }) {
     delivered: <CheckCheck className="h-3.5 w-3.5 text-amber-200/80" />,
     sent: <Check className="h-3.5 w-3.5 text-amber-200/70" />,
     sending: <Clock className="h-3.5 w-3.5 text-amber-200/70 animate-pulse" />,
-    failed: <AlertCircle className="h-3.5 w-3.5 text-red-400" />
+    failed: <AlertCircle className="h-3.5 w-3.5 text-red-400" />,
   };
   return icons[status] || icons.sending;
 }
@@ -38,24 +38,22 @@ function SenderAvatar({ senderType, isMine }: { senderType: string; isMine: bool
     bot: <Bot className="w-4 h-4" />,
     agent: <Shield className="w-4 h-4" />,
     user: <User className="w-4 h-4" />,
-    system: <AlertCircle className="w-4 h-4" />
+    system: <AlertCircle className="w-4 h-4" />,
   };
 
   return (
-    <div className={avatarClasses}>
-      {icons[senderType as keyof typeof icons] || icons.user}
-    </div>
+    <div className={avatarClasses}>{icons[senderType as keyof typeof icons] || icons.user}</div>
   );
 }
 
-export const MessageBubble = React.memo(function MessageBubble({ 
-  message, 
-  isMine, 
+export const MessageBubble = React.memo(function MessageBubble({
+  message,
+  isMine,
   showAvatar = true,
   isFirstInGroup = true,
   isLastInGroup = true,
   showMeta = true,
-  senderLabel
+  senderLabel,
 }: Props) {
   const isBot = message.senderType === 'bot' || message.senderType === 'system';
 
@@ -64,11 +62,17 @@ export const MessageBubble = React.memo(function MessageBubble({
     'relative max-w-[85%] px-4 py-3 shadow-sm',
     // Border radius based on position in group
     isFirstInGroup && isLastInGroup && 'rounded-2xl',
-    isFirstInGroup && !isLastInGroup && (isMine ? 'rounded-2xl rounded-br-lg' : 'rounded-2xl rounded-bl-lg'),
-    !isFirstInGroup && isLastInGroup && (isMine ? 'rounded-2xl rounded-tr-lg' : 'rounded-2xl rounded-tl-lg'),
-    !isFirstInGroup && !isLastInGroup && (isMine ? 'rounded-2xl rounded-r-lg' : 'rounded-2xl rounded-l-lg'),
+    isFirstInGroup &&
+      !isLastInGroup &&
+      (isMine ? 'rounded-2xl rounded-br-lg' : 'rounded-2xl rounded-bl-lg'),
+    !isFirstInGroup &&
+      isLastInGroup &&
+      (isMine ? 'rounded-2xl rounded-tr-lg' : 'rounded-2xl rounded-tl-lg'),
+    !isFirstInGroup &&
+      !isLastInGroup &&
+      (isMine ? 'rounded-2xl rounded-r-lg' : 'rounded-2xl rounded-l-lg'),
     // Colors
-    isMine 
+    isMine
       ? 'bg-gradient-to-br from-[#0F2E2A] to-[#13463E] text-[#F8F5F0] ring-1 ring-emerald-500/30'
       : isBot
         ? 'bg-[#FFF6E8] border border-amber-200 text-slate-900 dark:bg-amber-500/10 dark:border-amber-500/30 dark:text-slate-100'
@@ -80,15 +84,15 @@ export const MessageBubble = React.memo(function MessageBubble({
     if (message.type === 'summary' && typeof message.content === 'string') {
       return (
         <div className="space-y-2">
-          <div className={clsx(
-            'text-[10px] uppercase tracking-wider font-bold',
-            isMine ? 'text-amber-200' : 'text-amber-700'
-          )}>
+          <div
+            className={clsx(
+              'text-[10px] uppercase tracking-wider font-bold',
+              isMine ? 'text-amber-200' : 'text-amber-700'
+            )}
+          >
             Lead Summary
           </div>
-          <div className="text-sm leading-relaxed whitespace-pre-line">
-            {message.content}
-          </div>
+          <div className="text-sm leading-relaxed whitespace-pre-line">{message.content}</div>
         </div>
       );
     }
@@ -96,10 +100,12 @@ export const MessageBubble = React.memo(function MessageBubble({
     // Quick reply chip
     if (message.type === 'quickReply' && typeof message.content === 'string') {
       return (
-        <div className={clsx(
-          'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold',
-          isMine ? 'bg-amber-400/20' : 'bg-amber-50 text-amber-700'
-        )}>
+        <div
+          className={clsx(
+            'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold',
+            isMine ? 'bg-amber-400/20' : 'bg-amber-50 text-amber-700'
+          )}
+        >
           {message.content}
         </div>
       );
@@ -109,21 +115,30 @@ export const MessageBubble = React.memo(function MessageBubble({
     if (message.type === 'schedule') {
       return (
         <div className="space-y-2">
-          <div className={clsx(
-            'text-[10px] uppercase tracking-wider font-bold',
-            isMine ? 'text-amber-200' : 'text-blue-600'
-          )}>
+          <div
+            className={clsx(
+              'text-[10px] uppercase tracking-wider font-bold',
+              isMine ? 'text-amber-200' : 'text-blue-600'
+            )}
+          >
             Viewing Scheduled
           </div>
           <div className="text-sm">
-            {typeof message.content === 'string' ? message.content : JSON.stringify(message.content)}
+            {typeof message.content === 'string'
+              ? message.content
+              : JSON.stringify(message.content)}
           </div>
         </div>
       );
     }
 
     // Attachment (image or file link)
-    if (message.type === 'attachment' && message.content && typeof message.content === 'object' && 'url' in message.content) {
+    if (
+      message.type === 'attachment' &&
+      message.content &&
+      typeof message.content === 'object' &&
+      'url' in message.content
+    ) {
       const content = message.content as { url: string; name?: string };
       const url = content.url;
       const name = content.name || 'Attachment';
@@ -131,7 +146,12 @@ export const MessageBubble = React.memo(function MessageBubble({
       if (isImage) {
         return (
           <div className="space-y-1">
-            <a href={url} target="_blank" rel="noopener noreferrer" className="block rounded-lg overflow-hidden max-w-[280px]">
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block rounded-lg overflow-hidden max-w-[280px]"
+            >
               <img src={url} alt={name} className="w-full h-auto object-cover" />
             </a>
             {name && name !== url && <p className="text-xs text-slate-500 truncate">{name}</p>}
@@ -139,7 +159,12 @@ export const MessageBubble = React.memo(function MessageBubble({
         );
       }
       return (
-        <a href={url} target="_blank" rel="noopener noreferrer" className="text-sm text-emerald-600 dark:text-emerald-400 underline break-all">
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-emerald-600 dark:text-emerald-400 underline break-all"
+        >
           {name}
         </a>
       );
@@ -147,11 +172,7 @@ export const MessageBubble = React.memo(function MessageBubble({
 
     // Default text message
     if (typeof message.content === 'string') {
-      return (
-        <p className="text-sm leading-relaxed break-words">
-          {message.content}
-        </p>
-      );
+      return <p className="text-sm leading-relaxed break-words">{message.content}</p>;
     }
 
     // Fallback for complex content
@@ -163,9 +184,9 @@ export const MessageBubble = React.memo(function MessageBubble({
   };
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(dateString).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
@@ -183,9 +204,7 @@ export const MessageBubble = React.memo(function MessageBubble({
       {/* Avatar - only show for first message in group */}
       {showAvatar && (
         <div className="flex-shrink-0 w-8">
-          {isFirstInGroup && (
-            <SenderAvatar senderType={message.senderType} isMine={isMine} />
-          )}
+          {isFirstInGroup && <SenderAvatar senderType={message.senderType} isMine={isMine} />}
         </div>
       )}
 
@@ -193,10 +212,14 @@ export const MessageBubble = React.memo(function MessageBubble({
       <div className={bubbleStyles}>
         {/* Sender label for non-user messages */}
         {!isMine && isFirstInGroup && (
-          <div className={clsx(
-            'text-[10px] uppercase tracking-wider font-bold mb-1',
-            isBot ? 'text-amber-600 dark:text-amber-300' : 'text-emerald-600 dark:text-emerald-300'
-          )}>
+          <div
+            className={clsx(
+              'text-[10px] uppercase tracking-wider font-bold mb-1',
+              isBot
+                ? 'text-amber-600 dark:text-amber-300'
+                : 'text-emerald-600 dark:text-emerald-300'
+            )}
+          >
             {senderLabel || (message.senderType === 'bot' ? 'Assistant' : message.senderType)}
           </div>
         )}
@@ -206,10 +229,12 @@ export const MessageBubble = React.memo(function MessageBubble({
 
         {/* Timestamp and status */}
         {showMeta && (
-          <div className={clsx(
-            'flex items-center gap-1.5 mt-2 text-[10px]',
-            isMine ? 'justify-end text-amber-200' : 'text-slate-400'
-          )}>
+          <div
+            className={clsx(
+              'flex items-center gap-1.5 mt-2 text-[10px]',
+              isMine ? 'justify-end text-amber-200' : 'text-slate-400'
+            )}
+          >
             <span>{formatTime(message.createdAt)}</span>
             {isMine && <StatusIcon status={message.status} />}
           </div>
@@ -233,10 +258,10 @@ export function DateSeparator({ date }: { date: string }) {
     if (date.toDateString() === yesterday.toDateString()) {
       return 'Yesterday';
     }
-    return date.toLocaleDateString([], { 
-      weekday: 'long', 
-      month: 'short', 
-      day: 'numeric' 
+    return date.toLocaleDateString([], {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
     });
   };
 

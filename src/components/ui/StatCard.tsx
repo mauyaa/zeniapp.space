@@ -46,17 +46,19 @@ export function StatCard({
 
   const colors = theme === 'dark' ? darkColors : theme === 'light' ? lightColors : autoColors;
 
-  const containerBase = theme === 'dark'
-    ? 'border-slate-800 bg-slate-900/60'
-    : theme === 'light'
-    ? 'border-slate-200 bg-white'
-    : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/60';
+  const containerBase =
+    theme === 'dark'
+      ? 'border-slate-800 bg-slate-900/60'
+      : theme === 'light'
+        ? 'border-slate-200 bg-white'
+        : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/60';
 
-  const labelColor = theme === 'dark'
-    ? 'text-slate-500'
-    : theme === 'light'
-    ? 'text-slate-500'
-    : 'text-slate-500 dark:text-slate-500';
+  const labelColor =
+    theme === 'dark'
+      ? 'text-slate-500'
+      : theme === 'light'
+        ? 'text-slate-500'
+        : 'text-slate-500 dark:text-slate-500';
 
   return (
     <div
@@ -66,7 +68,12 @@ export function StatCard({
         compact ? 'w-24 text-center' : ''
       )}
     >
-      <div className={cn('flex items-center justify-between gap-2 text-[11px] uppercase tracking-wide', labelColor)}>
+      <div
+        className={cn(
+          'flex items-center justify-between gap-2 text-[11px] uppercase tracking-wide',
+          labelColor
+        )}
+      >
         <span>{label}</span>
         {!compact && trend && (
           <span className={cn('text-[10px] font-semibold', colors[tone])}>{trend}</span>

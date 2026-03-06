@@ -22,7 +22,15 @@ export { request, getToken, clearTokens, buildQuery } from './client';
 
 // Re-export error class for typed catch blocks
 export { ApiError } from '../../types/api';
-export type { Role, ViewingRequest, AdminUser, PendingListing, PendingAgent, ModerationQueueItem, UserKycStatus } from '../../types/api';
+export type {
+  Role,
+  ViewingRequest,
+  AdminUser,
+  PendingListing,
+  PendingAgent,
+  ModerationQueueItem,
+  UserKycStatus,
+} from '../../types/api';
 
 // Backwards-compatible `api` object for existing code that uses `api.xxx()`
 import * as auth from './auth';
@@ -30,10 +38,11 @@ import * as listings from './listings';
 import * as chat from './chat';
 import * as viewings from './viewings';
 import * as admin from './admin';
+import * as user from './user';
 import * as refundRequests from './refundRequests';
 // notifications module is re-exported via `export * from './notifications'` above
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import type { } from './notifications';
+import type {} from './notifications';
 
 export const api = {
   // Auth
@@ -51,6 +60,9 @@ export const api = {
   adminMfaSetup: auth.adminMfaSetup,
   adminMfaEnable: auth.adminMfaEnable,
   adminMfaDisable: auth.adminMfaDisable,
+
+  // User
+  updateAvatar: user.updateAvatar,
 
   // Listings
   searchListings: listings.searchListings,

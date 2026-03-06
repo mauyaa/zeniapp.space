@@ -8,7 +8,7 @@ export function Badge({
   children,
   tone = 'slate',
   theme = 'auto',
-  className
+  className,
 }: {
   children: React.ReactNode;
   tone?: Tone;
@@ -43,7 +43,9 @@ export function Badge({
   const colors = theme === 'dark' ? darkColors : theme === 'light' ? lightColors : autoColors;
 
   return (
-    <span className={cn('rounded-full px-2.5 py-1 text-[11px] font-semibold', colors[tone], className)}>
+    <span
+      className={cn('rounded-full px-2.5 py-1 text-[11px] font-semibold', colors[tone], className)}
+    >
       {children}
     </span>
   );

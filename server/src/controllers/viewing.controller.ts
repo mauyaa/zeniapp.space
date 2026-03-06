@@ -7,7 +7,7 @@ import {
   getViewingForUser,
   generateViewingIcs,
   cancelViewingByUser,
-  confirmViewingCompletedByTenant
+  confirmViewingCompletedByTenant,
 } from '../services/viewing.service';
 import { objectIdSchema } from '../utils/validators';
 
@@ -15,19 +15,25 @@ const createSchema = z.object({
   body: z.object({
     listingId: objectIdSchema,
     agentId: objectIdSchema.optional(),
-    date: z
-      .coerce.date()
-      .refine((d) => d.getTime() > Date.now() - 5 * 60 * 1000, 'Viewing date must be in the future'),
+    date: z.coerce
+      .date()
+      .refine(
+        (d) => d.getTime() > Date.now() - 5 * 60 * 1000,
+        'Viewing date must be in the future'
+      ),
     altDates: z
       .array(
-        z
-          .coerce.date()
-          .refine((d) => d.getTime() > Date.now() - 5 * 60 * 1000, 'Viewing date must be in the future')
+        z.coerce
+          .date()
+          .refine(
+            (d) => d.getTime() > Date.now() - 5 * 60 * 1000,
+            'Viewing date must be in the future'
+          )
       )
       .max(3)
       .optional(),
-    note: z.string().optional()
-  })
+    note: z.string().optional(),
+  }),
 });
 
 export async function createViewingRequest(req: AuthRequest, res: Response) {
@@ -76,8 +82,10 @@ export async function cancelMyViewing(req: AuthRequest, res: Response) {
     res.json(doc);
   } catch (err: unknown) {
     const e = err as { status?: number; code?: string; message?: string };
-    if (e.status === 404) return res.status(404).json({ code: 'NOT_FOUND', message: e.message || 'Viewing not found' });
-    if (e.status === 409) return res.status(409).json({ code: e.code || 'INVALID_STATUS', message: e.message });
+    if (e.status === 404)
+      return res.status(404).json({ code: 'NOT_FOUND', message: e.message || 'Viewing not found' });
+    if (e.status === 409)
+      return res.status(409).json({ code: e.code || 'INVALID_STATUS', message: e.message });
     throw err;
   }
 }
@@ -91,8 +99,10 @@ export async function confirmViewingCompleted(req: AuthRequest, res: Response) {
     res.json(doc);
   } catch (err: unknown) {
     const e = err as { status?: number; code?: string; message?: string };
-    if (e.status === 404) return res.status(404).json({ code: 'NOT_FOUND', message: e.message || 'Viewing not found' });
-    if (e.status === 409) return res.status(409).json({ code: e.code || 'INVALID_STATUS', message: e.message });
+    if (e.status === 404)
+      return res.status(404).json({ code: 'NOT_FOUND', message: e.message || 'Viewing not found' });
+    if (e.status === 409)
+      return res.status(409).json({ code: e.code || 'INVALID_STATUS', message: e.message });
     throw err;
   }
 }

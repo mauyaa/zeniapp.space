@@ -2,7 +2,15 @@ import { Router } from 'express';
 import { auth } from '../middlewares/auth';
 import { sendLimiter } from '../middlewares/rateLimit';
 import { asyncHandler } from '../middlewares/errorHandler';
-import { conversations, bootstrapConversations, createConversation, messages, postMessage, markConversationRead, updateConversationState } from '../controllers/chat.controller';
+import {
+  conversations,
+  bootstrapConversations,
+  createConversation,
+  messages,
+  postMessage,
+  markConversationRead,
+  updateConversationState,
+} from '../controllers/chat.controller';
 
 const router = Router();
 router.use(auth);

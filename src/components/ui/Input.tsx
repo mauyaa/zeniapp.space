@@ -86,10 +86,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             type={inputType}
             disabled={disabled}
             aria-invalid={state === 'error'}
-            aria-describedby={clsx(
-              hint && hintId,
-              error && errorId
-            ) || undefined}
+            aria-describedby={clsx(hint && hintId, error && errorId) || undefined}
             className={clsx(
               // Base: single radius (rounded-xl), clear focus
               'w-full border bg-white shadow-sm',
@@ -121,16 +118,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
                 tabIndex={-1}
               >
-                {showPassword ? (
-                  <EyeOff className="w-4 h-4" />
-                ) : (
-                  <Eye className="w-4 h-4" />
-                )}
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             )}
-            {!isPassword && state === 'error' && (
-              <AlertCircle className="w-4 h-4 text-red-500" />
-            )}
+            {!isPassword && state === 'error' && <AlertCircle className="w-4 h-4 text-red-500" />}
             {!isPassword && state === 'success' && (
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
             )}
@@ -188,7 +179,10 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className="space-y-1.5 w-full">
         {label && (
-          <label htmlFor={id} className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
+          <label
+            htmlFor={id}
+            className="block text-sm font-semibold text-slate-700 dark:text-slate-200"
+          >
             {label}
             {props.required && <span className="text-red-500 ml-0.5">*</span>}
           </label>
@@ -211,9 +205,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           {...props}
         />
 
-        {hint && !error && (
-          <p className="text-xs text-slate-500 dark:text-slate-400">{hint}</p>
-        )}
+        {hint && !error && <p className="text-xs text-slate-500 dark:text-slate-400">{hint}</p>}
 
         {error && (
           <p role="alert" className="text-xs font-medium text-red-600 flex items-center gap-1">

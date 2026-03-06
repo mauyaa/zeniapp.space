@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -14,6 +14,7 @@ const bankName = (import.meta.env.VITE_PAY_BANK_NAME as string) || 'Zeni Payment
 const bankAccount = (import.meta.env.VITE_PAY_BANK_ACCOUNT as string) || 'KES 1234567890';
 
 type PayMethod = 'mpesa_stk' | 'card' | 'bank_transfer';
+type PayPlan = 'custom' | 'rent_deposit' | 'rent_movein' | 'buy_deposit' | 'buy_balance';
 
 const METHOD_LABELS: Record<PayMethod, { name: string; subtitle: string }> = {
   mpesa_stk: { name: 'M-Pesa', subtitle: 'Mobile Money' },
@@ -27,19 +28,23 @@ const cardElementOptions = {
       fontSize: '16px',
       color: '#fff',
       '::placeholder': { color: '#71717a' },
-      iconColor: '#10b981'
+      iconColor: '#10b981',
     },
     invalid: {
-      color: '#f87171'
-    }
-  }
+      color: '#f87171',
+    },
+  },
 };
+
+function formatKes(value: number) {
+  return `KES ${value.toLocaleString()}`;
+}
 
 function CardForm({
   clientSecret,
   amountNum,
   onSuccess,
-  onError
+  onError,
 }: {
   clientSecret: string;
   amountNum: number;
@@ -59,7 +64,7 @@ function CardForm({
     onError('');
     try {
       const { error } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: { card }
+        payment_method: { card },
       });
       if (error) {
         onError(error.message || 'Card payment failed');
@@ -88,7 +93,7 @@ function CardForm({
         disabled={!stripe || loading}
         className="w-full bg-white text-black py-4 text-xs font-bold uppercase tracking-widest hover:bg-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed rounded-sm"
       >
-        {loading ? 'Processing…' : `Pay KES ${amountNum.toLocaleString()}`}
+        {loading ? 'Processing...' : `Pay KES ${amountNum.toLocaleString()}`}
       </button>
     </form>
   );
@@ -100,8 +105,10 @@ export function PayPayments() {
   const referenceId = searchParams.get('referenceId') || undefined;
   const amountFromUrl = searchParams.get('amount');
   const initialAmount = amountFromUrl && /^\d+$/.test(amountFromUrl) ? amountFromUrl : '25000';
+  const propertyPrice = Number(amountFromUrl) || 0;
   const [amount, setAmount] = useState(initialAmount);
   const [method, setMethod] = useState<PayMethod>('mpesa_stk');
+  const [plan, setPlan] = useState<PayPlan>('custom');
   const [phone, setPhone] = useState('');
   const [status, setStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
@@ -111,10 +118,79 @@ export function PayPayments() {
   const { success: toastSuccess } = useToast();
 
   const isViewingFee = purpose === 'viewing_fee';
-  const isPropertyPurchase = purpose === 'property_purchase' || purpose === 'rent';
+  const isRent = purpose === 'rent';
+  const isBuy = purpose === 'property_purchase';
+  const isPropertyPurchase = isBuy || isRent;
   const amountNum = Number(amount) || 0;
   const maskedPhone = phone ? `${phone.slice(0, 3)} *** ***` : '0712 *** ***';
   const showCardForm = Boolean(clientSecret && method === 'card');
+
+  const planOptions = useMemo<
+    Array<{ key: PayPlan; label: string; desc: string; value?: number }>
+  >(() => {
+    if (isRent && propertyPrice > 0) {
+      return [
+        {
+          key: 'rent_deposit',
+          label: 'Holding deposit',
+          desc: '1 month rent held in escrow',
+          value: Math.round(propertyPrice),
+        },
+        {
+          key: 'rent_movein',
+          label: 'Move-in (deposit + 1st month)',
+          desc: 'Two months up-front',
+          value: Math.round(propertyPrice * 2),
+        },
+        {
+          key: 'custom',
+          label: 'Custom amount',
+          desc: 'Enter a different amount',
+          value: undefined,
+        },
+      ] as const;
+    }
+    if (isBuy && propertyPrice > 0) {
+      const deposit = Math.round(propertyPrice * 0.1);
+      return [
+        {
+          key: 'buy_deposit',
+          label: '10% reservation',
+          desc: 'Deposit held until completion',
+          value: deposit,
+        },
+        {
+          key: 'buy_balance',
+          label: 'Balance to close',
+          desc: 'Remaining amount',
+          value: Math.max(propertyPrice - deposit, 0),
+        },
+        {
+          key: 'custom',
+          label: 'Custom amount',
+          desc: 'Enter a different amount',
+          value: undefined,
+        },
+      ] as const;
+    }
+    return [
+      { key: 'custom', label: 'Custom amount', desc: 'Enter any amount', value: undefined },
+    ] as const;
+  }, [isRent, isBuy, propertyPrice]);
+
+  const selectedPlan = useMemo(() => planOptions.find((p) => p.key === plan), [planOptions, plan]);
+  useEffect(() => {
+    const selected = planOptions.find((p) => p.key === plan);
+    if (selected && selected.value && selected.value !== amountNum) {
+      setAmount(String(selected.value));
+    }
+  }, [plan, planOptions, amountNum]);
+
+  useEffect(() => {
+    if (!planOptions.length) return;
+    const exists = planOptions.some((p) => p.key === plan);
+    if (!exists) setPlan(planOptions[0].key);
+  }, [planOptions, plan]);
 
   const handlePay = async () => {
     setStatus('pending');
@@ -122,9 +198,9 @@ export function PayPayments() {
     setBankRef(null);
     try {
       const idem = referenceId
-        ? (purpose === 'viewing_fee'
-            ? `viewing-fee-${referenceId}-${Date.now()}`
-            : `property-${purpose}-${referenceId}-${Date.now()}`)
+        ? purpose === 'viewing_fee'
+          ? `viewing-fee-${referenceId}-${Date.now()}`
+          : `property-${purpose}-${referenceId}-${Date.now()}`
         : `portal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const result = await payApi.initiatePayment(
         {
@@ -133,7 +209,7 @@ export function PayPayments() {
           method,
           phone: method === 'mpesa_stk' ? phone || undefined : undefined,
           purpose: purpose || undefined,
-          referenceId: referenceId || undefined
+          referenceId: referenceId || undefined,
         },
         idem
       );
@@ -153,7 +229,9 @@ export function PayPayments() {
       if (method === 'bank_transfer') {
         setBankRef(result.ref || result._id || '');
         setStatus('success');
-        setMessage('Use the reference below when making your bank transfer. We will confirm when payment is received.');
+        setMessage(
+          'Use the reference below when making your bank transfer. We will confirm when payment is received.'
+        );
         return;
       }
 
@@ -176,7 +254,15 @@ export function PayPayments() {
     setMessage('Payment confirmed.');
     toastSuccess('Payment confirmed');
     if ((purpose === 'property_purchase' || purpose === 'rent') && referenceId && amountNum > 0) {
-      trackEvent({ name: 'property_paid', payload: { listingId: referenceId, purpose: purpose || '', amount: amountNum, currency: 'KES' } });
+      trackEvent({
+        name: 'property_paid',
+        payload: {
+          listingId: referenceId,
+          purpose: purpose || '',
+          amount: amountNum,
+          currency: 'KES',
+        },
+      });
     }
   };
 
@@ -189,15 +275,32 @@ export function PayPayments() {
         setMessage('Payment confirmed.');
         toastSuccess('Payment confirmed');
         if (purpose === 'viewing_fee' && referenceId && amountNum > 0) {
-          trackEvent({ name: 'viewing_fee_paid', payload: { viewingId: referenceId, amount: amountNum, currency: 'KES' } });
+          trackEvent({
+            name: 'viewing_fee_paid',
+            payload: { viewingId: referenceId, amount: amountNum, currency: 'KES' },
+          });
         }
-        if ((purpose === 'property_purchase' || purpose === 'rent') && referenceId && amountNum > 0) {
-          trackEvent({ name: 'property_paid', payload: { listingId: referenceId, purpose: purpose || '', amount: amountNum, currency: 'KES' } });
+        if (
+          (purpose === 'property_purchase' || purpose === 'rent') &&
+          referenceId &&
+          amountNum > 0
+        ) {
+          trackEvent({
+            name: 'property_paid',
+            payload: {
+              listingId: referenceId,
+              purpose: purpose || '',
+              amount: amountNum,
+              currency: 'KES',
+            },
+          });
         }
       }
     };
     socket.on('pay:transaction', onTx);
-    return () => socket.off('pay:transaction', onTx);
+    return () => {
+      socket.off('pay:transaction', onTx);
+    };
   }, [accessToken, toastSuccess, purpose, referenceId, amountNum]);
 
   const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
@@ -214,7 +317,8 @@ export function PayPayments() {
               <div>
                 <p className="text-sm font-semibold text-amber-200">Viewing fee</p>
                 <p className="text-xs text-amber-200/80 mt-0.5">
-                  Zeni holds this amount until after your viewing. Once the agent marks the showing complete and you confirm, the fee is released to the agent.
+                  Zeni holds this amount until after your viewing. Once the agent marks the showing
+                  complete and you confirm, the fee is released to the agent.
                 </p>
               </div>
             </div>
@@ -227,16 +331,23 @@ export function PayPayments() {
                   {purpose === 'property_purchase' ? 'Property purchase' : 'First month rent'}
                 </p>
                 <p className="text-xs text-emerald-200/80 mt-0.5">
-                  Once payment is confirmed, this listing will be removed from active listings and marked as already bought/let. You can see it under Already bought on your Pay dashboard.
+                  Choose a deposit or full balance below. Reservation deposits hold the listing in
+                  escrow; paying the balance marks it as bought/let in this simulation.
                 </p>
               </div>
             </div>
           )}
 
           <h2 className="font-serif text-3xl text-white mb-2">
-            {isViewingFee ? 'Pay viewing fee' : isPropertyPurchase ? 'Pay for property' : 'Make a Payment'}
+            {isViewingFee
+              ? 'Pay viewing fee'
+              : isPropertyPurchase
+                ? 'Pay for property'
+                : 'Make a Payment'}
           </h2>
-          <p className="text-xs text-zinc-500 uppercase tracking-widest mb-10">Secure Transaction Gateway</p>
+          <p className="text-xs text-zinc-500 uppercase tracking-widest mb-10">
+            Secure Transaction Gateway
+          </p>
 
           {showCardForm && stripePromise && clientSecret ? (
             <Elements stripe={stripePromise}>
@@ -244,15 +355,91 @@ export function PayPayments() {
                 clientSecret={clientSecret}
                 amountNum={amountNum}
                 onSuccess={handleCardSuccess}
-                onError={(msg) => { setMessage(msg); setStatus('error'); }}
+                onError={(msg) => {
+                  setMessage(msg);
+                  setStatus('error');
+                }}
               />
             </Elements>
           ) : (
             <div className="space-y-8">
+              {propertyPrice > 0 && isPropertyPurchase && (
+                <div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                      Payment plan (simulation)
+                    </label>
+                    <span className="text-[11px] text-zinc-500">
+                      Listing price:{' '}
+                      <span className="text-white font-mono">{formatKes(propertyPrice)}</span>
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {planOptions.map((opt) => (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => setPlan(opt.key)}
+                        className={`border rounded-sm p-4 text-left transition-colors ${
+                          plan === opt.key
+                            ? 'border-emerald-500 bg-emerald-900/20'
+                            : 'border-zinc-700 bg-black/40 hover:border-zinc-500'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-semibold text-white">{opt.label}</span>
+                          {opt.value ? (
+                            <span className="text-[11px] font-mono text-emerald-300">
+                              {formatKes(opt.value)}
+                            </span>
+                          ) : (
+                            <span className="text-[11px] font-mono text-zinc-500">Custom</span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-zinc-400 mt-1 leading-snug">{opt.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-3 rounded-sm border border-zinc-800 bg-zinc-900/40 p-3 text-[11px] text-zinc-400 space-y-1.5">
+                    {isRent ? (
+                      <>
+                        <p className="text-zinc-200 font-semibold">
+                          How rent payments are simulated
+                        </p>
+                        <ul className="list-disc pl-4 space-y-1">
+                          <li>Deposits are held in escrow until move-in is confirmed.</li>
+                          <li>Move-in option covers security deposit + first month rent.</li>
+                          <li>If the lease is declined, deposits auto-refund after inspection.</li>
+                          <li>This sandbox simulates status updates only - no real charges.</li>
+                        </ul>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-zinc-200 font-semibold">
+                          How purchase payments are simulated
+                        </p>
+                        <ul className="list-disc pl-4 space-y-1">
+                          <li>10% reservation is held in escrow during due diligence.</li>
+                          <li>Balance to close marks the listing as sold once paid.</li>
+                          <li>No real funds move in this sandbox; status updates are mocked.</li>
+                        </ul>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-3">
-                  Payment Amount
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                    Payment Amount
+                  </label>
+                  {selectedPlan && selectedPlan.key !== 'custom' && (
+                    <span className="text-[11px] text-zinc-500">
+                      From plan: {selectedPlan.label}
+                    </span>
+                  )}
+                </div>
                 <div className="relative glow-border rounded-sm">
                   <span className="absolute left-4 top-4 text-zinc-500 font-mono text-sm">KES</span>
                   <input
@@ -276,11 +463,15 @@ export function PayPayments() {
                       type="button"
                       onClick={() => setMethod(m)}
                       className={`border py-4 flex flex-col items-center justify-center gap-2 transition-all rounded-sm ${
-                        method === m ? 'border-emerald-500 bg-emerald-900/20' : 'border-zinc-700 bg-black opacity-60 hover:opacity-100 hover:border-white'
+                        method === m
+                          ? 'border-emerald-500 bg-emerald-900/20'
+                          : 'border-zinc-700 bg-black opacity-60 hover:opacity-100 hover:border-white'
                       }`}
                     >
                       <span className="text-xl font-bold text-white">{METHOD_LABELS[m].name}</span>
-                      <span className={`text-[9px] uppercase tracking-widest ${method === m ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                      <span
+                        className={`text-[9px] uppercase tracking-widest ${method === m ? 'text-emerald-400' : 'text-zinc-500'}`}
+                      >
                         {METHOD_LABELS[m].subtitle}
                       </span>
                     </button>
@@ -306,7 +497,8 @@ export function PayPayments() {
               {method === 'bank_transfer' && (
                 <div className="rounded-sm bg-zinc-900/50 border border-zinc-700 p-4">
                   <p className="text-xs text-zinc-400 mb-2">
-                    After you click Confirm, you will see bank account details and a unique reference. Transfer the amount and we will confirm when received.
+                    After you click Confirm, you will see bank account details and a unique
+                    reference. Transfer the amount and we will confirm when received.
                   </p>
                 </div>
               )}
@@ -324,19 +516,29 @@ export function PayPayments() {
                 >
                   {message}
                   {status === 'error' && (
-                    <p className="mt-2 text-xs opacity-90">Check amount and payment method, then try again.</p>
+                    <p className="mt-2 text-xs opacity-90">
+                      Check amount and payment method, then try again.
+                    </p>
                   )}
                   {bankRef && (
                     <div className="mt-4 pt-4 border-t border-zinc-700 space-y-2">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Bank transfer details</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                        Bank transfer details
+                      </p>
                       <p className="text-xs text-zinc-300 font-mono">Bank: {bankName}</p>
                       <p className="text-xs text-zinc-300 font-mono">Account: {bankAccount}</p>
-                      <p className="text-xs text-zinc-300 font-mono">Reference: <strong className="text-white">{bankRef}</strong></p>
-                      <p className="text-xs text-amber-300 mt-2">Include this reference so we can match your payment.</p>
+                      <p className="text-xs text-zinc-300 font-mono">
+                        Reference: <strong className="text-white">{bankRef}</strong>
+                      </p>
+                      <p className="text-xs text-amber-300 mt-2">
+                        Include this reference so we can match your payment.
+                      </p>
                     </div>
                   )}
                   {status === 'pending' && method === 'mpesa_stk' && (
-                    <p className="mt-1 text-xs opacity-90">Complete the prompt on your phone to finish.</p>
+                    <p className="mt-1 text-xs opacity-90">
+                      Complete the prompt on your phone to finish.
+                    </p>
                   )}
                 </div>
               )}
@@ -345,13 +547,23 @@ export function PayPayments() {
                 <Info className="w-4 h-4 text-zinc-400 mt-0.5 shrink-0" />
                 <p className="text-xs text-zinc-400 leading-relaxed">
                   {method === 'mpesa_stk' && (
-                    <>By clicking Confirm, a payment request will be sent to your M-Pesa phone number <strong className="text-zinc-300">{maskedPhone}</strong>. Please enter your PIN to complete the transaction.</>
+                    <>
+                      By clicking Confirm, a payment request will be sent to your M-Pesa phone
+                      number <strong className="text-zinc-300">{maskedPhone}</strong>. Please enter
+                      your PIN to complete the transaction.
+                    </>
                   )}
                   {method === 'card' && (
-                    <>Card payments are secure. We do not store your card number. You will enter card details on the next step.</>
+                    <>
+                      Card payments are secure. We do not store your card number. You will enter
+                      card details on the next step.
+                    </>
                   )}
                   {method === 'bank_transfer' && (
-                    <>Transfer the exact amount to the account shown after you confirm. Use the unique reference so we can identify your payment.</>
+                    <>
+                      Transfer the exact amount to the account shown after you confirm. Use the
+                      unique reference so we can identify your payment.
+                    </>
                   )}
                 </p>
               </div>
@@ -359,10 +571,16 @@ export function PayPayments() {
               <button
                 type="button"
                 onClick={handlePay}
-                disabled={status === 'pending' || amountNum < 1 || (method === 'mpesa_stk' && !phone.trim())}
+                disabled={
+                  status === 'pending' || amountNum < 1 || (method === 'mpesa_stk' && !phone.trim())
+                }
                 className="w-full bg-white text-black py-4 text-xs font-bold uppercase tracking-widest hover:bg-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed rounded-sm"
               >
-                {status === 'pending' ? 'Processing…' : method === 'card' ? 'Continue to card' : `Confirm & Pay KES ${amountNum.toLocaleString()}`}
+                {status === 'pending'
+                  ? 'Processing...'
+                  : method === 'card'
+                    ? 'Continue to card'
+                    : `Confirm & Pay KES ${amountNum.toLocaleString()}`}
               </button>
             </div>
           )}

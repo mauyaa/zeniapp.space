@@ -36,30 +36,24 @@ const TOAST_ICONS: Record<ToastTone, React.ReactNode> = {
   success: <CheckCircle2 className="w-5 h-5 text-emerald-500" />,
   error: <XCircle className="w-5 h-5 text-red-500" />,
   warning: <AlertCircle className="w-5 h-5 text-amber-500" />,
-  info: <Info className="w-5 h-5 text-blue-500" />
+  info: <Info className="w-5 h-5 text-blue-500" />,
 };
 
 const TOAST_STYLES: Record<ToastTone, string> = {
   success: 'border-emerald-200 bg-emerald-50',
   error: 'border-red-200 bg-red-50',
   warning: 'border-amber-200 bg-amber-50',
-  info: 'border-blue-200 bg-blue-50'
+  info: 'border-blue-200 bg-blue-50',
 };
 
 const TOAST_PROGRESS: Record<ToastTone, string> = {
   success: 'bg-emerald-500',
   error: 'bg-red-500',
   warning: 'bg-amber-500',
-  info: 'bg-blue-500'
+  info: 'bg-blue-500',
 };
 
-function ToastItem({ 
-  toast, 
-  onDismiss 
-}: { 
-  toast: Toast; 
-  onDismiss: () => void;
-}) {
+function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
   const tone = toast.tone || 'info';
   const duration = toast.duration || 5000;
 
@@ -80,19 +74,13 @@ function ToastItem({
     >
       <div className="flex items-start gap-3 px-4 py-3">
         {/* Icon */}
-        <div className="flex-shrink-0 pt-0.5">
-          {TOAST_ICONS[tone]}
-        </div>
+        <div className="flex-shrink-0 pt-0.5">{TOAST_ICONS[tone]}</div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-slate-900">
-            {toast.title}
-          </p>
+          <p className="text-sm font-semibold text-slate-900">{toast.title}</p>
           {toast.description && (
-            <p className="mt-0.5 text-sm text-slate-600 line-clamp-2">
-              {toast.description}
-            </p>
+            <p className="mt-0.5 text-sm text-slate-600 line-clamp-2">{toast.description}</p>
           )}
           {toast.action && (
             <button
@@ -143,13 +131,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     (t: Omit<Toast, 'id'>): string => {
       const id = uuidv4();
       const duration = t.duration || 5000;
-      
+
       setToasts((prev) => {
         // Limit to 5 toasts maximum
         const newToasts = prev.length >= 5 ? prev.slice(1) : prev;
         return [...newToasts, { id, ...t }];
       });
-      
+
       setTimeout(() => dismiss(id), duration);
       return id;
     },
@@ -163,7 +151,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 
   const error = useCallback(
-    (title: string, description?: string) => push({ title, description, tone: 'error', duration: 7000 }),
+    (title: string, description?: string) =>
+      push({ title, description, tone: 'error', duration: 7000 }),
     [push]
   );
 
@@ -178,22 +167,20 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <ToastContext.Provider value={{ toasts, push, dismiss, dismissAll, success, error, warning, info }}>
+    <ToastContext.Provider
+      value={{ toasts, push, dismiss, dismissAll, success, error, warning, info }}
+    >
       {children}
-      
+
       {/* Toast Container */}
-      <div 
+      <div
         className="pointer-events-none fixed inset-0 z-[100] flex flex-col items-end justify-end gap-3 p-4 sm:justify-start sm:items-end sm:top-4 sm:bottom-auto"
         aria-live="polite"
         aria-label="Notifications"
       >
         <AnimatePresence mode="popLayout">
           {toasts.map((toast) => (
-            <ToastItem
-              key={toast.id}
-              toast={toast}
-              onDismiss={() => dismiss(toast.id)}
-            />
+            <ToastItem key={toast.id} toast={toast} onDismiss={() => dismiss(toast.id)} />
           ))}
         </AnimatePresence>
       </div>

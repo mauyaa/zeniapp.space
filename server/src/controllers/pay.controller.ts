@@ -1,7 +1,15 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { AuthRequest } from '../middlewares/auth';
-import { initiatePayment, listInvoices, getInvoice, handleCallback, reconciliation, resolveTransaction, getTransaction } from '../services/pay.service';
+import {
+  initiatePayment,
+  listInvoices,
+  getInvoice,
+  handleCallback,
+  reconciliation,
+  resolveTransaction,
+  getTransaction,
+} from '../services/pay.service';
 import { handlePortalCallback } from '../services/payPortal.service';
 import { verifyCallbackSignature } from '../services/mpesa.service';
 
@@ -39,7 +47,7 @@ export async function stkInitiate(req: AuthRequest, res: Response) {
 const mpesaCallbackSchema = z.object({
   providerRef: z.string(),
   success: z.boolean(),
-  receipt: z.string().optional()
+  receipt: z.string().optional(),
 });
 
 /** Safaricom Daraja STK callback body shape */
@@ -54,16 +62,18 @@ const darajaStkCallbackSchema = z.object({
           Item: z.array(
             z.object({
               Name: z.string(),
-              Value: z.union([z.string(), z.number(), z.null()]).optional()
+              Value: z.union([z.string(), z.number(), z.null()]).optional(),
             })
-          )
+          ),
         })
-        .optional()
-    })
-  })
+        .optional(),
+    }),
+  }),
 });
 
-function normalizeMpesaCallbackBody(body: unknown): { providerRef: string; success: boolean; receipt?: string } | null {
+function normalizeMpesaCallbackBody(
+  body: unknown
+): { providerRef: string; success: boolean; receipt?: string } | null {
   const parsed = darajaStkCallbackSchema.safeParse(body);
   if (parsed.success) {
     const cb = parsed.data.Body.stkCallback;
@@ -72,7 +82,7 @@ function normalizeMpesaCallbackBody(body: unknown): { providerRef: string; succe
     return {
       providerRef: cb.CheckoutRequestID,
       success: cb.ResultCode === 0,
-      receipt: receipt ? String(receipt.Value) : undefined
+      receipt: receipt ? String(receipt.Value) : undefined,
     };
   }
   const simple = mpesaCallbackSchema.safeParse(body);
@@ -86,12 +96,16 @@ export async function mpesaCallback(req: Request, res: Response) {
     (req.headers['x-mpesa-signature'] as string | undefined);
 
   if (!verifyCallbackSignature(signature)) {
-    return res.status(401).json({ code: 'INVALID_SIGNATURE', message: 'Invalid callback signature' });
+    return res
+      .status(401)
+      .json({ code: 'INVALID_SIGNATURE', message: 'Invalid callback signature' });
   }
 
   const payload = normalizeMpesaCallbackBody(req.body);
   if (!payload) {
-    return res.status(400).json({ code: 'INVALID_PAYLOAD', message: 'Invalid M-Pesa callback body' });
+    return res
+      .status(400)
+      .json({ code: 'INVALID_PAYLOAD', message: 'Invalid M-Pesa callback body' });
   }
 
   const portalHandled = await handlePortalCallback(payload);

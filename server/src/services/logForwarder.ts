@@ -7,10 +7,17 @@ import { redactPII } from '../utils/pii';
 export function forwardAudit(event: Record<string, unknown>) {
   const url = process.env.AUDIT_WEBHOOK_URL || '';
   if (!url) return;
-  const failureCounter = getOrCreateCounter('audit_forward_failures_total', 'Count of audit forward failures');
+  const failureCounter = getOrCreateCounter(
+    'audit_forward_failures_total',
+    'Count of audit forward failures'
+  );
   try {
     const safeEvent = redactPII(event);
-    const body = JSON.stringify({ ...safeEvent, forwardedAt: new Date().toISOString(), service: 'zeni-api' });
+    const body = JSON.stringify({
+      ...safeEvent,
+      forwardedAt: new Date().toISOString(),
+      service: 'zeni-api',
+    });
     const target = new URL(url);
     const req = https.request(
       {
@@ -20,9 +27,9 @@ export function forwardAudit(event: Record<string, unknown>) {
         path: target.pathname + target.search,
         headers: {
           'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(body)
+          'Content-Length': Buffer.byteLength(body),
         },
-        timeout: 3000
+        timeout: 3000,
       },
       (res) => {
         // Drain response to free socket
@@ -38,7 +45,10 @@ export function forwardAudit(event: Record<string, unknown>) {
     req.write(body);
     req.end();
   } catch (err) {
-    const failureCounter = getOrCreateCounter('audit_forward_failures_total', 'Count of audit forward failures');
+    const failureCounter = getOrCreateCounter(
+      'audit_forward_failures_total',
+      'Count of audit forward failures'
+    );
     failureCounter.inc();
     if (env.nodeEnv === 'development') {
       console.warn('[audit forward] failed', (err as Error).message);

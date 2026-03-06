@@ -13,7 +13,7 @@ import {
   submitAgentListing,
   listAgent,
   getAgent,
-  recordLead
+  recordLead,
 } from '../controllers/listing.controller';
 
 const router = Router();

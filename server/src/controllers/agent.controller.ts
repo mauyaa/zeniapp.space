@@ -1,7 +1,13 @@
 import { Response } from 'express';
 import { z } from 'zod';
 import { AuthRequest } from '../middlewares/auth';
-import { getAgentStats, getAgentAvailability, setAgentAvailability, getPayoutChecklist, runTestPayout } from '../services/agent.service';
+import {
+  getAgentStats,
+  getAgentAvailability,
+  setAgentAvailability,
+  getPayoutChecklist,
+  runTestPayout,
+} from '../services/agent.service';
 import { getAgentDashboardData } from '../services/dashboard.service';
 
 export async function getStats(req: AuthRequest, res: Response) {

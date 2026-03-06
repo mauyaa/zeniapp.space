@@ -55,7 +55,7 @@ if (multer) {
         filename: (_req: any, file: any, cb: any) => {
           const ext = path.extname(file.originalname);
           cb(null, `${crypto.randomBytes(16).toString('hex')}${ext}`);
-        }
+        },
       });
 
   const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -67,19 +67,41 @@ if (multer) {
         return cb(new Error('Only JPEG, PNG, WebP and GIF images are allowed'));
       }
       cb(null, true);
-    }
+    },
   });
 
-  router.post('/upload/image', auth, requireRole(['user', 'agent', 'admin']), upload.single('file'), handleUploadedFile);
+  router.post(
+    '/upload/image',
+    auth,
+    requireRole(['user', 'agent', 'admin']),
+    upload.single('file'),
+    handleUploadedFile
+  );
 
   /** Chat attachments: user, agent, or admin can upload an image to attach to a message. */
-  router.post('/upload/chat-image', auth, requireRole(['user', 'agent', 'admin']), upload.single('file'), handleUploadedFile);
+  router.post(
+    '/upload/chat-image',
+    auth,
+    requireRole(['user', 'agent', 'admin']),
+    upload.single('file'),
+    handleUploadedFile
+  );
 } else {
   router.post('/upload/image', (_req, res) => {
-    res.status(503).json({ code: 'UPLOADS_DISABLED', message: 'File uploads unavailable (multer not installed)' });
+    res
+      .status(503)
+      .json({
+        code: 'UPLOADS_DISABLED',
+        message: 'File uploads unavailable (multer not installed)',
+      });
   });
   router.post('/upload/chat-image', (_req, res) => {
-    res.status(503).json({ code: 'UPLOADS_DISABLED', message: 'File uploads unavailable (multer not installed)' });
+    res
+      .status(503)
+      .json({
+        code: 'UPLOADS_DISABLED',
+        message: 'File uploads unavailable (multer not installed)',
+      });
   });
 }
 

@@ -5,6 +5,7 @@ import { getUserDashboardData } from '../services/dashboard.service';
 import { blockUser, unblockUser, listBlockedUserIds } from '../services/block.service';
 import { exportUserData, deleteAccount } from '../services/userData.service';
 import { objectIdSchema } from '../utils/validators';
+import { UserModel } from '../models/User';
 
 export async function current(req: AuthRequest, res: Response) {
   const user = req.user;
@@ -22,13 +23,16 @@ export async function dashboard(req: AuthRequest, res: Response) {
 export async function block(req: AuthRequest, res: Response) {
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
-  const { blockedId } = z.object({ body: z.object({ blockedId: objectIdSchema }) }).parse({ body: req.body }).body;
+  const { blockedId } = z
+    .object({ body: z.object({ blockedId: objectIdSchema }) })
+    .parse({ body: req.body }).body;
   try {
     const out = await blockUser(userId, blockedId);
     res.status(201).json(out);
   } catch (err: unknown) {
     const e = err as { status?: number; code?: string; message?: string };
-    if (e.status === 400) return res.status(400).json({ code: e.code || 'INVALID', message: e.message });
+    if (e.status === 400)
+      return res.status(400).json({ code: e.code || 'INVALID', message: e.message });
     throw err;
   }
 }
@@ -36,7 +40,9 @@ export async function block(req: AuthRequest, res: Response) {
 export async function unblock(req: AuthRequest, res: Response) {
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
-  const { blockedId } = z.object({ blockedId: objectIdSchema }).parse({ blockedId: req.params.userId });
+  const { blockedId } = z
+    .object({ blockedId: objectIdSchema })
+    .parse({ blockedId: req.params.userId });
   const out = await unblockUser(userId, blockedId);
   res.json(out);
 }
@@ -63,4 +69,15 @@ export async function deleteMyAccount(req: AuthRequest, res: Response) {
   await deleteAccount(userId, req);
   res.clearCookie('refreshToken', { path: '/api/auth' });
   res.status(200).json({ deleted: true });
+}
+
+export async function updateAvatar(req: AuthRequest, res: Response) {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
+  const { avatarUrl } = z
+    .object({ body: z.object({ avatarUrl: z.string().url() }) })
+    .parse({ body: req.body }).body;
+  const user = await UserModel.findByIdAndUpdate(userId, { avatarUrl }, { new: true });
+  if (!user) return res.status(404).json({ code: 'NOT_FOUND', message: 'User not found' });
+  res.json({ avatarUrl: user.avatarUrl });
 }

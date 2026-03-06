@@ -16,7 +16,7 @@ export function AuditPage() {
       actorId: filters.actorId || undefined,
       action: filters.action || undefined,
       entityType: filters.entityType || undefined,
-      limit: 200
+      limit: 200,
     })
       .then(setRows)
       .catch((err) => {
@@ -69,9 +69,14 @@ export function AuditPage() {
         <div className="border-b border-gray-200 bg-gray-50 px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">
           Log entries
         </div>
-        {rows.length === 0 && <div className="py-10 text-center text-sm text-gray-500">No audit logs yet</div>}
+        {rows.length === 0 && (
+          <div className="py-10 text-center text-sm text-gray-500">No audit logs yet</div>
+        )}
         {rows.map((r) => (
-          <div key={r._id} className="flex items-center justify-between py-4 px-6 border-b border-gray-100 text-sm hover:bg-gray-50 transition-colors last:border-b-0">
+          <div
+            key={r._id}
+            className="flex items-center justify-between py-4 px-6 border-b border-gray-100 text-sm hover:bg-gray-50 transition-colors last:border-b-0"
+          >
             <div className="space-y-1">
               <div className="font-semibold text-black">{r.action}</div>
               <div className="text-xs text-gray-500">
@@ -82,7 +87,9 @@ export function AuditPage() {
               </div>
             </div>
             <div className="flex items-center gap-3 text-xs text-gray-500">
-              <span className="px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border bg-gray-100 text-gray-700 border-gray-200">Admin</span>
+              <span className="px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border bg-gray-100 text-gray-700 border-gray-200">
+                Admin
+              </span>
               <span>{formatDistanceToNow(new Date(r.createdAt), { addSuffix: true })}</span>
             </div>
           </div>

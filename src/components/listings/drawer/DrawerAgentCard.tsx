@@ -21,9 +21,7 @@ export const DrawerAgentCard = React.memo(function DrawerAgentCard({
       transition={{ delay: reduceMotion ? 0 : 0.3, duration: reduceMotion ? 0 : 0.2 }}
       className="space-y-3 rounded-2xl border border-[#E9E2D8] bg-gradient-to-br from-[#F7F2EA] to-[#FFFBF7] p-4"
     >
-      <h4 className="text-sm font-semibold text-slate-800 font-display tracking-wide">
-        Listed by
-      </h4>
+      <h4 className="text-sm font-semibold text-slate-800 font-display tracking-wide">Listed by</h4>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img

@@ -29,7 +29,10 @@ export function SessionTimeoutModal({ open, onStayLoggedIn, onLogOut }: SessionT
       <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl max-w-md w-full p-6 border border-zinc-200 dark:border-zinc-700">
         <div className="flex items-center gap-3 text-amber-600 dark:text-amber-400 mb-4">
           <Clock className="w-6 h-6 shrink-0" aria-hidden />
-          <h2 id="session-timeout-title" className="text-lg font-semibold text-zinc-900 dark:text-white">
+          <h2
+            id="session-timeout-title"
+            className="text-lg font-semibold text-zinc-900 dark:text-white"
+          >
             Still there?
           </h2>
         </div>

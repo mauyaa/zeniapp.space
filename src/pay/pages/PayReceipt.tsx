@@ -8,7 +8,10 @@ export function PayReceipt() {
 
   useEffect(() => {
     if (!id) return;
-    payApi.getReceipt(id).then(setReceipt).catch(() => setReceipt(null));
+    payApi
+      .getReceipt(id)
+      .then(setReceipt)
+      .catch(() => setReceipt(null));
   }, [id]);
 
   if (!receipt) {
@@ -25,7 +28,9 @@ export function PayReceipt() {
         <div className="flex items-center justify-between">
           <div>
             <div className="text-xs uppercase tracking-wide text-slate-400">Receipt</div>
-            <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{receipt.receiptNumber}</h1>
+            <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+              {receipt.receiptNumber}
+            </h1>
           </div>
           <button
             type="button"
@@ -59,7 +64,9 @@ function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm dark:border-slate-800 dark:bg-slate-950">
       <div className="text-xs uppercase tracking-wide text-slate-400">{label}</div>
-      <div className="mt-1 font-semibold text-slate-900 dark:text-slate-100 break-words">{value}</div>
+      <div className="mt-1 font-semibold text-slate-900 dark:text-slate-100 break-words">
+        {value}
+      </div>
     </div>
   );
 }

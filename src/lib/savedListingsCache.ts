@@ -47,7 +47,10 @@ export async function setCachedSavedListings(items: CachedListing[]): Promise<vo
       store.put({ ...item, savedAt: now });
     }
     return new Promise((resolve, reject) => {
-      tx.oncomplete = () => { db.close(); resolve(); };
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
+      };
       tx.onerror = () => reject(tx.error);
     });
   } catch {
@@ -60,12 +63,15 @@ export async function getCachedSavedListings(): Promise<CachedListing[]> {
     const db = await openDB();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readonly');
-    const req = tx.objectStore(STORE_NAME).getAll();
-    req.onsuccess = () => {
-      db.close();
-      resolve((req.result || []) as CachedListing[]);
-    };
-      req.onerror = () => { db.close(); reject(req.error); };
+      const req = tx.objectStore(STORE_NAME).getAll();
+      req.onsuccess = () => {
+        db.close();
+        resolve((req.result || []) as CachedListing[]);
+      };
+      req.onerror = () => {
+        db.close();
+        reject(req.error);
+      };
     });
   } catch {
     return [];
@@ -90,7 +96,7 @@ export async function cacheListingCard(item: {
     ...item,
     currency: item.currency || 'KES',
     location: { ...item.location, lat, lng },
-    savedAt: Date.now()
+    savedAt: Date.now(),
   };
   const rest = existing.filter((e) => e.id !== item.id);
   await setCachedSavedListings([entry, ...rest]);
@@ -128,15 +134,15 @@ export function cachedListingToProperty(c: CachedListing): {
       neighborhood: c.location?.neighborhood ?? '',
       city: c.location?.city ?? '',
       lat,
-      lng
+      lng,
     },
     features: {
       bedrooms: c.beds ?? 0,
       bathrooms: c.baths ?? 0,
-      sqm: 0
+      sqm: 0,
     },
     isVerified: false,
     imageUrl: c.imageUrl ?? '',
-    agent: { name: '', image: '' }
+    agent: { name: '', image: '' },
   };
 }

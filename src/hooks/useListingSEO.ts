@@ -29,14 +29,15 @@ export function useListingSEO(listing: ListingSEO | null) {
     if (!listing) return;
 
     const locationLabel =
-      [listing.location?.neighborhood, listing.location?.city].filter(Boolean).join(', ') || 'Kenya';
+      [listing.location?.neighborhood, listing.location?.city].filter(Boolean).join(', ') ||
+      'Kenya';
     const priceLabel = listing.purpose === 'buy' ? 'For sale' : 'For rent';
     const title = `${listing.title} — Zeni`;
     const description = `${priceLabel} · ${listing.currency} ${listing.price.toLocaleString()} · ${locationLabel}`;
     const imageUrl = listing.imageUrl?.trim() || undefined;
     const url = typeof window !== 'undefined' ? window.location.href : '';
 
-      document.title = 'Zeni — Where Kenya Lives';
+    document.title = 'Zeni — Where Kenya Lives';
 
     // Open Graph
     setOrCreate('meta[property="og:title"]', 'property=og:title', title);
@@ -89,5 +90,14 @@ export function useListingSEO(listing: ListingSEO | null) {
       document.getElementById('listing-jsonld')?.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listing?.id, listing?.title, listing?.price, listing?.currency, listing?.imageUrl, listing?.location?.city, listing?.location?.neighborhood, listing?.purpose]);
+  }, [
+    listing?.id,
+    listing?.title,
+    listing?.price,
+    listing?.currency,
+    listing?.imageUrl,
+    listing?.location?.city,
+    listing?.location?.neighborhood,
+    listing?.purpose,
+  ]);
 }

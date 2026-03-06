@@ -20,12 +20,7 @@ interface BottomNavProps {
   className?: string;
 }
 
-export function BottomNav({
-  tabs,
-  badges,
-  variant = 'dark',
-  className = '',
-}: BottomNavProps) {
+export function BottomNav({ tabs, badges, variant = 'dark', className = '' }: BottomNavProps) {
   const isDark = variant === 'dark';
   const reduceMotion = useReducedMotion();
 
@@ -33,13 +28,15 @@ export function BottomNav({
     <motion.nav
       initial={reduceMotion ? { y: 0, opacity: 1 } : { y: 100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ delay: reduceMotion ? 0 : 0.2, duration: reduceMotion ? 0 : 0.4, ease: [0.4, 0, 0.2, 1] }}
+      transition={{
+        delay: reduceMotion ? 0 : 0.2,
+        duration: reduceMotion ? 0 : 0.4,
+        ease: [0.4, 0, 0.2, 1],
+      }}
       className={clsx(
         'fixed inset-x-0 bottom-0 z-30 backdrop-blur-xl',
         'pb-[env(safe-area-inset-bottom)]',
-        isDark
-          ? 'border-t border-white/10 bg-black/95'
-          : 'border-t border-black/10 bg-white/95',
+        isDark ? 'border-t border-white/10 bg-black/95' : 'border-t border-black/10 bg-white/95',
         className
       )}
       role="navigation"
@@ -73,8 +70,8 @@ export function BottomNav({
                     ? 'text-green-400'
                     : 'text-orange-600'
                   : isDark
-                  ? 'text-white/60 active:bg-white/10'
-                  : 'text-black/60 active:bg-orange-500/10'
+                    ? 'text-white/60 active:bg-white/10'
+                    : 'text-black/60 active:bg-orange-500/10'
               )
             }
           >
@@ -106,7 +103,12 @@ export function BottomNav({
                 <motion.div
                   className="relative"
                   whileTap={reduceMotion ? undefined : { scale: 0.9 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 17, duration: reduceMotion ? 0 : undefined }}
+                  transition={{
+                    type: 'spring',
+                    stiffness: 400,
+                    damping: 17,
+                    duration: reduceMotion ? 0 : undefined,
+                  }}
                 >
                   <Icon
                     className={clsx(
@@ -202,12 +204,7 @@ interface TabBarProps {
   variant?: 'dark' | 'light';
 }
 
-export function TabBar({
-  tabs,
-  activeTab,
-  onTabChange,
-  variant = 'light',
-}: TabBarProps) {
+export function TabBar({ tabs, activeTab, onTabChange, variant = 'light' }: TabBarProps) {
   const isDark = variant === 'dark';
   const reduceMotion = useReducedMotion();
 
@@ -236,8 +233,8 @@ export function TabBar({
                   ? 'text-white'
                   : 'text-black'
                 : isDark
-                ? 'text-white/70 hover:text-white'
-                : 'text-black/60 hover:text-black'
+                  ? 'text-white/70 hover:text-white'
+                  : 'text-black/60 hover:text-black'
             )}
           >
             {isActive && (

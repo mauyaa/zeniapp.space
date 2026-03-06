@@ -1,5 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Search, MapPin, SlidersHorizontal, X, Clock, TrendingUp, Home, Building2, Warehouse, Navigation } from 'lucide-react';
+import {
+  Search,
+  MapPin,
+  SlidersHorizontal,
+  X,
+  Clock,
+  TrendingUp,
+  Home,
+  Building2,
+  Warehouse,
+  Navigation,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import Fuse from 'fuse.js';
@@ -30,13 +41,13 @@ const POPULAR_LOCATIONS = [
   'Runda, Kenya',
   'Parklands, Kenya',
   'Upper Hill, Kenya',
-  'CBD, Kenya'
+  'CBD, Kenya',
 ];
 
 const PROPERTY_TYPES = [
   { id: 'apartment', label: 'Apartment', icon: Building2 },
   { id: 'house', label: 'House', icon: Home },
-  { id: 'studio', label: 'Studio', icon: Warehouse }
+  { id: 'studio', label: 'Studio', icon: Warehouse },
 ];
 
 // KES-stepped price presets matching Kenya rental/buy reality
@@ -46,7 +57,7 @@ const PRICE_PRESETS = [
   { label: '50K–80K', min: 50000, max: 80000 },
   { label: '80K–120K', min: 80000, max: 120000 },
   { label: '120K–200K', min: 120000, max: 200000 },
-  { label: '200K+', min: 200000, max: undefined }
+  { label: '200K+', min: 200000, max: undefined },
 ];
 
 const COMMUTE_HUBS = [
@@ -55,12 +66,17 @@ const COMMUTE_HUBS = [
   'Near Upper Hill',
   'Near Gigiri (UN)',
   'Near Strathmore University',
-  'Near Aga Khan Hospital'
+  'Near Aga Khan Hospital',
 ];
 
 const MAX_RECENT_SEARCHES = 5;
 
-export function SearchBar({ onSearch, onFilter, placeholder = 'Search location, neighborhood...', initialFilters }: SearchBarProps) {
+export function SearchBar({
+  onSearch,
+  onFilter,
+  placeholder = 'Search location, neighborhood...',
+  initialFilters,
+}: SearchBarProps) {
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -90,7 +106,7 @@ export function SearchBar({ onSearch, onFilter, placeholder = 'Search location, 
   // Save recent search
   const saveRecentSearch = useCallback((term: string) => {
     if (!term.trim()) return;
-    
+
     setRecentSearches((prev) => {
       const filtered = prev.filter((s) => s.toLowerCase() !== term.toLowerCase());
       const updated = [term, ...filtered].slice(0, MAX_RECENT_SEARCHES);
@@ -106,23 +122,29 @@ export function SearchBar({ onSearch, onFilter, placeholder = 'Search location, 
   }, []);
 
   // Handle search submission
-  const handleSearch = useCallback((term: string) => {
-    saveRecentSearch(term);
-    onSearch(term);
-    setIsFocused(false);
-    inputRef.current?.blur();
-  }, [onSearch, saveRecentSearch]);
-
-  // Handle key events
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && query.trim()) {
-      handleSearch(query);
-    }
-    if (e.key === 'Escape') {
+  const handleSearch = useCallback(
+    (term: string) => {
+      saveRecentSearch(term);
+      onSearch(term);
       setIsFocused(false);
       inputRef.current?.blur();
-    }
-  }, [query, handleSearch]);
+    },
+    [onSearch, saveRecentSearch]
+  );
+
+  // Handle key events
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' && query.trim()) {
+        handleSearch(query);
+      }
+      if (e.key === 'Escape') {
+        setIsFocused(false);
+        inputRef.current?.blur();
+      }
+    },
+    [query, handleSearch]
+  );
 
   // Fuzzy-matched suggestions (typo-tolerant)
   const filteredSuggestions = useMemo(() => {
@@ -158,8 +180,8 @@ export function SearchBar({ onSearch, onFilter, placeholder = 'Search location, 
       <div
         className={clsx(
           'relative flex items-center bg-white rounded-2xl shadow-lg border-2 transition-all duration-200',
-          isFocused 
-            ? 'border-emerald-500 ring-4 ring-emerald-100' 
+          isFocused
+            ? 'border-emerald-500 ring-4 ring-emerald-100'
             : 'border-transparent hover:border-slate-200'
         )}
       >
@@ -276,7 +298,11 @@ export function SearchBar({ onSearch, onFilter, placeholder = 'Search location, 
             {/* Search Results or Popular Locations */}
             <div className="p-3">
               <div className="flex items-center gap-2 px-1 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                {query ? <MapPin className="w-3.5 h-3.5" /> : <TrendingUp className="w-3.5 h-3.5" />}
+                {query ? (
+                  <MapPin className="w-3.5 h-3.5" />
+                ) : (
+                  <TrendingUp className="w-3.5 h-3.5" />
+                )}
                 {query ? 'Suggestions' : 'Popular Locations'}
               </div>
               {(query ? filteredSuggestions : POPULAR_LOCATIONS.slice(0, 5)).map((suggestion) => {
@@ -291,8 +317,19 @@ export function SearchBar({ onSearch, onFilter, placeholder = 'Search location, 
                     className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-emerald-50 rounded-xl transition-colors group"
                     role="option"
                   >
-                    <div className={clsx('p-1.5 rounded-lg transition-colors', isCommute ? 'bg-sky-100 text-sky-600 group-hover:bg-sky-200' : 'bg-slate-100 group-hover:bg-emerald-100 group-hover:text-emerald-600')}>
-                      {isCommute ? <Navigation className="w-4 h-4" /> : <MapPin className="w-4 h-4" />}
+                    <div
+                      className={clsx(
+                        'p-1.5 rounded-lg transition-colors',
+                        isCommute
+                          ? 'bg-sky-100 text-sky-600 group-hover:bg-sky-200'
+                          : 'bg-slate-100 group-hover:bg-emerald-100 group-hover:text-emerald-600'
+                      )}
+                    >
+                      {isCommute ? (
+                        <Navigation className="w-4 h-4" />
+                      ) : (
+                        <MapPin className="w-4 h-4" />
+                      )}
                     </div>
                     <div className="min-w-0">
                       <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium">
@@ -340,7 +377,12 @@ export function SearchBar({ onSearch, onFilter, placeholder = 'Search location, 
                 {PROPERTY_TYPES.map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
-                    onClick={() => setFilters((f) => ({ ...f, propertyType: f.propertyType === id ? undefined : id }))}
+                    onClick={() =>
+                      setFilters((f) => ({
+                        ...f,
+                        propertyType: f.propertyType === id ? undefined : id,
+                      }))
+                    }
                     className={clsx(
                       'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all',
                       filters.propertyType === id
@@ -364,11 +406,13 @@ export function SearchBar({ onSearch, onFilter, placeholder = 'Search location, 
                 {PRICE_PRESETS.map(({ label, min, max }) => (
                   <button
                     key={label}
-                    onClick={() => setFilters((f) => ({
-                      ...f,
-                      priceMin: f.priceMin === min ? undefined : min,
-                      priceMax: f.priceMax === max ? undefined : max
-                    }))}
+                    onClick={() =>
+                      setFilters((f) => ({
+                        ...f,
+                        priceMin: f.priceMin === min ? undefined : min,
+                        priceMax: f.priceMax === max ? undefined : max,
+                      }))
+                    }
                     className={clsx(
                       'px-3 py-2 rounded-lg border text-sm font-medium transition-all',
                       filters.priceMin === min
@@ -391,10 +435,12 @@ export function SearchBar({ onSearch, onFilter, placeholder = 'Search location, 
                 {[1, 2, 3, 4, '5+'].map((num) => (
                   <button
                     key={num}
-                    onClick={() => setFilters((f) => ({
-                      ...f,
-                      beds: f.beds === num ? undefined : Number(num) || 5
-                    }))}
+                    onClick={() =>
+                      setFilters((f) => ({
+                        ...f,
+                        beds: f.beds === num ? undefined : Number(num) || 5,
+                      }))
+                    }
                     className={clsx(
                       'w-12 h-10 rounded-lg border text-sm font-semibold transition-all',
                       filters.beds === (Number(num) || 5)

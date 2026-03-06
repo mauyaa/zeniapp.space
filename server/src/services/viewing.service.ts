@@ -3,10 +3,7 @@ import mongoose from 'mongoose';
 import { ListingModel } from '../models/Listing';
 import { ViewingRequestModel } from '../models/ViewingRequest';
 import { getIO } from '../socket';
-import {
-  VIEWING_LEAD_TIME_HOURS,
-  VIEWING_MAX_PER_AGENT_PER_DAY
-} from '../utils/constants';
+import { VIEWING_LEAD_TIME_HOURS, VIEWING_MAX_PER_AGENT_PER_DAY } from '../utils/constants';
 import type { ViewingStatus } from '../models/ViewingRequest';
 import { env } from '../config/env';
 import { createNotification } from './notification.service';
@@ -32,7 +29,10 @@ export async function createViewing(payload: CreatePayload) {
     : '';
   if (!listingAgentId) throw Object.assign(new Error('Listing agent not found'), { status: 400 });
   if (agentId && String(agentId) !== listingAgentId) {
-    throw Object.assign(new Error('Agent does not match listing owner'), { status: 400, code: 'AGENT_MISMATCH' });
+    throw Object.assign(new Error('Agent does not match listing owner'), {
+      status: 400,
+      code: 'AGENT_MISMATCH',
+    });
   }
   const now = new Date();
   const leadTimeMs = VIEWING_LEAD_TIME_HOURS * 60 * 60 * 1000;
@@ -48,7 +48,7 @@ export async function createViewing(payload: CreatePayload) {
   const confirmedThatDay = await ViewingRequestModel.countDocuments({
     agentId: listingAgentId,
     date: { $gte: dayStart, $lt: dayEnd },
-    status: 'confirmed'
+    status: 'confirmed',
   });
   if (confirmedThatDay >= VIEWING_MAX_PER_AGENT_PER_DAY) {
     throw Object.assign(
@@ -67,7 +67,7 @@ export async function createViewing(payload: CreatePayload) {
     status: 'requested',
     timezone: timezone || 'Africa/Nairobi',
     viewingFeeAmount: viewingFeeAmount > 0 ? viewingFeeAmount : undefined,
-    viewingFeeStatus: viewingFeeAmount > 0 ? 'pending_payment' : undefined
+    viewingFeeStatus: viewingFeeAmount > 0 ? 'pending_payment' : undefined,
   });
   const io = getIO();
   if (io) {
@@ -77,12 +77,12 @@ export async function createViewing(payload: CreatePayload) {
   await createNotification(listingAgentId, {
     title: 'New viewing request',
     description: note ? note.slice(0, 80) : 'A user requested a viewing',
-    type: 'viewing'
+    type: 'viewing',
   });
   const out = doc.toObject ? doc.toObject() : doc;
   return Object.assign(out, {
     needsViewingFee: viewingFeeAmount > 0,
-    viewingFeeAmount: viewingFeeAmount > 0 ? viewingFeeAmount : undefined
+    viewingFeeAmount: viewingFeeAmount > 0 ? viewingFeeAmount : undefined,
   });
 }
 
@@ -112,7 +112,7 @@ export async function updateViewingStatus(
   if (!allowed.includes(status)) {
     throw Object.assign(new Error(`Cannot transition from ${doc.status} to ${status}`), {
       status: 409,
-      code: 'INVALID_STATUS_TRANSITION'
+      code: 'INVALID_STATUS_TRANSITION',
     });
   }
   const updated = await ViewingRequestModel.findOneAndUpdate(
@@ -131,7 +131,7 @@ export async function updateViewingStatus(
       status === 'completed'
         ? 'The agent marked the viewing as complete. Confirm to release your viewing fee to the agent.'
         : message || reason || `Status: ${status}`,
-    type: 'viewing'
+    type: 'viewing',
   });
   return updated;
 }
@@ -141,10 +141,16 @@ export async function confirmViewingCompletedByTenant(viewingId: string, userId:
   const doc = await ViewingRequestModel.findOne({ _id: viewingId, userId });
   if (!doc) throw Object.assign(new Error('Viewing not found'), { status: 404 });
   if (doc.status !== 'completed') {
-    throw Object.assign(new Error('Only completed viewings can be confirmed'), { status: 409, code: 'INVALID_STATUS' });
+    throw Object.assign(new Error('Only completed viewings can be confirmed'), {
+      status: 409,
+      code: 'INVALID_STATUS',
+    });
   }
   if (doc.viewingFeeStatus !== 'held') {
-    throw Object.assign(new Error('No viewing fee held to release'), { status: 409, code: 'NO_FEE_HELD' });
+    throw Object.assign(new Error('No viewing fee held to release'), {
+      status: 409,
+      code: 'NO_FEE_HELD',
+    });
   }
   const updated = await ViewingRequestModel.findByIdAndUpdate(
     viewingId,
@@ -158,7 +164,7 @@ export async function confirmViewingCompletedByTenant(viewingId: string, userId:
   await createNotification(String(doc.agentId), {
     title: 'Viewing fee released',
     description: 'Tenant confirmed the viewing. The viewing fee has been released to you.',
-    type: 'viewing'
+    type: 'viewing',
   });
   return updated;
 }
@@ -170,7 +176,7 @@ export async function cancelViewingByUser(id: string, userId: string) {
   if (doc.status !== 'requested' && doc.status !== 'confirmed') {
     throw Object.assign(new Error(`Cannot cancel viewing in status ${doc.status}`), {
       status: 409,
-      code: 'INVALID_STATUS'
+      code: 'INVALID_STATUS',
     });
   }
   const updated = await ViewingRequestModel.findOneAndUpdate(
@@ -181,12 +187,15 @@ export async function cancelViewingByUser(id: string, userId: string) {
   if (!updated) throw Object.assign(new Error('Viewing not found'), { status: 404 });
   const io = getIO();
   if (io) {
-    io.to(`user:${String(doc.agentId)}`).emit('viewing:update', { id: updated.id, status: 'canceled' });
+    io.to(`user:${String(doc.agentId)}`).emit('viewing:update', {
+      id: updated.id,
+      status: 'canceled',
+    });
   }
   await createNotification(String(doc.agentId), {
     title: 'Viewing canceled',
     description: 'A viewing was canceled by the user',
-    type: 'viewing'
+    type: 'viewing',
   });
   return updated;
 }
@@ -204,7 +213,8 @@ export async function generateViewingIcs(viewingId: string, agentId: string) {
   const end = new Date(start.getTime() + 60 * 60 * 1000); // default 1h
   const title = listing?.title || 'Property viewing';
   const location = listing?.location?.address || listing?.location?.city || 'To be confirmed';
-  const description = doc.agentMessage || doc.agentReason || doc.note || 'Viewing scheduled via ZENI';
+  const description =
+    doc.agentMessage || doc.agentReason || doc.note || 'Viewing scheduled via ZENI';
 
   const lines = [
     'BEGIN:VCALENDAR',
@@ -221,12 +231,12 @@ export async function generateViewingIcs(viewingId: string, agentId: string) {
     `DESCRIPTION:${description}`,
     `LOCATION:${location}`,
     'END:VEVENT',
-    'END:VCALENDAR'
+    'END:VCALENDAR',
   ];
 
   return {
     filename: `viewing-${doc.id}.ics`,
-    content: lines.join('\r\n')
+    content: lines.join('\r\n'),
   };
 }
 export async function getViewingForUser(id: string, userId: string) {

@@ -29,7 +29,10 @@ export function createViewingRequest(body: {
   altDates?: string[];
   note?: string;
 }) {
-  return request<CreateViewingResponse>('/viewings', { method: 'POST', body: JSON.stringify(body) });
+  return request<CreateViewingResponse>('/viewings', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
 }
 
 export function fetchMyViewings(options?: { signal?: AbortSignal }) {
@@ -121,7 +124,9 @@ export function fetchVerificationHistory(): Promise<{
   return request('/agent/verification/evidence');
 }
 
-export function updateEarbNumber(earbRegistrationNumber: string): Promise<{ earbRegistrationNumber?: string; earbVerifiedAt?: string }> {
+export function updateEarbNumber(
+  earbRegistrationNumber: string
+): Promise<{ earbRegistrationNumber?: string; earbVerifiedAt?: string }> {
   return request('/agent/verification/earb', {
     method: 'PATCH',
     body: JSON.stringify({ earbRegistrationNumber }),

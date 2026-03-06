@@ -7,9 +7,7 @@ import crypto from 'crypto';
 import { env } from '../config/env';
 
 export function isCloudinaryConfigured(): boolean {
-  return Boolean(
-    env.cloudinary.cloudName && env.cloudinary.apiKey && env.cloudinary.apiSecret
-  );
+  return Boolean(env.cloudinary.cloudName && env.cloudinary.apiKey && env.cloudinary.apiSecret);
 }
 
 function sign(params: Record<string, string>, secret: string): string {
@@ -33,7 +31,7 @@ export async function uploadImage(
   const timestamp = String(Math.floor(Date.now() / 1000));
   const params: Record<string, string> = {
     timestamp,
-    folder: 'zeni-listings'
+    folder: 'zeni-listings',
   };
   const signature = sign(params, apiSecret);
   const base64 = buffer.toString('base64');
@@ -44,13 +42,13 @@ export async function uploadImage(
     api_key: apiKey,
     timestamp,
     signature,
-    folder: 'zeni-listings'
+    folder: 'zeni-listings',
   });
 
   const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: body.toString()
+    body: body.toString(),
   });
   if (!res.ok) {
     const text = await res.text();

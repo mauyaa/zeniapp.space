@@ -11,7 +11,7 @@ function homeFor(role: Role) {
 export function RequireRole({
   roles,
   redirectToRole = false,
-  children
+  children,
 }: {
   roles: Role[];
   redirectToRole?: boolean;

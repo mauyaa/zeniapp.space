@@ -12,14 +12,21 @@ export function Footer() {
               Ready to find a home in Kenya?
             </h2>
             <p className="mt-2 text-sm text-[rgb(var(--muted))] max-w-xl">
-              ZENI is a Kenyan real estate management system. Explore verified listings around Kenya and connect with trusted agents.
+              ZENI is a Kenyan real estate management system. Explore verified listings around Kenya
+              and connect with trusted agents.
             </p>
           </div>
           <div className="flex flex-wrap gap-4 text-sm">
-            <Link to="/app/explore" className="text-[rgb(var(--accent))] underline underline-offset-4">
+            <Link
+              to="/app/explore"
+              className="text-[rgb(var(--accent))] underline underline-offset-4"
+            >
               Explore map
             </Link>
-            <Link to="/login" className="text-[rgb(var(--muted))] underline underline-offset-4 hover:text-[rgb(var(--text))]">
+            <Link
+              to="/login"
+              className="text-[rgb(var(--muted))] underline underline-offset-4 hover:text-[rgb(var(--text))]"
+            >
               Sign in
             </Link>
           </div>
@@ -28,7 +35,9 @@ export function Footer() {
 
       <footer className="border-t border-[rgb(var(--border))] pt-8">
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between text-sm text-[rgb(var(--muted))]">
-          <div className="text-xs uppercase tracking-[0.3em] text-[rgb(var(--muted))]">ZENI · Kenyan Real Estate</div>
+          <div className="text-xs uppercase tracking-[0.3em] text-[rgb(var(--muted))]">
+            ZENI · Kenyan Real Estate
+          </div>
           <div className="flex flex-wrap gap-6">
             <Link to="/login" className="hover:text-[rgb(var(--accent))]">
               Sign in

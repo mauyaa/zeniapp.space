@@ -4,7 +4,7 @@ const KENYA_BOUNDS = {
   minLat: -5.2,
   maxLat: 5.2,
   minLng: 33.8,
-  maxLng: 42.4
+  maxLng: 42.4,
 };
 
 const DEFAULT_CENTER: [number, number] = [-1.2921, 36.8219]; // Kenya CBD

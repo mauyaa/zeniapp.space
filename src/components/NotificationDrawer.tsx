@@ -94,7 +94,11 @@ export function NotificationDrawer({ open, onClose }: { open: boolean; onClose: 
                 </button>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto custom-scroll" role="list" aria-label="Notification list">
+            <div
+              className="flex-1 overflow-y-auto custom-scroll"
+              role="list"
+              aria-label="Notification list"
+            >
               {loading ? (
                 <div className="divide-y" role="status" aria-label="Loading notifications">
                   {Array.from({ length: 4 }).map((_, idx) => (
@@ -113,7 +117,9 @@ export function NotificationDrawer({ open, onClose }: { open: boolean; onClose: 
                   <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
                     <Bell className="h-5 w-5 text-slate-400" aria-hidden="true" />
                   </div>
-                  <div className="mb-1 text-sm font-semibold text-slate-700">You're all caught up</div>
+                  <div className="mb-1 text-sm font-semibold text-slate-700">
+                    You're all caught up
+                  </div>
                   <p className="text-xs text-slate-500">Nothing to review right now.</p>
                 </div>
               ) : (
@@ -131,9 +137,13 @@ export function NotificationDrawer({ open, onClose }: { open: boolean; onClose: 
                       />
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-semibold text-slate-900">{n.title}</div>
-                        {n.description && <div className="text-xs text-slate-600 mt-0.5">{n.description}</div>}
+                        {n.description && (
+                          <div className="text-xs text-slate-600 mt-0.5">{n.description}</div>
+                        )}
                         <div className="text-[10px] uppercase tracking-widest text-slate-500 mt-1">
-                          <time dateTime={n.createdAt}>{new Date(n.createdAt).toLocaleString()}</time>
+                          <time dateTime={n.createdAt}>
+                            {new Date(n.createdAt).toLocaleString()}
+                          </time>
                         </div>
                       </div>
                       {!n.read && (

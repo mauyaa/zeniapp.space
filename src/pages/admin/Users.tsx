@@ -2,7 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Button } from '../../components/ui/Button';
-import { fetchUsers, updateUserStatus, deleteUserAccount, fetchPayAccounts, setPayAccountStatus } from '../../lib/api';
+import {
+  fetchUsers,
+  updateUserStatus,
+  deleteUserAccount,
+  fetchPayAccounts,
+  setPayAccountStatus,
+} from '../../lib/api';
 import type { AdminUser, PayAccount } from '../../types/api';
 import { getSocket } from '../../lib/socket';
 import { useAuth } from '../../context/AuthProvider';
@@ -39,7 +45,11 @@ export function UsersPage() {
         setPayAccounts(map);
       })
       .catch((err) => {
-        logger.error('Failed to load users or pay accounts', {}, err instanceof Error ? err : undefined);
+        logger.error(
+          'Failed to load users or pay accounts',
+          {},
+          err instanceof Error ? err : undefined
+        );
         push({ title: 'Load failed', description: errors.generic, tone: 'error' });
       })
       .finally(() => setLoading(false));
@@ -68,7 +78,9 @@ export function UsersPage() {
     if (statusFilter !== 'all') result = result.filter((r) => r.status === statusFilter);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      result = result.filter((r) => r.name?.toLowerCase().includes(q) || r._id.toLowerCase().includes(q));
+      result = result.filter(
+        (r) => r.name?.toLowerCase().includes(q) || r._id.toLowerCase().includes(q)
+      );
     }
     return result;
   }, [rows, roleFilter, statusFilter, searchQuery]);
@@ -84,7 +96,11 @@ export function UsersPage() {
       const updated = await runWithStepUp(() => updateUserStatus(userId, status));
       setRows((prev) => prev.map((u) => (u._id === userId ? { ...u, status: updated.status } : u)));
     } catch (err) {
-      logger.error('Update user status failed', { userId, status }, err instanceof Error ? err : undefined);
+      logger.error(
+        'Update user status failed',
+        { userId, status },
+        err instanceof Error ? err : undefined
+      );
       push({ title: 'Update failed', description: errors.generic, tone: 'error' });
     } finally {
       setActioning(null);
@@ -97,7 +113,11 @@ export function UsersPage() {
       const updated = await runWithStepUp(() => setPayAccountStatus(userId, status));
       setPayAccounts((prev) => ({ ...prev, [userId]: updated }));
     } catch (err) {
-      logger.error('Update pay account status failed', { userId, status }, err instanceof Error ? err : undefined);
+      logger.error(
+        'Update pay account status failed',
+        { userId, status },
+        err instanceof Error ? err : undefined
+      );
       push({ title: 'Update failed', description: errors.generic, tone: 'error' });
     } finally {
       setActioning(null);
@@ -118,11 +138,8 @@ export function UsersPage() {
     }
   };
 
-  const renderUserRow = (r: AdminUser, idx: number) => (
-    <tr
-      key={r._id}
-      className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
-    >
+  const renderUserRow = (r: AdminUser) => (
+    <tr key={r._id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
       <td className="py-3 px-4">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-sm bg-gray-200 text-gray-600 text-[10px] font-bold uppercase flex-shrink-0">
@@ -135,29 +152,73 @@ export function UsersPage() {
         </div>
       </td>
       <td className="py-3 px-4">
-        <span className={cn('inline-block px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border', r.role === 'agent' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200')}>{r.role}</span>
+        <span
+          className={cn(
+            'inline-block px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border',
+            r.role === 'agent'
+              ? 'bg-amber-50 text-amber-700 border-amber-200'
+              : 'bg-blue-50 text-blue-700 border-blue-200'
+          )}
+        >
+          {r.role}
+        </span>
       </td>
       <td className="py-3 px-4">
-        <span className={cn('inline-block px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border', r.status === 'active' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200')}>{r.status}</span>
+        <span
+          className={cn(
+            'inline-block px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border',
+            r.status === 'active'
+              ? 'bg-green-50 text-green-700 border-green-200'
+              : 'bg-red-50 text-red-700 border-red-200'
+          )}
+        >
+          {r.status}
+        </span>
       </td>
       {r.role === 'agent' && (
         <td className="py-3 px-4">
-          <span className={cn('inline-block px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border', r.agentVerification === 'verified' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200')}>{r.agentVerification}</span>
+          <span
+            className={cn(
+              'inline-block px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border',
+              r.agentVerification === 'verified'
+                ? 'bg-green-50 text-green-700 border-green-200'
+                : 'bg-amber-50 text-amber-700 border-amber-200'
+            )}
+          >
+            {r.agentVerification}
+          </span>
         </td>
       )}
       <td className="py-3 px-4">
-        <span className={cn('inline-block px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border', (payAccounts[r._id]?.status || 'active') === 'active' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200')}>
+        <span
+          className={cn(
+            'inline-block px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase border',
+            (payAccounts[r._id]?.status || 'active') === 'active'
+              ? 'bg-green-50 text-green-700 border-green-200'
+              : 'bg-amber-50 text-amber-700 border-amber-200'
+          )}
+        >
           {payAccounts[r._id]?.status || 'active'}
         </span>
       </td>
       <td className="py-3 px-4 text-right">
         <div className="flex flex-wrap justify-end gap-1.5" role="group" aria-label="Row actions">
           {r.status === 'active' ? (
-            <Button size="sm" variant="outline" loading={actioning === r._id} onClick={() => handleStatus(r._id, 'suspended')}>
+            <Button
+              size="sm"
+              variant="outline"
+              loading={actioning === r._id}
+              onClick={() => handleStatus(r._id, 'suspended')}
+            >
               Suspend
             </Button>
           ) : (
-            <Button size="sm" variant="secondary" loading={actioning === r._id} onClick={() => handleStatus(r._id, 'active')}>
+            <Button
+              size="sm"
+              variant="secondary"
+              loading={actioning === r._id}
+              onClick={() => handleStatus(r._id, 'active')}
+            >
               Reactivate
             </Button>
           )}
@@ -165,11 +226,22 @@ export function UsersPage() {
             size="sm"
             variant="ghost"
             loading={actioning === r._id}
-            onClick={() => handlePayStatus(r._id, (payAccounts[r._id]?.status || 'active') === 'active' ? 'suspended' : 'active')}
+            onClick={() =>
+              handlePayStatus(
+                r._id,
+                (payAccounts[r._id]?.status || 'active') === 'active' ? 'suspended' : 'active'
+              )
+            }
           >
             {(payAccounts[r._id]?.status || 'active') === 'active' ? 'Suspend Pay' : 'Enable Pay'}
           </Button>
-          <Button size="sm" variant="danger" loading={actioning === r._id} onClick={() => handleDelete(r._id)} aria-label={`Delete ${r.name}`}>
+          <Button
+            size="sm"
+            variant="danger"
+            loading={actioning === r._id}
+            onClick={() => handleDelete(r._id)}
+            aria-label={`Delete ${r.name}`}
+          >
             Delete
           </Button>
         </div>
@@ -182,7 +254,9 @@ export function UsersPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-serif text-black mb-2">User Base</h1>
-          <p className="text-sm text-gray-500">Manage buyers and agents with controlled status and payout access.</p>
+          <p className="text-sm text-gray-500">
+            Manage buyers and agents with controlled status and payout access.
+          </p>
         </div>
       </div>
 
@@ -231,7 +305,8 @@ export function UsersPage() {
           ))}
         </div>
         <span className="text-xs text-gray-500 ml-auto">
-          Showing {filteredRows.length} of {rows.length} · Users: {userCount} · Agents: {agentCount} · Active: {activeCount} · Suspended: {suspendedCount}
+          Showing {filteredRows.length} of {rows.length} · Users: {userCount} · Agents: {agentCount}{' '}
+          · Active: {activeCount} · Suspended: {suspendedCount}
         </span>
       </div>
 
@@ -239,7 +314,10 @@ export function UsersPage() {
         <div className="rounded-sm border border-gray-200 bg-white shadow-sm overflow-hidden">
           <div className="space-y-0">
             {Array.from({ length: 5 }).map((_, idx) => (
-              <div key={`user-skeleton-${idx}`} className="flex items-center justify-between border-b border-gray-100 py-4 px-6">
+              <div
+                key={`user-skeleton-${idx}`}
+                className="flex items-center justify-between border-b border-gray-100 py-4 px-6"
+              >
                 <div className="flex items-center gap-2">
                   <div className="h-8 w-8 rounded-sm bg-gray-200 animate-pulse" />
                   <div className="h-4 w-32 rounded bg-gray-200 animate-pulse" />
@@ -256,8 +334,23 @@ export function UsersPage() {
           <EmptyState
             variant="light"
             title={searchQuery ? 'No matching users' : 'No users found'}
-            subtitle={searchQuery ? 'Try adjusting your search or filters.' : 'New users will appear here as they sign up.'}
-            action={searchQuery ? { label: 'Clear search', onClick: () => { setSearchQuery(''); setRoleFilter('all'); setStatusFilter('all'); } } : { label: 'Refresh', onClick: load }}
+            subtitle={
+              searchQuery
+                ? 'Try adjusting your search or filters.'
+                : 'New users will appear here as they sign up.'
+            }
+            action={
+              searchQuery
+                ? {
+                    label: 'Clear search',
+                    onClick: () => {
+                      setSearchQuery('');
+                      setRoleFilter('all');
+                      setStatusFilter('all');
+                    },
+                  }
+                : { label: 'Refresh', onClick: load }
+            }
           />
         </div>
       ) : (
@@ -276,9 +369,7 @@ export function UsersPage() {
                   <th className="py-3 px-4 text-right font-semibold">Actions</th>
                 </tr>
               </thead>
-              <tbody>
-                {filteredRows.map((r, idx) => renderUserRow(r, idx))}
-              </tbody>
+              <tbody>{filteredRows.map((r) => renderUserRow(r))}</tbody>
             </table>
           </div>
         </div>

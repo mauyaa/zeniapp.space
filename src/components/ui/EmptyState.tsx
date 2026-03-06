@@ -1,10 +1,10 @@
 import React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { 
-  MessageSquare, 
-  Search, 
-  Home, 
-  Bookmark, 
+import {
+  MessageSquare,
+  Search,
+  Home,
+  Bookmark,
   Calendar,
   FileX,
   Inbox,
@@ -12,7 +12,7 @@ import {
   Heart,
   Bell,
   Users,
-  type LucideIcon
+  type LucideIcon,
 } from 'lucide-react';
 
 /**
@@ -65,11 +65,10 @@ export function EmptyState({
 }: EmptyStateProps) {
   const isDark = variant === 'dark';
   const reduceMotion = useReducedMotion();
-  
+
   // Get the icon component
-  const IconComponent = typeof illustration === 'string' 
-    ? illustrations[illustration] || Inbox
-    : illustration;
+  const IconComponent =
+    typeof illustration === 'string' ? illustrations[illustration] || Inbox : illustration;
 
   // Size configurations
   const sizeConfig = {
@@ -118,7 +117,11 @@ export function EmptyState({
       <motion.div
         initial={reduceMotion ? { scale: 1, opacity: 1 } : { scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: reduceMotion ? 0 : 0.1, duration: reduceMotion ? 0 : 0.4, ease: [0.4, 0, 0.2, 1] }}
+        transition={{
+          delay: reduceMotion ? 0 : 0.1,
+          duration: reduceMotion ? 0 : 0.4,
+          ease: [0.4, 0, 0.2, 1],
+        }}
         className={`relative flex items-center justify-center rounded-full ${config.iconBg} ${
           isDark
             ? 'bg-gradient-to-br from-slate-800 to-slate-900'
@@ -131,7 +134,7 @@ export function EmptyState({
             isDark ? 'border-emerald-500/20' : 'border-amber-300/60'
           }`}
         />
-        
+
         {/* Animated dots */}
         <motion.div
           className={`absolute -right-1 -top-1 h-3 w-3 rounded-full ${
@@ -143,9 +146,7 @@ export function EmptyState({
               : { scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }
           }
           transition={
-            reduceMotion
-              ? { duration: 0 }
-              : { duration: 2, repeat: Infinity, ease: 'easeInOut' }
+            reduceMotion ? { duration: 0 } : { duration: 2, repeat: Infinity, ease: 'easeInOut' }
           }
         />
         <motion.div
@@ -165,9 +166,7 @@ export function EmptyState({
         />
 
         <IconComponent
-          className={`${config.icon} ${
-            isDark ? 'text-slate-500' : 'text-amber-400'
-          }`}
+          className={`${config.icon} ${isDark ? 'text-slate-500' : 'text-amber-400'}`}
           strokeWidth={1.5}
         />
       </motion.div>
@@ -187,9 +186,7 @@ export function EmptyState({
           {title}
         </h3>
         <p
-          className={`${config.subtitle} max-w-xs ${
-            isDark ? 'text-slate-400' : 'text-slate-500'
-          }`}
+          className={`${config.subtitle} max-w-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
         >
           {subtitle}
         </p>
@@ -289,11 +286,7 @@ interface FullPageEmptyProps extends EmptyStateProps {
   onBack?: () => void;
 }
 
-export function FullPageEmpty({
-  showBackButton,
-  onBack,
-  ...props
-}: FullPageEmptyProps) {
+export function FullPageEmpty({ showBackButton, onBack, ...props }: FullPageEmptyProps) {
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center p-6">
       {showBackButton && onBack && (

@@ -46,8 +46,8 @@ export function getListingContentKey(item: {
  * Deduplicate listings by content (title, price, neighborhood, city).
  * Use after dedupeById so the same property is not shown multiple times when the API returns duplicate rows with different ids.
  */
-export function dedupeListingsByContent<T extends { title?: string; price?: number; location?: { neighborhood?: string; city?: string } }>(
-  items: T[]
-): T[] {
+export function dedupeListingsByContent<
+  T extends { title?: string; price?: number; location?: { neighborhood?: string; city?: string } },
+>(items: T[]): T[] {
   return dedupeByKey(items, getListingContentKey);
 }

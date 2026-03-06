@@ -4,8 +4,18 @@
 
 import { request } from './client';
 
+export type NotificationDto = {
+  _id?: string;
+  id?: string;
+  title?: string;
+  description?: string;
+  createdAt?: string;
+  read?: boolean;
+  type?: string;
+};
+
 export function listNotifications(limit = 50) {
-  return request(`/notifications?limit=${limit}`);
+  return request<NotificationDto[]>(`/notifications?limit=${limit}`);
 }
 
 export function markAllNotificationsRead() {

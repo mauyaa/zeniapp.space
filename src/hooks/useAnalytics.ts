@@ -9,7 +9,7 @@ type EventName = 'search' | 'listing_view' | 'contact' | 'payment' | 'sign_up';
 
 type Payload = {
   event: EventName;
-  timestamp: string;
+  timestamp?: string;
   [key: string]: unknown;
 };
 
@@ -41,7 +41,6 @@ export function useAnalytics() {
     payment: (params: { amount?: number; currency?: string; method?: string }) =>
       send({ event: 'payment', ...params }),
 
-    signUp: (params: { role?: string }) =>
-      send({ event: 'sign_up', ...params }),
+    signUp: (params: { role?: string }) => send({ event: 'sign_up', ...params }),
   };
 }

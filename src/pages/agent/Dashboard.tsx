@@ -6,13 +6,10 @@ import {
   Clock,
   Eye,
   Heart,
-  Inbox,
   ListChecks,
   MessageCircle,
   MoreHorizontal,
   Plus,
-  TrendingUp,
-  Users,
   Zap,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
@@ -28,7 +25,12 @@ type AgentKpiTone = 'emerald' | 'blue' | 'amber' | 'rose' | 'purple' | 'slate';
 type AgentKpi = { label: string; value: string | number; tone: AgentKpiTone };
 type AgentPipeline = { stage: string; count: number };
 type AgentInsight = { label: string; value: string | number; hint?: string };
-type AgentStatsResponse = { kpis?: AgentKpi[]; pipeline?: AgentPipeline[]; insights?: AgentInsight[]; listings?: number };
+type AgentStatsResponse = {
+  kpis?: AgentKpi[];
+  pipeline?: AgentPipeline[];
+  insights?: AgentInsight[];
+  listings?: number;
+};
 
 const pipelineColors: Record<string, string> = {
   New: 'bg-slate-900',
@@ -36,12 +38,6 @@ const pipelineColors: Record<string, string> = {
   Viewing: 'bg-amber-500',
   Offer: 'bg-emerald-600',
   Closed: 'bg-violet-600',
-};
-
-const kpiIcons: Record<string, React.ElementType> = {
-  'New Leads': Users,
-  'Pending Viewings': Clock,
-  'Active Listings': ListChecks,
 };
 
 export function DashboardPage() {
@@ -69,7 +65,7 @@ export function DashboardPage() {
   const kpis: AgentKpi[] = stats?.kpis || [
     { label: 'New Leads', value: '-', tone: 'emerald' },
     { label: 'Pending Viewings', value: '-', tone: 'amber' },
-    { label: 'Active Listings', value: '-', tone: 'purple' }
+    { label: 'Active Listings', value: '-', tone: 'purple' },
   ];
 
   const pipeline: AgentPipeline[] = stats?.pipeline || [
@@ -77,23 +73,47 @@ export function DashboardPage() {
     { stage: 'Contacted', count: 0 },
     { stage: 'Viewing', count: 0 },
     { stage: 'Offer', count: 0 },
-    { stage: 'Closed', count: 0 }
+    { stage: 'Closed', count: 0 },
   ];
 
   const totalListings = typeof stats?.listings === 'number' ? stats.listings : listings.length;
-  const activeLeads = (pipeline.reduce((s, p) => s + p.count, 0) || (kpis.find((k) => k.label === 'New Leads')?.value as number)) ?? 0;
+  const activeLeads =
+    (pipeline.reduce((s, p) => s + p.count, 0) ||
+      (kpis.find((k) => k.label === 'New Leads')?.value as number)) ??
+    0;
   const totalViews = useMemo(() => {
-    const insight = (stats as AgentStatsResponse)?.insights?.find((i) => /view|impression/i.test(String(i.label)));
+    const insight = stats?.insights?.find((i) => /view|impression/i.test(String(i.label)));
     return insight?.value ?? '2.4k';
   }, [stats]);
+  const insights = stats?.insights ?? [];
 
   const leadConversations = useMemo(
     () => conversations.filter((conv) => conv.userSnapshot?.role !== 'admin'),
     [conversations]
   );
 
+  // Deduplicate support/general chats that were showing up multiple times.
+  // Keep the most recent conversation per buyer + listing (or per buyer for support threads).
+  const dedupedLeadConversations = useMemo(() => {
+    const map = new Map<string, (typeof leadConversations)[0]>();
+    leadConversations.forEach((conv) => {
+      const key = `${conv.listingId || 'support'}:${conv.userId}`;
+      const existing = map.get(key);
+      if (!existing) {
+        map.set(key, conv);
+        return;
+      }
+      const existingTime = new Date(existing.lastMessageAt).getTime();
+      const currentTime = new Date(conv.lastMessageAt).getTime();
+      if (currentTime > existingTime) {
+        map.set(key, conv);
+      }
+    });
+    return Array.from(map.values());
+  }, [leadConversations]);
+
   const nextActions = useMemo(() => {
-    const sorted = [...leadConversations].sort(
+    const sorted = [...dedupedLeadConversations].sort(
       (a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
     );
     return sorted.slice(0, 5).map((conv) => {
@@ -108,33 +128,45 @@ export function DashboardPage() {
         hasUnread,
         timeAgo,
         cta: hasUnread ? 'Reply' : 'Open',
-        onClick: () => navigate(`/agent/messages/${conv.id}`)
+        onClick: () => navigate(`/agent/messages/${conv.id}`),
       };
     });
-  }, [leadConversations, navigate]);
+  }, [dedupedLeadConversations, navigate]);
 
   const unreadCount = useMemo(
-    () => leadConversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0),
-    [leadConversations]
+    () => dedupedLeadConversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0),
+    [dedupedLeadConversations]
   );
 
   const slaMinutes = useMemo(() => {
-    const dueTimes = leadConversations
+    const dueTimes = dedupedLeadConversations
       .filter((c) => c.responseDueAt && c.unreadCount > 0)
       .map((c) => new Date(c.responseDueAt as string).getTime() - Date.now())
       .filter((ms) => ms > 0);
     if (!dueTimes.length) return null;
     return Math.round(Math.min(...dueTimes) / 60000);
-  }, [leadConversations]);
+  }, [dedupedLeadConversations]);
 
   const [portfolioTab, setPortfolioTab] = useState<'active' | 'drafts' | 'sold'>('active');
   const activeListings = useMemo(
-    () => listings.filter((l) => l.status !== 'draft' && l.availabilityStatus !== 'sold' && l.availabilityStatus !== 'let'),
+    () =>
+      listings.filter(
+        (l) =>
+          l.status !== 'draft' && l.availabilityStatus !== 'sold' && l.availabilityStatus !== 'let'
+      ),
     [listings]
   );
   const draftListings = useMemo(() => listings.filter((l) => l.status === 'draft'), [listings]);
-  const soldListings = useMemo(() => listings.filter((l) => l.availabilityStatus === 'sold' || l.availabilityStatus === 'let'), [listings]);
-  const portfolioList = portfolioTab === 'active' ? activeListings : portfolioTab === 'drafts' ? draftListings : soldListings;
+  const soldListings = useMemo(
+    () => listings.filter((l) => l.availabilityStatus === 'sold' || l.availabilityStatus === 'let'),
+    [listings]
+  );
+  const portfolioList =
+    portfolioTab === 'active'
+      ? activeListings
+      : portfolioTab === 'drafts'
+        ? draftListings
+        : soldListings;
 
   return (
     <div className="space-y-10">
@@ -142,24 +174,36 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="col-span-1 md:col-span-3 grid grid-cols-3 gap-0">
           <div className="bg-white p-6 border border-gray-200">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Total Listings</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">
+              Total Listings
+            </p>
             <div className="flex items-end justify-between">
               <h4 className="text-3xl font-serif text-black">{totalListings}</h4>
-              <span className="text-xs font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-sm">+2</span>
+              <span className="text-xs font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-sm">
+                +2
+              </span>
             </div>
           </div>
           <div className="bg-white p-6 border border-gray-200 border-l-0">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Active Leads</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">
+              Active Leads
+            </p>
             <div className="flex items-end justify-between">
               <h4 className="text-3xl font-serif text-black">{activeLeads}</h4>
-              <span className="text-xs font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-sm">+12%</span>
+              <span className="text-xs font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-sm">
+                +12%
+              </span>
             </div>
           </div>
           <div className="bg-white p-6 border border-gray-200 border-l-0">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Total Views</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">
+              Total Views
+            </p>
             <div className="flex items-end justify-between">
               <h4 className="text-3xl font-serif text-black">{totalViews}</h4>
-              <span className="text-xs font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-sm">+8%</span>
+              <span className="text-xs font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-sm">
+                +8%
+              </span>
             </div>
           </div>
         </div>
@@ -222,15 +266,35 @@ export function DashboardPage() {
             <div className="bg-white border border-gray-200 rounded-lg p-8">
               <EmptyState
                 variant="light"
-                title={portfolioTab === 'active' ? 'No active listings' : portfolioTab === 'drafts' ? 'No drafts' : 'No sold listings'}
-                subtitle={portfolioTab === 'active' ? 'Create a listing to get started.' : 'Nothing in this tab yet.'}
-                action={portfolioTab === 'active' ? { label: 'Create listing', onClick: () => navigate('/agent/listings/new') } : undefined}
+                title={
+                  portfolioTab === 'active'
+                    ? 'No active listings'
+                    : portfolioTab === 'drafts'
+                      ? 'No drafts'
+                      : 'No sold listings'
+                }
+                subtitle={
+                  portfolioTab === 'active'
+                    ? 'Create a listing to get started.'
+                    : 'Nothing in this tab yet.'
+                }
+                action={
+                  portfolioTab === 'active'
+                    ? { label: 'Create listing', onClick: () => navigate('/agent/listings/new') }
+                    : undefined
+                }
               />
             </div>
           ) : (
-            portfolioList.slice(0, 6).map((listing) => (
-              <ListingPortfolioCard key={listing._id} listing={listing} onManage={() => navigate(`/agent/listings/${listing._id}/edit`)} />
-            ))
+            portfolioList
+              .slice(0, 6)
+              .map((listing) => (
+                <ListingPortfolioCard
+                  key={listing._id}
+                  listing={listing}
+                  onManage={() => navigate(`/agent/listings/${listing._id}/edit`)}
+                />
+              ))
           )}
         </div>
         {portfolioList.length > 0 && (
@@ -246,19 +310,30 @@ export function DashboardPage() {
       <div className="rounded-lg border border-gray-200 bg-white p-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.24em] text-gray-400 mb-1">Command center</p>
+            <p className="text-[10px] uppercase tracking-[0.24em] text-gray-400 mb-1">
+              Command center
+            </p>
             <h3 className="text-base font-semibold text-black">Today&apos;s overview</h3>
           </div>
           <div className="flex items-center gap-2">
-            <div className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${
-              slaMinutes !== null && slaMinutes < 15 ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-gray-200 bg-gray-50 text-gray-600'
-            }`}>
+            <div
+              className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${
+                slaMinutes !== null && slaMinutes < 15
+                  ? 'border-rose-200 bg-rose-50 text-rose-700'
+                  : 'border-gray-200 bg-gray-50 text-gray-600'
+              }`}
+            >
               <Zap className="h-3.5 w-3.5" />
               SLA: {slaMinutes !== null ? `${slaMinutes}m` : 'All clear'}
             </div>
             <Button variant="outline" size="sm" onClick={() => navigate('/agent/messages')}>
               <MessageCircle className="w-3.5 h-3.5 mr-1.5" />
-              Messages {unreadCount > 0 && <Badge tone="rose" className="ml-1.5">{unreadCount}</Badge>}
+              Messages{' '}
+              {unreadCount > 0 && (
+                <Badge tone="rose" className="ml-1.5">
+                  {unreadCount}
+                </Badge>
+              )}
             </Button>
             <Button size="sm" onClick={() => navigate('/agent/listings/new')}>
               <Plus className="w-3.5 h-3.5 mr-1.5" />
@@ -297,14 +372,20 @@ export function DashboardPage() {
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-slate-800 truncate">{a.name}</span>
-                      {a.hasUnread && <span className="flex h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" />}
+                      <span className="text-sm font-semibold text-slate-800 truncate">
+                        {a.name}
+                      </span>
+                      {a.hasUnread && (
+                        <span className="flex h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" />
+                      )}
                     </div>
                     <p className="text-xs text-gray-500 truncate mt-0.5">{a.listing}</p>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0 ml-3">
                     <span className="text-[10px] text-gray-400">{a.timeAgo}</span>
-                    <span className="text-xs font-bold uppercase tracking-widest text-gray-500 group-hover:text-black transition-colors">{a.cta}</span>
+                    <span className="text-xs font-bold uppercase tracking-widest text-gray-500 group-hover:text-black transition-colors">
+                      {a.cta}
+                    </span>
                   </div>
                 </button>
               ))}
@@ -324,21 +405,30 @@ export function DashboardPage() {
           </div>
           {pipeline.reduce((s, p) => s + p.count, 0) > 0 && (
             <div className="flex rounded-full overflow-hidden h-2.5">
-              {pipeline.filter((p) => p.count > 0).map((p) => (
-                <div
-                  key={p.stage}
-                  className={`${pipelineColors[p.stage] || 'bg-gray-400'} transition-all`}
-                  style={{ width: `${(p.count / pipeline.reduce((s, x) => s + x.count, 0)) * 100}%` }}
-                  title={`${p.stage}: ${p.count}`}
-                />
-              ))}
+              {pipeline
+                .filter((p) => p.count > 0)
+                .map((p) => (
+                  <div
+                    key={p.stage}
+                    className={`${pipelineColors[p.stage] || 'bg-gray-400'} transition-all`}
+                    style={{
+                      width: `${(p.count / pipeline.reduce((s, x) => s + x.count, 0)) * 100}%`,
+                    }}
+                    title={`${p.stage}: ${p.count}`}
+                  />
+                ))}
             </div>
           )}
           <div className="space-y-2">
             {pipeline.map((p) => (
-              <div key={p.stage} className="flex items-center justify-between rounded-lg px-3 py-2 bg-gray-50">
+              <div
+                key={p.stage}
+                className="flex items-center justify-between rounded-lg px-3 py-2 bg-gray-50"
+              >
                 <div className="flex items-center gap-2">
-                  <span className={`h-2.5 w-2.5 rounded-full ${pipelineColors[p.stage] || 'bg-gray-400'}`} />
+                  <span
+                    className={`h-2.5 w-2.5 rounded-full ${pipelineColors[p.stage] || 'bg-gray-400'}`}
+                  />
                   <span className="text-xs font-semibold text-gray-700">{p.stage}</span>
                 </div>
                 <span className="text-sm font-bold text-black">{p.count}</span>
@@ -351,7 +441,12 @@ export function DashboardPage() {
       {/* Quick links */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: 'Analytics', icon: BarChart3, to: '/agent/analytics', desc: 'Performance metrics' },
+          {
+            label: 'Analytics',
+            icon: BarChart3,
+            to: '/agent/analytics',
+            desc: 'Performance metrics',
+          },
           { label: 'Listings', icon: ListChecks, to: '/agent/listings', desc: 'Manage inventory' },
           { label: 'Viewings', icon: Clock, to: '/agent/viewings', desc: 'Schedule & confirm' },
           { label: 'Verification', icon: Zap, to: '/agent/verification', desc: 'Account status' },
@@ -376,11 +471,13 @@ export function DashboardPage() {
         })}
       </div>
 
-      {stats?.insights && (stats as AgentStatsResponse).insights && (stats as AgentStatsResponse).insights!.length > 0 && (
+      {insights.length > 0 && (
         <div className="border border-gray-200 bg-white rounded-lg p-5 shadow-sm">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-3">Conversion insights</p>
+          <p className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-3">
+            Conversion insights
+          </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {(stats as AgentStatsResponse).insights!.map((i) => (
+            {insights.map((i) => (
               <div key={i.label} className="rounded-lg border border-gray-200 bg-gray-50 p-3">
                 <p className="text-[10px] uppercase tracking-[0.16em] text-gray-500">{i.label}</p>
                 <p className="text-xl font-semibold text-black mt-1">{i.value}</p>
@@ -394,13 +491,29 @@ export function DashboardPage() {
   );
 }
 
-function ListingPortfolioCard({ listing, onManage }: { listing: AgentListing; onManage: () => void }) {
-  const imgUrl = listing.images?.find((i) => i.isPrimary)?.url || listing.images?.[0]?.url || 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80';
-  const location = [listing.location?.area, listing.location?.city].filter(Boolean).join(', ') || 'Kenya';
+function ListingPortfolioCard({
+  listing,
+  onManage,
+}: {
+  listing: AgentListing;
+  onManage: () => void;
+}) {
+  const imgUrl =
+    listing.images?.find((i) => i.isPrimary)?.url ||
+    listing.images?.[0]?.url ||
+    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80';
+  const location =
+    [listing.location?.area, listing.location?.city].filter(Boolean).join(', ') || 'Kenya';
   const isSold = listing.availabilityStatus === 'sold' || listing.availabilityStatus === 'let';
   const isDraft = listing.status === 'draft';
+  const isRent =
+    listing.purpose === 'rent' || (listing.category || '').toLowerCase().includes('rent');
   const statusLabel = isSold ? 'Sold' : isDraft ? 'Draft' : 'Active';
-  const statusClass = isSold ? 'bg-gray-100 text-gray-600' : isDraft ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-green-50 text-green-700 border border-green-200';
+  const statusClass = isSold
+    ? 'bg-gray-100 text-gray-600'
+    : isDraft
+      ? 'bg-amber-50 text-amber-700 border border-amber-200'
+      : 'bg-green-50 text-green-700 border border-green-200';
 
   return (
     <div
@@ -416,7 +529,9 @@ function ListingPortfolioCard({ listing, onManage }: { listing: AgentListing; on
           alt={listing.title}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 grayscale-[20%] group-hover:grayscale-0"
         />
-        <div className={`absolute top-3 left-3 px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-widest border ${statusClass}`}>
+        <div
+          className={`absolute top-3 left-3 px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-widest border ${statusClass}`}
+        >
           {statusLabel}
         </div>
       </div>
@@ -424,7 +539,9 @@ function ListingPortfolioCard({ listing, onManage }: { listing: AgentListing; on
         <div>
           <div className="flex justify-between items-start mb-2">
             <div className="min-w-0">
-              <h3 className="text-xl font-serif font-medium text-black group-hover:underline decoration-1 underline-offset-4 truncate">{listing.title}</h3>
+              <h3 className="text-xl font-serif font-medium text-black group-hover:underline decoration-1 underline-offset-4 truncate">
+                {listing.title}
+              </h3>
               <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1 flex items-center">
                 <span className="w-1.5 h-1.5 bg-gray-300 rounded-full mr-2 flex-shrink-0" />
                 <span className="truncate">{location}</span>
@@ -433,25 +550,35 @@ function ListingPortfolioCard({ listing, onManage }: { listing: AgentListing; on
             <MoreHorizontal className="w-5 h-5 text-gray-400 hover:text-black flex-shrink-0 ml-2" />
           </div>
           <p className="font-mono text-lg font-medium mt-2 text-black">
-            {listing.currency === 'KES' ? 'KES' : listing.currency} {Number(listing.price).toLocaleString()}
-            {isSold ? null : <span className="text-xs text-gray-400 font-sans"> / mo</span>}
+            {listing.currency === 'KES' ? 'KES' : listing.currency}{' '}
+            {Number(listing.price).toLocaleString()}
+            {isSold || !isRent ? null : (
+              <span className="text-xs text-gray-500 font-sans"> per month</span>
+            )}
           </p>
-          {isSold && <p className="font-mono text-lg font-medium mt-0.5 line-through text-gray-400">{listing.currency} {Number(listing.price).toLocaleString()}</p>}
+          {isSold && (
+            <p className="font-mono text-lg font-medium mt-0.5 line-through text-gray-400">
+              {listing.currency} {Number(listing.price).toLocaleString()}
+              {isRent && <span className="text-xs text-gray-400 font-sans"> per month</span>}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-6 mt-4 pt-4 border-t border-gray-100">
           <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
-            <Eye className="w-4 h-4 text-gray-400" />
-            —
+            <Eye className="w-4 h-4 text-gray-400" />—
           </div>
           <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
-            <Heart className="w-4 h-4 text-gray-400" />
-            —
+            <Heart className="w-4 h-4 text-gray-400" />—
           </div>
           <div className="flex-1 text-right">
             {isSold ? (
-              <span className="text-[10px] font-bold uppercase tracking-widest text-green-600">Deal Closed</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-green-600">
+                Deal Closed
+              </span>
             ) : (
-              <span className="text-[10px] font-bold uppercase tracking-widest hover:underline decoration-1 underline-offset-4">Manage</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest hover:underline decoration-1 underline-offset-4">
+                Manage
+              </span>
             )}
           </div>
         </div>

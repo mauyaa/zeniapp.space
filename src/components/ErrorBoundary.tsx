@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react';
 import { logger } from '../lib/logger';
 import { captureException } from '../lib/sentry';
+import { clearStoredPayAuth } from '../pay/payApi';
 
 /**
  * Enhanced Error Boundary with multiple recovery strategies
@@ -47,8 +48,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    logger.error('ErrorBoundary caught an error:', error, errorInfo);
-    
+    logger.error('ErrorBoundary caught an error', { error, errorInfo });
+
     this.setState({
       error,
       errorInfo,
@@ -213,9 +214,7 @@ function ErrorDisplay({
                   <summary className="cursor-pointer text-slate-500 hover:text-slate-700">
                     Component stack trace
                   </summary>
-                  <pre className="mt-2 text-xs text-slate-500">
-                    {errorInfo.componentStack}
-                  </pre>
+                  <pre className="mt-2 text-xs text-slate-500">{errorInfo.componentStack}</pre>
                 </details>
               )}
             </div>
@@ -224,7 +223,7 @@ function ErrorDisplay({
           {/* Recovery actions */}
           <div className="flex flex-col gap-3">
             {getRecoveryButton()}
-            
+
             {recoveryStrategy !== 'home' && (
               <button
                 onClick={onGoHome}
@@ -257,7 +256,7 @@ interface RouteErrorBoundaryProps {
 
 export function RouteErrorBoundary({ children, routeName }: RouteErrorBoundaryProps) {
   const handleError = (error: Error, errorInfo: ErrorInfo) => {
-    logger.error(`Error in route ${routeName}:`, error, errorInfo);
+    logger.error(`Error in route ${routeName}`, { error, errorInfo });
     // Log to analytics/monitoring
   };
 
@@ -281,21 +280,17 @@ interface ComponentErrorBoundaryProps {
   fallbackUI?: ReactNode;
 }
 
-export function ComponentErrorBoundary({ 
-  children, 
+export function ComponentErrorBoundary({
+  children,
   componentName,
-  fallbackUI 
+  fallbackUI,
 }: ComponentErrorBoundaryProps) {
   const handleError = (error: Error, errorInfo: ErrorInfo) => {
-    logger.error(`Error in component ${componentName}:`, error, errorInfo);
+    logger.error(`Error in component ${componentName}`, { error, errorInfo });
   };
 
   return (
-    <ErrorBoundary
-      onError={handleError}
-      fallback={fallbackUI}
-      recoveryStrategy="none"
-    >
+    <ErrorBoundary onError={handleError} fallback={fallbackUI} recoveryStrategy="none">
       {children}
     </ErrorBoundary>
   );
@@ -308,11 +303,13 @@ export function ComponentErrorBoundary({
 const PageErrorFallback = ({
   title,
   message,
-  onRefresh
+  onRefresh,
+  showReset,
 }: {
   title: string;
   message: string;
   onRefresh: () => void;
+  showReset?: boolean;
 }) => (
   <div className="flex min-h-[400px] flex-col items-center justify-center p-6">
     <div className="max-w-sm rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm">
@@ -327,6 +324,17 @@ const PageErrorFallback = ({
         <RefreshCw className="h-4 w-4" />
         Refresh
       </button>
+      {showReset && (
+        <button
+          onClick={() => {
+            clearStoredPayAuth();
+            window.location.href = '/pay/login';
+          }}
+          className="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+        >
+          Reset pay session
+        </button>
+      )}
     </div>
   </div>
 );
@@ -353,12 +361,17 @@ export function PayErrorBoundary({ children }: { children: ReactNode }) {
   return (
     <ErrorBoundary
       showDetails={import.meta.env.DEV}
+      onError={(err) => {
+        console.error('Pay portal error:', err);
+        clearStoredPayAuth();
+      }}
       recoveryStrategy="refresh"
       fallback={
         <PageErrorFallback
           title="Payments couldn't load"
           message="Something went wrong with the payments console. Try refreshing the page."
           onRefresh={() => window.location.reload()}
+          showReset
         />
       }
     >
@@ -372,12 +385,12 @@ export function PayErrorBoundary({ children }: { children: ReactNode }) {
  */
 export function setupGlobalErrorHandling() {
   window.addEventListener('error', (event) => {
-    logger.error('Global error caught:', event.error);
+    logger.error('Global error caught', { error: event.error });
     captureException(event.error);
   });
 
   window.addEventListener('unhandledrejection', (event) => {
-    logger.error('Unhandled promise rejection:', event.reason);
+    logger.error('Unhandled promise rejection', { reason: event.reason });
     captureException(event.reason);
     event.preventDefault();
   });

@@ -13,7 +13,7 @@ export async function listInsights(limit = 3) {
     tag: item.tag,
     title: item.title,
     desc: item.desc,
-    href: item.href
+    href: item.href,
   }));
 }
 
@@ -34,7 +34,7 @@ export async function subscribeNewsletter(email: string, source?: string, userId
   await NewsletterSubscriptionModel.create({
     email: normalized,
     source,
-    userId
+    userId,
   });
   return { status: 'created' };
 }
