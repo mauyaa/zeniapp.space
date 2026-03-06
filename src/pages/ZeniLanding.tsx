@@ -1029,101 +1029,139 @@ export function ZeniLanding() {
         {/* ── HERO SECTION ── */}
         <section
           id="hero"
-          className="relative min-h-[90vh] flex items-center border-b border-[var(--zeni-black)]/10 pb-20"
+          className="relative min-h-[100vh] flex flex-col border-b border-[var(--zeni-black)]/10 overflow-hidden"
+          style={{ background: 'linear-gradient(135deg, #0a0a0a 0%, #0d1a12 50%, #0a0a0a 100%)' }}
         >
-          <div className="w-full max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 px-4 md:px-12">
-            <div className="col-span-12 md:col-span-5 z-10 flex flex-col justify-center">
-              {/* Live status pill */}
-              <div className="hero-animate flex items-center gap-2 mb-6 md:mb-8">
-                <span className="zeni-dot-live" aria-hidden="true" />
-                <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-[var(--zeni-black)]/50">
+          {/* Subtle grid overlay */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute', inset: 0, zIndex: 0, opacity: 0.04,
+              backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
+              backgroundSize: '60px 60px',
+            }}
+          />
+          {/* Green glow */}
+          <div aria-hidden="true" style={{ position: 'absolute', top: '-20%', right: '-10%', width: '60%', height: '80%', background: 'radial-gradient(ellipse, rgba(5,150,105,0.12) 0%, transparent 70%)', zIndex: 0 }} />
+
+          <div className="relative z-10 flex-1 flex flex-col justify-center w-full max-w-[1600px] mx-auto px-6 md:px-16 pt-36 pb-12">
+            {/* Top row: live pill + tagline */}
+            <div className="hero-animate flex flex-wrap items-center gap-4 mb-10">
+              <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2">
+                <span className="w-2 h-2 rounded-full bg-[var(--zeni-green)] animate-pulse" aria-hidden="true" />
+                <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/60">
                   Live · <span ref={heroStatusTextRef}>Verified</span>
                 </span>
               </div>
-
-              <p
-                className="hero-animate-delay-1 zeni-tagline uppercase text-[var(--zeni-green)] mb-4 tracking-[0.35em] whitespace-nowrap text-[clamp(0.5rem,2vw,0.875rem)]"
-                style={{ letterSpacing: '0.35em' }}
-              >
-                D . I . S . C . O . V . E . R . &nbsp; Y . O . U . R . &nbsp; P . L . A . C . E
-              </p>
-
-              <h1 className="hero-animate-delay-2 zeni-display font-sans text-[clamp(2.5rem,8vw,5.5rem)] leading-[0.9] tracking-tighter text-[var(--zeni-black)] uppercase mb-6 md:mb-8">
-                <span className="font-light">Where</span> <span className="font-bold">Kenya</span>{' '}
-                <span className="font-light">Lives.</span>
-              </h1>
-
-              <p className="hero-animate-delay-3 max-w-md text-base md:text-lg text-[var(--zeni-black)]/75 leading-relaxed mb-8 font-normal">
-                Verified listings, intelligent mapping, and architectural precision for the modern
-                Kenyan buyer and renter.
-              </p>
-
-              {/* Dual CTA */}
-              <div className="hero-animate-delay-4 flex flex-wrap gap-4 mb-10">
-                <Link to="/register" className={CTA_LINK_CLASSES.primaryBlock}>
-                  Get started free →
-                </Link>
-                <a
-                  href="#projects"
-                  onClick={(e) => onNavAnchorClick(e, '#projects')}
-                  className="magnetic font-mono text-xs uppercase tracking-[0.15em] px-6 py-3.5 rounded-xl border border-[var(--zeni-black)]/15 text-[var(--zeni-black)]/70 hover:border-[var(--zeni-black)] hover:text-[var(--zeni-black)] transition-all"
-                >
-                  View Inventory ↓
-                </a>
-              </div>
-
-              {/* Mobile-only stat pills */}
-              <div className="flex md:hidden flex-wrap gap-2 mt-2">
-                {listingStats && (
-                  <>
-                    <span className="mobile-stat-pill">
-                      <span className="zeni-dot-live" aria-hidden="true" />
-                      {listingStats.verified}+ Verified
-                    </span>
-                    <span className="mobile-stat-pill">
-                      {listingStats.total}+ Listings
-                    </span>
-                  </>
-                )}
-                <span className="mobile-stat-pill">100% Agent-Vetted</span>
-              </div>
+              <span className="font-mono text-[11px] uppercase tracking-[0.25em] text-[var(--zeni-green)]/70 hidden md:block">
+                Kenya's #1 Verified Property Platform
+              </span>
             </div>
 
-            {/* Kinetic ring */}
-            <div
-              ref={stageRef}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerLeave={onPointerUp}
-              className="col-span-12 md:col-span-7 relative h-[55vh] md:h-[80vh] stage-3d flex items-center justify-center cursor-grab active:cursor-grabbing overflow-hidden"
-              style={{ touchAction: coarsePointer ? 'auto' : 'none', transform: 'translateZ(0)' }}
-              aria-hidden="true"
-            >
-              <div ref={ringRef} className="ring-3d relative w-[180px] h-[250px] z-10">
-                <div
-                  ref={ballRef}
-                  className="kinetic-ball-outer absolute left-1/2 top-1/2 w-10 h-10 pointer-events-none"
-                  style={{ transform: 'translate(-50%, -50%) translateZ(0)' }}
-                >
-                  <div className="kinetic-ball-inner" />
-                </div>
-                {ringImages.map((src, i) => (
-                  <div
-                    key={i}
-                    className="ring-item"
-                    style={{ transform: `rotateY(${i * 45}deg) translateZ(320px)` }}
+            {/* Main headline + ring side by side */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-0 items-center">
+              <div className="md:col-span-6 flex flex-col">
+                <h1 className="hero-animate-delay-1 font-sans text-[clamp(3.5rem,10vw,7rem)] leading-[0.88] tracking-[-0.04em] text-white uppercase mb-8">
+                  <span className="block font-extralight text-white/60">Where</span>
+                  <span className="block font-black text-white">Kenya</span>
+                  <span className="block font-extralight" style={{ color: 'var(--zeni-green)' }}>Lives.</span>
+                </h1>
+
+                <p className="hero-animate-delay-2 max-w-md text-base md:text-lg text-white/50 leading-relaxed mb-10 font-light">
+                  Verified listings, intelligent mapping, and architectural precision for the modern
+                  Kenyan buyer and renter.
+                </p>
+
+                {/* Dual CTA */}
+                <div className="hero-animate-delay-3 flex flex-wrap gap-4 mb-12">
+                  <Link
+                    to="/register"
+                    className="font-mono text-xs uppercase tracking-[0.15em] px-8 py-4 rounded-xl bg-[var(--zeni-green)] text-white hover:opacity-90 transition-all shadow-lg shadow-emerald-900/40"
                   >
-                    <img
-                      src={src}
-                      alt={featuredProjects[i]?.alt || 'Property preview'}
-                      className="w-full h-full object-cover rounded-sm shadow-2xl"
-                      loading="eager"
-                      decoding="async"
-                    />
+                    Get started free →
+                  </Link>
+                  <a
+                    href="#projects"
+                    onClick={(e) => onNavAnchorClick(e, '#projects')}
+                    className="font-mono text-xs uppercase tracking-[0.15em] px-8 py-4 rounded-xl border border-white/15 text-white/70 hover:border-white/40 hover:text-white transition-all"
+                  >
+                    View Inventory ↓
+                  </a>
+                </div>
+
+                {/* Inline stats row */}
+                <div className="hero-animate-delay-4 flex flex-wrap gap-6 md:gap-10 border-t border-white/10 pt-8">
+                  <div>
+                    <div className="text-2xl md:text-3xl font-light text-white">
+                      {listingStats ? `${listingStats.verified}+` : '—'}
+                    </div>
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-white/35 mt-1">Verified Listings</div>
                   </div>
-                ))}
+                  <div>
+                    <div className="text-2xl md:text-3xl font-light text-white">
+                      {listingStats ? `${listingStats.total}+` : '—'}
+                    </div>
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-white/35 mt-1">Total Listings</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl md:text-3xl font-light" style={{ color: 'var(--zeni-green)' }}>100%</div>
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-white/35 mt-1">Agent Vetted</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl md:text-3xl font-light text-white">6+</div>
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-white/35 mt-1">Neighborhoods</div>
+                  </div>
+                </div>
               </div>
+
+              {/* Kinetic ring — right side */}
+              <div
+                ref={stageRef}
+                onPointerDown={onPointerDown}
+                onPointerMove={onPointerMove}
+                onPointerUp={onPointerUp}
+                onPointerLeave={onPointerUp}
+                className="md:col-span-6 relative h-[50vh] md:h-[75vh] stage-3d flex items-center justify-center cursor-grab active:cursor-grabbing"
+                style={{ touchAction: coarsePointer ? 'auto' : 'none', transform: 'translateZ(0)' }}
+                aria-hidden="true"
+              >
+                <div ref={ringRef} className="ring-3d relative w-[180px] h-[250px] z-10">
+                  <div
+                    ref={ballRef}
+                    className="kinetic-ball-outer absolute left-1/2 top-1/2 w-10 h-10 pointer-events-none"
+                    style={{ transform: 'translate(-50%, -50%) translateZ(0)' }}
+                  >
+                    <div className="kinetic-ball-inner" />
+                  </div>
+                  {ringImages.map((src, i) => (
+                    <div
+                      key={i}
+                      className="ring-item"
+                      style={{ transform: `rotateY(${i * 45}deg) translateZ(320px)` }}
+                    >
+                      <img
+                        src={src}
+                        alt={featuredProjects[i]?.alt || 'Property preview'}
+                        className="w-full h-full object-cover rounded-sm shadow-2xl"
+                        loading="eager"
+                        decoding="async"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom ticker bar */}
+          <div className="relative z-10 border-t border-white/8 py-3 overflow-hidden bg-white/3">
+            <div className="flex gap-12 font-mono text-[10px] uppercase tracking-widest text-white/30 whitespace-nowrap animate-[marquee_30s_linear_infinite]">
+              {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, i) => (
+                <span key={i} className="flex items-center gap-3">
+                  <span className="w-1 h-1 rounded-full bg-[var(--zeni-green)] inline-block" />
+                  {item === 'Verified Listings' && listingStats ? `${listingStats.verified.toLocaleString()} Verified Listings` : item}
+                </span>
+              ))}
             </div>
           </div>
         </section>
