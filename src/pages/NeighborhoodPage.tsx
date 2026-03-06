@@ -6,8 +6,8 @@ import { listingThumbUrl } from '../lib/cloudinary';
 import { resolveApiAssetUrl } from '../lib/runtime';
 import { properties as mockProperties } from '../utils/mockData';
 
-/** 
- * Races a promise against a timeout. 
+/**
+ * Races a promise against a timeout.
  * If timeout wins, returns the fallback value.
  */
 async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {

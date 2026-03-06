@@ -62,8 +62,8 @@ function isValidCoord(lat?: number, lng?: number): boolean {
   return true;
 }
 
-/** 
- * Races a promise against a timeout. 
+/**
+ * Races a promise against a timeout.
  * If timeout wins, returns the fallback value.
  */
 async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
@@ -107,7 +107,7 @@ function listingToPropertyForMap(listing: ListingCard): Property | null {
     imageUrl: image,
     agent: {
       name: listing.agent?.name ?? 'Agent',
-      image: listingThumbUrl(resolveApiAssetUrl(listing.agent?.image)) || fallbackImage
+      image: listingThumbUrl(resolveApiAssetUrl(listing.agent?.image)) || fallbackImage,
     },
   };
 }
@@ -325,16 +325,18 @@ function FaqAccordion({ faqs }: { faqs: { q: string; a: string }[] }) {
             aria-expanded={openIndex === i}
           >
             <span
-              className={`text-base font-light transition-colors ${openIndex === i ? 'text-[var(--zeni-black)]' : 'text-[var(--zeni-black)]/70'
-                } group-hover:text-[var(--zeni-black)]`}
+              className={`text-base font-light transition-colors ${
+                openIndex === i ? 'text-[var(--zeni-black)]' : 'text-[var(--zeni-black)]/70'
+              } group-hover:text-[var(--zeni-black)]`}
             >
               {faq.q}
             </span>
             <span
-              className={`ml-4 flex-shrink-0 w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-300 ${openIndex === i
-                ? 'border-[var(--zeni-green)] bg-[var(--zeni-green)] text-white rotate-45'
-                : 'border-[var(--zeni-black)]/15 text-[var(--zeni-black)]/40 group-hover:border-[var(--zeni-green)] group-hover:text-[var(--zeni-green)]'
-                }`}
+              className={`ml-4 flex-shrink-0 w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-300 ${
+                openIndex === i
+                  ? 'border-[var(--zeni-green)] bg-[var(--zeni-green)] text-white rotate-45'
+                  : 'border-[var(--zeni-black)]/15 text-[var(--zeni-black)]/40 group-hover:border-[var(--zeni-green)] group-hover:text-[var(--zeni-green)]'
+              }`}
             >
               <svg
                 viewBox="0 0 24 24"
@@ -348,8 +350,9 @@ function FaqAccordion({ faqs }: { faqs: { q: string; a: string }[] }) {
             </span>
           </button>
           <div
-            className={`overflow-hidden transition-all duration-300 ease-in-out ${openIndex === i ? 'max-h-48 pb-6' : 'max-h-0'
-              }`}
+            className={`overflow-hidden transition-all duration-300 ease-in-out ${
+              openIndex === i ? 'max-h-48 pb-6' : 'max-h-0'
+            }`}
           >
             <p className="text-sm text-[var(--zeni-black)]/60 leading-relaxed font-light pr-12">
               {faq.a}
@@ -586,11 +589,9 @@ export function ZeniLanding() {
   useAsyncEffect(async (signal) => {
     setInsightsStatus('loading');
     try {
-      const res = await withTimeout(
-        fetchInsights(INSIGHTS_LIMIT),
-        3000,
-        { items: FALLBACK_INSIGHTS }
-      );
+      const res = await withTimeout(fetchInsights(INSIGHTS_LIMIT), 3000, {
+        items: FALLBACK_INSIGHTS,
+      });
       if (signal.cancelled) return;
       setInsights(res?.items || FALLBACK_INSIGHTS);
       setInsightsStatus('idle');
@@ -602,75 +603,78 @@ export function ZeniLanding() {
     }
   }, []);
 
-  const refreshFeaturedAndStats = useCallback(async (opts?: { silent?: boolean }) => {
-    if (!opts?.silent) {
-      setFeaturedListingsLoading(true);
-      setFeaturedListingsError(false);
-    }
-    const limitOne = 1;
-    const limitFeatured = 6;
-    try {
-      // Use timeouts for production resilience — force fallback to mock data if API is slow
-      const timeoutMs = 3000;
-      const [totalCountResult, verifiedCountResult, featuredListingsResult] = await Promise.all([
-        withTimeout(
-          searchListings({ limit: limitOne, availabilityOnly: true, noCache: true }),
-          timeoutMs,
-          null
-        ).catch(() => null),
-        withTimeout(
-          searchListings({
-            verifiedOnly: true,
-            availabilityOnly: true,
-            limit: limitOne,
-            noCache: true,
-          }),
-          timeoutMs,
-          null
-        ).catch(() => null),
-        withTimeout(
-          searchListings({
-            limit: limitFeatured,
-            availabilityOnly: true,
-            verifiedOnly: true,
-            noCache: true,
-          }),
-          timeoutMs,
-          null
-        ).catch(() => null),
-      ]);
-
-      if (!opts?.silent) setFeaturedListingsLoading(false);
-
-      if (totalCountResult && verifiedCountResult) {
-        setListingStats({
-          total: totalCountResult.total ?? 0,
-          verified: verifiedCountResult.total ?? 0,
-        });
-      }
-      setFeaturedListingsError(!featuredListingsResult);
-      if (featuredListingsResult?.items?.length) {
-        const uniqueItems = dedupeListingsByContent(dedupeById(featuredListingsResult.items)).map(
-          (item, idx) => ({ ...item, _idx: idx })
-        );
-        const projects = uniqueItems.map((item) => listingCardToProject(item));
-        setFeaturedProjects(projects);
-        setRingImages(buildRingImagesFromProjects(projects));
-      } else if (!opts?.silent || !featuredProjects.length) {
-        setFeaturedProjects(FALLBACK_PROJECTS);
-        setRingImages(buildRingImagesFromProjects(FALLBACK_PROJECTS));
-      }
-    } catch {
+  const refreshFeaturedAndStats = useCallback(
+    async (opts?: { silent?: boolean }) => {
       if (!opts?.silent) {
-        setFeaturedListingsLoading(false);
-        setFeaturedListingsError(true);
-        if (!featuredProjects.length) {
+        setFeaturedListingsLoading(true);
+        setFeaturedListingsError(false);
+      }
+      const limitOne = 1;
+      const limitFeatured = 6;
+      try {
+        // Use timeouts for production resilience — force fallback to mock data if API is slow
+        const timeoutMs = 3000;
+        const [totalCountResult, verifiedCountResult, featuredListingsResult] = await Promise.all([
+          withTimeout(
+            searchListings({ limit: limitOne, availabilityOnly: true, noCache: true }),
+            timeoutMs,
+            null
+          ).catch(() => null),
+          withTimeout(
+            searchListings({
+              verifiedOnly: true,
+              availabilityOnly: true,
+              limit: limitOne,
+              noCache: true,
+            }),
+            timeoutMs,
+            null
+          ).catch(() => null),
+          withTimeout(
+            searchListings({
+              limit: limitFeatured,
+              availabilityOnly: true,
+              verifiedOnly: true,
+              noCache: true,
+            }),
+            timeoutMs,
+            null
+          ).catch(() => null),
+        ]);
+
+        if (!opts?.silent) setFeaturedListingsLoading(false);
+
+        if (totalCountResult && verifiedCountResult) {
+          setListingStats({
+            total: totalCountResult.total ?? 0,
+            verified: verifiedCountResult.total ?? 0,
+          });
+        }
+        setFeaturedListingsError(!featuredListingsResult);
+        if (featuredListingsResult?.items?.length) {
+          const uniqueItems = dedupeListingsByContent(dedupeById(featuredListingsResult.items)).map(
+            (item, idx) => ({ ...item, _idx: idx })
+          );
+          const projects = uniqueItems.map((item) => listingCardToProject(item));
+          setFeaturedProjects(projects);
+          setRingImages(buildRingImagesFromProjects(projects));
+        } else if (!opts?.silent || !featuredProjects.length) {
           setFeaturedProjects(FALLBACK_PROJECTS);
           setRingImages(buildRingImagesFromProjects(FALLBACK_PROJECTS));
         }
+      } catch {
+        if (!opts?.silent) {
+          setFeaturedListingsLoading(false);
+          setFeaturedListingsError(true);
+          if (!featuredProjects.length) {
+            setFeaturedProjects(FALLBACK_PROJECTS);
+            setRingImages(buildRingImagesFromProjects(FALLBACK_PROJECTS));
+          }
+        }
       }
-    }
-  }, [featuredProjects.length, fetchMapListings]);
+    },
+    [featuredProjects.length, fetchMapListings]
+  );
 
   useEffect(() => {
     const tick = () => {
@@ -1407,8 +1411,9 @@ export function ZeniLanding() {
             {SERVICES.map((service, index) => (
               <article
                 key={service.id}
-                className={`p-16 border-[var(--zeni-black)]/5 hover:bg-[var(--zeni-white)] transition-colors group ${index % 2 === 0 ? 'md:border-r' : ''
-                  } ${index < 2 ? 'border-b' : ''}`}
+                className={`p-16 border-[var(--zeni-black)]/5 hover:bg-[var(--zeni-white)] transition-colors group ${
+                  index % 2 === 0 ? 'md:border-r' : ''
+                } ${index < 2 ? 'border-b' : ''}`}
               >
                 <div className="font-mono text-xs text-[var(--zeni-green)] mb-8" aria-hidden="true">
                   {service.id}.

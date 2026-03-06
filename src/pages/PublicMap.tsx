@@ -16,8 +16,8 @@ type PropertyWithMeta = Property & {
   saved?: boolean;
 };
 
-/** 
- * Races a promise against a timeout. 
+/**
+ * Races a promise against a timeout.
  * If timeout wins, returns the fallback value.
  */
 async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
@@ -78,12 +78,13 @@ export function PublicMapPage() {
             catalogueUrl: listing.catalogueUrl,
             isVerified: Boolean(listing.verified),
             imageUrl: image,
-            images: (listing.images && listing.images.length > 0)
-              ? listing.images.map((img) => ({
-                ...img,
-                url: resolveApiAssetUrl(img.url) || fallbackImage,
-              }))
-              : [{ url: image }],
+            images:
+              listing.images && listing.images.length > 0
+                ? listing.images.map((img) => ({
+                    ...img,
+                    url: resolveApiAssetUrl(img.url) || fallbackImage,
+                  }))
+                : [{ url: image }],
             agent: {
               name: listing.agent?.name || 'Agent',
               image: listingThumbUrl(resolveApiAssetUrl(listing.agent?.image)) || fallbackImage,
