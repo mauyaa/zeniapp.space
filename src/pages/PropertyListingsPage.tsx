@@ -87,8 +87,8 @@ export function PropertyListingsPage() {
   const [isMapOpen, setIsMapOpen] = useState(false); // For mobile toggle
   const [searchTerm, setSearchTerm] = useState('');
   const [verifiedOnly, setVerifiedOnly] = useState(false);
-  const [listings, setListings] = useState<Property[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [listings, setListings] = useState<Property[]>(FALLBACK_PROPERTIES);
+  const [loading, setLoading] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {

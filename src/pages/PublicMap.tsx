@@ -5,12 +5,16 @@ import { Map as MapIcon, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthProvider';
 import { searchListings } from '../lib/api/listings';
 import { normalizeKenyaLatLng } from '../utils/geo';
-import type { Property } from '../utils/mockData';
+import { properties as FALLBACK_PROPERTIES, type Property } from '../utils/mockData';
 import { listingThumbUrl } from '../lib/cloudinary';
 import { resolveApiAssetUrl } from '../lib/runtime';
+import { getPublicSocket, disconnectPublicSocket } from '../lib/publicSocket';
 
 const fallbackImage =
   'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=60';
+
+const PUBLIC_FEED_KEY =
+  (import.meta.env.VITE_PUBLIC_FEED_KEY as string | undefined) || 'public-demo-key';
 
 type PropertyWithMeta = Property & {
   saved?: boolean;
@@ -32,7 +36,9 @@ export function PublicMapPage() {
   const navigate = useNavigate();
   const { isAuthed, user } = useAuth();
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [mapProps, setMapProps] = useState<PropertyWithMeta[]>([]);
+  const [mapProps, setMapProps] = useState<PropertyWithMeta[]>(() =>
+    FALLBACK_PROPERTIES.slice(0, 50).map((p: Property) => ({ ...p, saved: false }))
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -92,13 +98,80 @@ export function PublicMapPage() {
             saved: listing.saved,
           };
         });
-        setMapProps(converted);
+        setMapProps((prev) => (converted.length ? converted : prev));
       })
       .catch((err) => {
         console.error('Failed to load map items', err);
       });
+
+    // Real-time updates
+    const socket = getPublicSocket(PUBLIC_FEED_KEY);
+    const handleUpdate = () => {
+      searchListings({ limit: 50, verifiedOnly: true, noCache: true }).then((res) => {
+        if (res?.items && !cancelled) {
+          // Re-map and update... (abstracted/simplified here for brevity as previously done)
+          // For true performance, we'd reuse the conversion logic, but here we just re-run the fetch
+          // and the conversion is identical.
+          const converted: PropertyWithMeta[] = res.items.map((listing: any) => {
+            const [lat, lng] = normalizeKenyaLatLng(
+              listing.location?.lat ?? listing.location?.coordinates?.[1],
+              listing.location?.lng ?? listing.location?.coordinates?.[0]
+            );
+            const rawImg = listing.imageUrl || listing.images?.[0]?.url || listing.agent?.image;
+            const resolvedImg = resolveApiAssetUrl(rawImg);
+            const image = listingThumbUrl(resolvedImg) || fallbackImage;
+            return {
+              id: listing.id,
+              title: listing.title,
+              category: listing.category,
+              description: listing.description,
+              price: listing.price,
+              currency: listing.currency,
+              purpose: (listing.purpose as Property['purpose']) || 'rent',
+              type: (listing.type as Property['type']) || 'Apartment',
+              agentId: listing.agent?.id,
+              location: {
+                neighborhood: listing.location?.neighborhood || '',
+                city: listing.location?.city || '',
+                lat,
+                lng,
+              },
+              features: {
+                bedrooms: listing.beds ?? 0,
+                bathrooms: listing.baths ?? 0,
+                sqm: listing.sqm ?? 0,
+              },
+              amenities: listing.amenities,
+              catalogueUrl: listing.catalogueUrl,
+              isVerified: Boolean(listing.verified),
+              imageUrl: image,
+              images:
+                listing.images && listing.images.length > 0
+                  ? listing.images.map((img: any) => ({
+                      ...img,
+                      url: resolveApiAssetUrl(img.url) || fallbackImage,
+                    }))
+                  : [{ url: image }],
+              agent: {
+                name: listing.agent?.name || 'Agent',
+                image: listingThumbUrl(resolveApiAssetUrl(listing.agent?.image)) || fallbackImage,
+              },
+              saved: listing.saved,
+            };
+          });
+          setMapProps(converted);
+        }
+      });
+    };
+
+    socket.on('listing:changed', handleUpdate);
+    socket.on('listing:deleted', handleUpdate);
+
     return () => {
       cancelled = true;
+      socket.off('listing:changed', handleUpdate);
+      socket.off('listing:deleted', handleUpdate);
+      disconnectPublicSocket();
     };
   }, []);
 

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { MapPin, BedDouble, ShieldCheck, ChevronRight, ArrowLeft } from 'lucide-react';
 import { searchListings, type ListingCard } from '../lib/api';
+import { getPublicSocket, disconnectPublicSocket } from '../lib/publicSocket';
 import { listingThumbUrl } from '../lib/cloudinary';
 import { resolveApiAssetUrl } from '../lib/runtime';
 import { properties as mockProperties } from '../utils/mockData';
@@ -17,6 +18,9 @@ async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Pro
   });
   return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
 }
+
+const PUBLIC_FEED_KEY =
+  (import.meta.env.VITE_PUBLIC_FEED_KEY as string | undefined) || 'public-demo-key';
 
 const NEIGHBORHOODS: Record<
   string,
@@ -131,8 +135,34 @@ function formatCompact(price: number, currency: string, purpose?: string) {
 export function NeighborhoodPage() {
   const { neighborhood, purpose } = useParams<{ neighborhood: string; purpose: 'rent' | 'buy' }>();
   const navigate = useNavigate();
-  const [listings, setListings] = React.useState<ListingCard[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const [listings, setListings] = React.useState<ListingCard[]>(() => {
+    return mockProperties
+      .filter((p) => {
+        const matchProp =
+          p.location.neighborhood.toLowerCase() === (neighborhood || '').toLowerCase();
+        const matchPurpose = p.purpose === (purpose || 'rent');
+        return matchProp && matchPurpose;
+      })
+      .map((p) => ({
+        id: p.id,
+        title: p.title,
+        price: p.price,
+        currency: p.currency,
+        purpose: p.purpose,
+        type: p.type,
+        beds: p.features?.bedrooms,
+        baths: p.features?.bathrooms,
+        location: {
+          neighborhood: p.location.neighborhood,
+          city: p.location.city,
+          lat: p.location.lat,
+          lng: p.location.lng,
+        },
+        verified: p.isVerified,
+        imageUrl: p.imageUrl,
+      }));
+  });
+  const [loading, setLoading] = React.useState(false);
 
   const key = (neighborhood || '').toLowerCase();
   const data = NEIGHBORHOODS[key];
@@ -180,7 +210,9 @@ export function NeighborhoodPage() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+    // Don't set loading true if we already have mock data (instant feel)
+    // but if we have none, we can show a small indicator or just wait for background fetch
+
     const searchPromise = searchListings({ q: neighborhood, purpose, limit: 12 });
 
     withTimeout(searchPromise, 5000, { items: [], total: 0 })
@@ -204,6 +236,29 @@ export function NeighborhoodPage() {
       cancelled = true;
     };
   }, [neighborhood, purpose, fallbackFromMock]);
+
+  // Real-time Updates
+  useEffect(() => {
+    const socket = getPublicSocket(PUBLIC_FEED_KEY);
+    const handleUpdate = () => {
+      // Re-trigger the fetch effect in the background
+      const searchPromise = searchListings({ q: neighborhood, purpose, limit: 12 });
+      searchPromise.then((res) => {
+        if (res?.items && res.items.length > 0) {
+          setListings(res.items);
+        }
+      });
+    };
+
+    socket.on('listing:changed', handleUpdate);
+    socket.on('listing:deleted', handleUpdate);
+
+    return () => {
+      socket.off('listing:changed', handleUpdate);
+      socket.off('listing:deleted', handleUpdate);
+      disconnectPublicSocket();
+    };
+  }, [neighborhood, purpose]);
 
   if (!data) {
     return (

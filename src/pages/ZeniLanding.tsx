@@ -372,8 +372,8 @@ function FaqAccordion({ faqs }: { faqs: { q: string; a: string }[] }) {
 
 export function ZeniLanding() {
   // --- State ---
-  const [insights, setInsights] = useState<InsightItem[]>([]);
-  const [insightsStatus, setInsightsStatus] = useState<'idle' | 'loading' | 'error'>('loading');
+  const [insights, setInsights] = useState<InsightItem[]>(FALLBACK_INSIGHTS);
+  const [insightsStatus, setInsightsStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterStatus, setNewsletterStatus] = useState<
     'idle' | 'loading' | 'success' | 'error' | 'exists'
@@ -382,12 +382,12 @@ export function ZeniLanding() {
   const [listingStats, setListingStats] = useState<{ total: number; verified: number } | null>(
     null
   );
-  const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
-  const [featuredListingsLoading, setFeaturedListingsLoading] = useState(true);
+  const [featuredProjects, setFeaturedProjects] = useState<Project[]>(FALLBACK_PROJECTS);
+  const [featuredListingsLoading, setFeaturedListingsLoading] = useState(false);
   const [featuredListingsError, setFeaturedListingsError] = useState(false);
   const [ringImages, setRingImages] = useState<string[]>(() => FALLBACK_RING_IMAGES);
-  const [mapListings, setMapListings] = useState<Property[]>([]);
-  const [mapListingsLoading, setMapListingsLoading] = useState(true);
+  const [mapListings, setMapListings] = useState<Property[]>(FALLBACK_MAP_PROPERTIES);
+  const [mapListingsLoading, setMapListingsLoading] = useState(false);
   const [activeNavSection, setActiveNavSection] = useState<string | null>(null);
 
   const navigate = useNavigate();
