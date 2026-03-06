@@ -467,9 +467,9 @@ export function AdminVerificationPage() {
                         <p className="text-sm font-medium text-black">
                           {item.payload.title as string}
                         </p>
-                        {item.payload.agentId && (
+                        {item.payload.agentId != null && (
                           <p className="text-xs text-gray-500 mt-1">
-                            Agent ID: {String(item.payload.agentId)}
+                            {'Agent ID: ' + String(item.payload.agentId)}
                           </p>
                         )}
                       </div>
