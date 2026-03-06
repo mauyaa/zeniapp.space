@@ -1635,38 +1635,6 @@ export function ZeniLanding() {
         </section>
 
         {/* ── CTA ── */}
-        <section className="py-24 px-4 md:px-12 border-b border-[var(--zeni-black)]/10 bg-[var(--zeni-black)]">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-10">
-            <div>
-              <h2 className="text-xs font-bold uppercase tracking-widest text-[var(--zeni-green)]">
-                Start now
-              </h2>
-              <p className="text-4xl md:text-5xl font-light leading-tight mt-4 text-white">
-                Ready to list or
-                <br />
-                <span className="font-medium">find your next place?</span>
-              </p>
-              <p className="text-white/50 mt-4 max-w-xl font-light">
-                Zeni brings verified listings across Kenya, clear KES data, and safe viewings into
-                one trusted platform.
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link
-                to="/register"
-                className="magnetic font-mono text-xs uppercase tracking-[0.15em] px-8 py-4 rounded-xl bg-[var(--zeni-green)] text-white hover:opacity-90 transition-opacity text-center"
-              >
-                Sign up free →
-              </Link>
-              <Link
-                to={MAP_EXPLORE_PATH}
-                className="magnetic font-mono text-xs uppercase tracking-[0.15em] px-8 py-4 rounded-xl border border-white/20 text-white hover:border-white/60 transition-all text-center"
-              >
-                Browse the map
-              </Link>
-            </div>
-          </div>
-        </section>
       </main>
 
       {/* ── FOOTER ── */}
