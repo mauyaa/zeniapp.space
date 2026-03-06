@@ -1,4 +1,5 @@
 module.exports = {
+  root: true,
   env: { node: true, es2021: true, jest: true },
   parser: '@typescript-eslint/parser',
   plugins: ['@typescript-eslint', 'unused-imports', 'import'],

@@ -15,7 +15,7 @@
     "mobile:android": "npm run build && npx cap sync android && npx cap open android",
     "mobile:ios": "npm run build && npx cap sync ios && npx cap open ios",
     "mobile:doctor": "npx cap doctor",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx --ignore-pattern server/** --ignore-pattern server",
     "lint:server": "npm --prefix server run lint",
     "test": "vitest run",
     "test:watch": "vitest",
