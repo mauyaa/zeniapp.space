@@ -1,0 +1,34 @@
+﻿
+C:\Users\USER\Downloads\ZENI\src\pages\NeighborhoodPage.tsx
+  14:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\USER\Downloads\ZENI\src\pages\PropertyListingsPage.tsx
+  76:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\USER\Downloads\ZENI\src\pages\PublicMap.tsx
+  24:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\USER\Downloads\ZENI\src\pages\ZeniLanding.tsx
+   70:14  warning  Unexpected any. Specify a different type                                                                                    @typescript-eslint/no-explicit-any
+  195:26  warning  Unexpected any. Specify a different type                                                                                    @typescript-eslint/no-explicit-any
+  676:5   warning  React Hook useCallback has an unnecessary dependency: 'fetchMapListings'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+Γ£û 6 problems (0 errors, 6 warnings)
+
+node.exe : ESLint found too many 
+warnings (maximum: 0).
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Users\USER\AppData\Roaming\n 
+...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~
+    + CategoryInfo          : No 
+   tSpecified: (ESLint found to  
+  ...s (maximum: 0).:String) [   
+ ], RemoteException
+    + FullyQualifiedErrorId : Na 
+   tiveCommandError
+ 

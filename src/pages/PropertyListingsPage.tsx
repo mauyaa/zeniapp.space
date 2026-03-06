@@ -57,9 +57,9 @@ function listingToProperty(listing: ListingCard): Property {
     images:
       listing.images && listing.images.length > 0
         ? listing.images.map((img) => ({
-            ...img,
-            url: resolveApiAssetUrl(img.url) || fallbackImage,
-          }))
+          ...img,
+          url: resolveApiAssetUrl(img.url) || fallbackImage,
+        }))
         : [{ url: image }],
     agent: {
       name: listing.agent?.name || 'Agent',
@@ -73,7 +73,7 @@ function listingToProperty(listing: ListingCard): Property {
  * If timeout wins, returns the fallback value.
  */
 async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
-  let timer: any;
+  let timer: ReturnType<typeof setTimeout>;
   const timeoutPromise = new Promise<T>((resolve) => {
     timer = setTimeout(() => resolve(fallback), ms);
   });

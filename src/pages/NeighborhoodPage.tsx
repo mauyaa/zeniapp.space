@@ -11,7 +11,7 @@ import { properties as mockProperties } from '../utils/mockData';
  * If timeout wins, returns the fallback value.
  */
 async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
-  let timer: any;
+  let timer: ReturnType<typeof setTimeout>;
   const timeoutPromise = new Promise<T>((resolve) => {
     timer = setTimeout(() => resolve(fallback), ms);
   });

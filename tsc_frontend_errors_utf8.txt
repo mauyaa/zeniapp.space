@@ -1,0 +1,220 @@
+﻿src/components/admin/AdminStepUpModal.tsx(114,29): error TS2322: Type '{ children: string; size: "sm"; tone: string; loading: boolean; onClick: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps & RefAttributes<HTMLButtonElement>'.
+  Property 'tone' does not exist on type 'IntrinsicAttributes & ButtonProps & RefAttributes<HTMLButtonElement>'.
+src/components/auth/GoogleSignInButton.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/chat/ConversationItem.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/chat/EmptyState.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/chat/FilterChips.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/chat/LeadStageSelect.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/chat/MessageComposer.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/chat/QuickActionsBar.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/chat/QuickReplyChips.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/chat/SkeletonLines.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/chat/TypingIndicator.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/Curtain.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/ErrorBoundary.tsx(50,52): error TS2345: Argument of type 'Error' is not assignable to parameter of type 'Record<string, unknown>'.
+  Index signature for type 'string' is missing in type 'Error'.
+src/components/ErrorBoundary.tsx(260,50): error TS2345: Argument of type 'Error' is not assignable to parameter of type 'Record<string, unknown>'.
+  Index signature for type 'string' is missing in type 'Error'.
+src/components/ErrorBoundary.tsx(290,58): error TS2345: Argument of type 'Error' is not assignable to parameter of type 'Record<string, unknown>'.
+  Index signature for type 'string' is missing in type 'Error'.
+src/components/landing/AgentSection.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/landing/CollageControls.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/landing/FeaturedListings.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/landing/Footer.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/landing/Header.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/landing/NavLink.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/landing/SafetySection.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/landing/SiteIndexSection.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/landing/StepsSlider.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/landing/TiltedCollage.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/landing/TrustTiles.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/listings/ImageGallery.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/listings/MortgageCalculator.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/listings/NeighborhoodTrust.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/listings/ReportListingModal.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/listings/ResultsToolbar.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/OfflineBanner.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/PropertyMap.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/PropertyMap.tsx(89,42): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'Record<string, unknown> | undefined'.
+src/components/PropertyMap.tsx(153,9): error TS2322: Type '{ children: (Element | Element[] | undefined)[]; center: [number, number]; zoom: number; style: { height: string; width: string; }; preferCanvas: true; zoomControl: false; attributionControl: false; scrollWheelZoom: true; smoothWheelZoom: boolean; }' is not assignable to type 'IntrinsicAttributes & MapContainerProps & RefAttributes<Map>'.
+  Property 'smoothWheelZoom' does not exist on type 'IntrinsicAttributes & MapContainerProps & RefAttributes<Map>'.
+src/components/SessionTimeoutModal.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/ui/EmptyState.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/ui/OnboardingBanner.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/ui/PageLoader.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/ui/PageTransition.tsx(30,7): error TS2322: Type 'false | { opacity: number; y: number; }' is not assignable to type 'VariantLabels | TargetAndTransition | undefined'.
+  Type 'false' is not assignable to type 'VariantLabels | TargetAndTransition | undefined'.
+src/components/ui/PriceRangeSlider.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/ui/Skeleton.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/ui/StatCard.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/ui/StatsBar.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/VerifiedBadge.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/ZeniLoading.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/context/AdminStepUpContext.tsx(51,39): error TS2322: Type '(value: T | PromiseLike<T>) => void' is not assignable to type '(value: unknown) => void'.
+  Types of parameters 'value' and 'value' are incompatible.
+    Type 'unknown' is not assignable to type 'T | PromiseLike<T>'.
+src/context/ChatContext.tsx(419,40): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'Record<string, unknown> | undefined'.
+src/context/NotificationContext.tsx(43,15): error TS2345: Argument of type '(items: Array<{ _id?: string; id?: string; title: string; description?: string; type?: string; createdAt: string; read?: boolean; }>) => void' is not assignable to parameter of type '(value: unknown) => void | PromiseLike<void>'.
+  Types of parameters 'items' and 'value' are incompatible.
+    Type 'unknown' is not assignable to type '{ _id?: string | undefined; id?: string | undefined; title: string; description?: string | undefined; type?: string | undefined; createdAt: string; read?: boolean | undefined; }[]'.
+src/context/NotificationContext.tsx(52,28): error TS2345: Argument of type '{ id: string | undefined; title: string; description: string | undefined; type: string | undefined; createdAt: string; read: boolean; }[]' is not assignable to parameter of type 'SetStateAction<Notification[]>'.
+  Type '{ id: string | undefined; title: string; description: string | undefined; type: string | undefined; createdAt: string; read: boolean; }[]' is not assignable to type 'Notification[]'.
+    Type '{ id: string | undefined; title: string; description: string | undefined; type: string | undefined; createdAt: string; read: boolean; }' is not assignable to type 'Notification'.
+      Types of property 'id' are incompatible.
+        Type 'string | undefined' is not assignable to type 'string'.
+          Type 'undefined' is not assignable to type 'string'.
+src/context/NotificationContext.tsx(70,24): error TS2345: Argument of type '(prev: Notification[]) => (Notification | { id: string; title: string; description: string | undefined; type: string | undefined; createdAt: string; read: boolean; })[]' is not assignable to parameter of type 'SetStateAction<Notification[]>'.
+  Type '(prev: Notification[]) => (Notification | { id: string; title: string; description: string | undefined; type: string | undefined; createdAt: string; read: boolean; })[]' is not assignable to type '(prevState: Notification[]) => Notification[]'.
+    Type '(Notification | { id: string; title: string; description: string | undefined; type: string | undefined; createdAt: string; read: boolean; })[]' is not assignable to type 'Notification[]'.
+      Type 'Notification | { id: string; title: string; description: string | undefined; type: string | undefined; createdAt: string; read: boolean; }' is not assignable to type 'Notification'.
+        Type '{ id: string; title: string; description: string | undefined; type: string | undefined; createdAt: string; read: boolean; }' is not assignable to type 'Notification'.
+          Types of property 'type' are incompatible.
+            Type 'string | undefined' is not assignable to type '"message" | "viewing" | "system" | undefined'.
+              Type 'string' is not assignable to type '"message" | "viewing" | "system" | undefined'.
+src/context/ThemeContext.tsx(3,8): error TS6133: 'React' is declared but its value is never read.
+src/context/ThemeContext.tsx(149,11): error TS6133: 'theme' is declared but its value is never read.
+src/hooks/useAnalytics.ts(33,12): error TS2345: Argument of type '{ query?: string; resultsCount?: number; event: "search"; }' is not assignable to parameter of type 'Payload'.
+  Property 'timestamp' is missing in type '{ query?: string; resultsCount?: number; event: "search"; }' but required in type 'Payload'.
+src/hooks/useAnalytics.ts(36,12): error TS2345: Argument of type '{ listingId: string; title?: string; event: "listing_view"; }' is not assignable to parameter of type 'Payload'.
+  Property 'timestamp' is missing in type '{ listingId: string; title?: string; event: "listing_view"; }' but required in type 'Payload'.
+src/hooks/useAnalytics.ts(39,12): error TS2345: Argument of type '{ listingId: string; channel?: string; event: "contact"; }' is not assignable to parameter of type 'Payload'.
+  Property 'timestamp' is missing in type '{ listingId: string; channel?: string; event: "contact"; }' but required in type 'Payload'.
+src/hooks/useAnalytics.ts(42,12): error TS2345: Argument of type '{ amount?: number; currency?: string; method?: string; event: "payment"; }' is not assignable to parameter of type 'Payload'.
+  Property 'timestamp' is missing in type '{ amount?: number; currency?: string; method?: string; event: "payment"; }' but required in type 'Payload'.
+src/hooks/useAnalytics.ts(45,12): error TS2345: Argument of type '{ role?: string; event: "sign_up"; }' is not assignable to parameter of type 'Payload'.
+  Property 'timestamp' is missing in type '{ role?: string; event: "sign_up"; }' but required in type 'Payload'.
+src/hooks/useCursor.ts(19,14): error TS2339: Property 'quickTo' does not exist on type 'typeof import("gsap")'.
+src/hooks/useCursor.ts(22,14): error TS2339: Property 'quickTo' does not exist on type 'typeof import("gsap")'.
+src/hooks/useCursor.ts(25,14): error TS2339: Property 'quickTo' does not exist on type 'typeof import("gsap")'.
+src/hooks/useCursor.ts(28,14): error TS2339: Property 'quickTo' does not exist on type 'typeof import("gsap")'.
+src/hooks/useHomeData.ts(229,21): error TS2339: Property 'otherParty' does not exist on type 'Conversation'.
+src/hooks/useMenu.ts(32,12): error TS2339: Property 'to' does not exist on type 'typeof import("gsap")'.
+src/hooks/useMenu.ts(35,14): error TS2339: Property 'fromTo' does not exist on type 'typeof import("gsap")'.
+src/hooks/useMenu.ts(48,12): error TS2339: Property 'to' does not exist on type 'typeof import("gsap")'.
+src/hooks/useMotion.ts(54,19): error TS2740: Type 'typeof gsap' is missing the following properties from type 'typeof import("gsap")': default, CSSPlugin, Back, Bounce, and 37 more.
+src/hooks/useMotion.ts(54,34): error TS2740: Type 'typeof _ScrollTrigger' is missing the following properties from type 'ScrollTrigger': direction, end, isActive, progress, and 13 more.
+src/hooks/useMotion.ts(96,12): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(event: "scroll", callback: ScrollCallback): () => void', gave the following error.
+    Argument of type '(reset?: boolean | undefined, recordVelocity?: boolean | undefined, forceFake?: boolean | undefined) => void' is not assignable to parameter of type 'ScrollCallback'.
+      Types of parameters 'reset' and 'lenis' are incompatible.
+        Type 'Lenis' is not assignable to type 'boolean | undefined'.
+  Overload 2 of 2, '(event: "virtual-scroll", callback: VirtualScrollCallback): () => void', gave the following error.
+    Argument of type '"scroll"' is not assignable to parameter of type '"virtual-scroll"'.
+src/hooks/useMotion.ts(100,14): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(event: "scroll", callback: ScrollCallback): void', gave the following error.
+    Argument of type '(reset?: boolean | undefined, recordVelocity?: boolean | undefined, forceFake?: boolean | undefined) => void' is not assignable to parameter of type 'ScrollCallback'.
+      Types of parameters 'reset' and 'lenis' are incompatible.
+        Type 'Lenis' is not assignable to type 'boolean | undefined'.
+  Overload 2 of 2, '(event: "virtual-scroll", callback: VirtualScrollCallback): void', gave the following error.
+    Argument of type '"scroll"' is not assignable to parameter of type '"virtual-scroll"'.
+src/layouts/AgentLayout.tsx(7,3): error TS6133: 'Wallet' is declared but its value is never read.
+src/layouts/PaymentLayout.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/layouts/UserLayout.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/lib/chat.ts(16,49): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'Record<string, unknown> | undefined'.
+src/lib/chat.ts(26,51): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'Record<string, unknown> | undefined'.
+src/lib/chat.ts(35,44): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'Record<string, unknown> | undefined'.
+src/lib/chat.ts(84,45): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'Record<string, unknown> | undefined'.
+src/lib/logger.ts(75,24): error TS6133: 'entry' is declared but its value is never read.
+src/lib/schemas.ts(45,5): error TS2554: Expected 2-3 arguments, but got 1.
+src/pages/__tests__/NotFound.test.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/admin/AdminVerificationPage.tsx(307,23): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/pages/admin/Audit.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/admin/NetworkAccess.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/admin/Overview.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/admin/RefundRequests.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/admin/Reports.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/admin/Settings.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/admin/Users.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/admin/Users.tsx(121,40): error TS6133: 'idx' is declared but its value is never read.
+src/pages/agent/Analytics.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/agent/Dashboard.tsx(9,3): error TS6133: 'Inbox' is declared but its value is never read.
+src/pages/agent/Dashboard.tsx(14,3): error TS6133: 'TrendingUp' is declared but its value is never read.
+src/pages/agent/Dashboard.tsx(41,7): error TS6133: 'kpiIcons' is declared but its value is never read.
+src/pages/agent/ListingEditor.tsx(169,9): error TS2322: Type 'unknown' is not assignable to type 'AgentListing'.
+src/pages/agent/Listings.tsx(2,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/agent/Messages.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/agent/Settings.tsx(226,43): error TS2345: Argument of type '(p: { email?: boolean | undefined; sms?: boolean | undefined; push?: boolean | undefined; quietHours?: { start: string; end: string; } | undefined; }) => { quietHours: { start: string; end?: string | undefined; }; email?: boolean | undefined; sms?: boolean | undefined; push?: boolean | undefined; }' is not assignable to parameter of type 'SetStateAction<{ email?: boolean | undefined; sms?: boolean | undefined; push?: boolean | undefined; quietHours?: { start: string; end: string; } | undefined; }>'.
+  Type '(p: { email?: boolean | undefined; sms?: boolean | undefined; push?: boolean | undefined; quietHours?: { start: string; end: string; } | undefined; }) => { quietHours: { start: string; end?: string | undefined; }; email?: boolean | undefined; sms?: boolean | undefined; push?: boolean | undefined; }' is not assignable to type '(prevState: { email?: boolean | undefined; sms?: boolean | undefined; push?: boolean | undefined; quietHours?: { start: string; end: string; } | undefined; }) => { email?: boolean | undefined; sms?: boolean | undefined; push?: boolean | undefined; quietHours?: { ...; } | undefined; }'.
+    Call signature return types '{ quietHours: { start: string; end?: string | undefined; }; email?: boolean | undefined; sms?: boolean | undefined; push?: boolean | undefined; }' and '{ email?: boolean | undefined; sms?: boolean | undefined; push?: boolean | undefined; quietHours?: { start: string; end: string; } | undefined; }' are incompatible.
+      The types of 'quietHours.end' are incompatible between these types.
+        Type 'string | undefined' is not assignable to type 'string'.
+          Type 'undefined' is not assignable to type 'string'.
+src/pages/agent/Settings.tsx(233,43): error TS2345: Argument of type '(p: { email?: boolean | undefined; sms?: boolean | undefined; push?: boolean | undefined; quietHours?: { start: string; end: string; } | undefined; }) => { quietHours: { end: string; start?: string | undefined; }; email?: boolean | undefined; sms?: boolean | undefined; push?: boolean | undefined; }' is not assignable to parameter of type 'SetStateAction<{ email?: boolean | undefined; sms?: boolean | undefined; push?: boolean | undefined; quietHours?: { start: string; end: string; } | undefined; }>'.
+  Type '(p: { email?: boolean | undefined; sms?: boolean | undefined; push?: boolean | undefined; quietHours?: { start: string; end: string; } | undefined; }) => { quietHours: { end: string; start?: string | undefined; }; email?: boolean | undefined; sms?: boolean | undefined; push?: boolean | undefined; }' is not assignable to type '(prevState: { email?: boolean | undefined; sms?: boolean | undefined; push?: boolean | undefined; quietHours?: { start: string; end: string; } | undefined; }) => { email?: boolean | undefined; sms?: boolean | undefined; push?: boolean | undefined; quietHours?: { ...; } | undefined; }'.
+    Call signature return types '{ quietHours: { end: string; start?: string | undefined; }; email?: boolean | undefined; sms?: boolean | undefined; push?: boolean | undefined; }' and '{ email?: boolean | undefined; sms?: boolean | undefined; push?: boolean | undefined; quietHours?: { start: string; end: string; } | undefined; }' are incompatible.
+      The types of 'quietHours.start' are incompatible between these types.
+        Type 'string | undefined' is not assignable to type 'string'.
+          Type 'undefined' is not assignable to type 'string'.
+src/pages/agent/Settings.tsx(244,30): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'SetStateAction<{ email?: boolean | undefined; sms?: boolean | undefined; push?: boolean | undefined; quietHours?: { start: string; end: string; } | undefined; }>'.
+src/pages/agent/Viewings.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/agent/Viewings.tsx(148,24): error TS2339: Property 'agentReason' does not exist on type 'ViewingRequest'.
+src/pages/agent/Viewings.tsx(148,93): error TS2339: Property 'agentReason' does not exist on type 'ViewingRequest'.
+src/pages/agent/Viewings.tsx(149,24): error TS2339: Property 'agentMessage' does not exist on type 'ViewingRequest'.
+src/pages/agent/Viewings.tsx(149,95): error TS2339: Property 'agentMessage' does not exist on type 'ViewingRequest'.
+src/pages/auth/Login.tsx(30,10): error TS6133: 'showPassword' is declared but its value is never read.
+src/pages/auth/Login.tsx(30,24): error TS6133: 'setShowPassword' is declared but its value is never read.
+src/pages/auth/Login.tsx(31,22): error TS6133: 'setRememberMe' is declared but its value is never read.
+src/pages/auth/Register.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/messages/Inbox.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/messages/Layout.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/NotFound.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/pay/admin/Audit.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/pay/admin/Reconciliation.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/pay/admin/Reconciliation.tsx(24,31): error TS2322: Type '{ children: string; size: "sm"; tone: string; }' is not assignable to type 'IntrinsicAttributes & ButtonProps & RefAttributes<HTMLButtonElement>'.
+  Property 'tone' does not exist on type 'IntrinsicAttributes & ButtonProps & RefAttributes<HTMLButtonElement>'.
+src/pages/pay/Checkout.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/pay/Dashboard.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/pay/History.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/pay/InvoiceDetail.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/pay/InvoiceDetail.tsx(32,17): error TS2322: Type '{ children: string; tone: string; }' is not assignable to type 'IntrinsicAttributes & ButtonProps & RefAttributes<HTMLButtonElement>'.
+  Property 'tone' does not exist on type 'IntrinsicAttributes & ButtonProps & RefAttributes<HTMLButtonElement>'.
+src/pages/pay/Invoices.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/pay/SecurityCenter.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/pay/Support.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/PropertyDetails.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/PropertyListingsPage.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/PublicLanding.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/user/Inventory.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/user/Messages.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/user/Profile.tsx(71,46): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'Record<string, unknown> | undefined'.
+src/pages/user/Profile.tsx(158,47): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'Record<string, unknown> | undefined'.
+src/pages/user/Saved.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/user/Saved.tsx(162,9): error TS6133: '_describeSearch' is declared but its value is never read.
+src/pages/ZeniLanding.tsx(459,18): error TS2345: Argument of type 'HTMLDivElement | null' is not assignable to parameter of type 'object'.
+  Type 'null' is not assignable to type 'object'.
+src/pages/ZeniLanding.tsx(464,18): error TS2345: Argument of type 'HTMLDivElement | null' is not assignable to parameter of type 'object'.
+  Type 'null' is not assignable to type 'object'.
+src/pay/components/PaymentProgressRing.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pay/components/PayTopbar.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pay/components/SecureNotice.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pay/components/StepUpModal.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pay/components/TransactionsTable.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pay/layout/PayAppLayout.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pay/pages/PayAdminReconcile.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pay/pages/PayDashboard.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pay/pages/PayDashboard.tsx(62,13): error TS2345: Argument of type '() => (() => Socket<DefaultEventsMap, DefaultEventsMap>) | undefined' is not assignable to parameter of type 'EffectCallback'.
+  Type '(() => Socket<DefaultEventsMap, DefaultEventsMap>) | undefined' is not assignable to type 'void | Destructor'.
+    Type '() => Socket<DefaultEventsMap, DefaultEventsMap>' is not assignable to type 'void | Destructor'.
+      Type '() => Socket<DefaultEventsMap, DefaultEventsMap>' is not assignable to type 'Destructor'.
+        Type 'Socket<DefaultEventsMap, DefaultEventsMap>' is not assignable to type 'void | { [UNDEFINED_VOID_ONLY]: never; }'.
+src/pay/pages/PayDashboard.tsx(114,9): error TS6133: '_exportCsv' is declared but its value is never read.
+src/pay/pages/PayDashboard.tsx(130,9): error TS6133: '_promptStepUpThen' is declared but its value is never read.
+src/pay/pages/PayPayments.tsx(179,20): error TS2322: Type '"property_paid"' is not assignable to type '"viewing_requested" | "viewing_fee_paid" | "refund_requested" | "refund_resolved"'.
+src/pay/pages/PayPayments.tsx(179,78): error TS2353: Object literal may only specify known properties, and 'purpose' does not exist in type '{ listingId: string; viewingId: string; hasFee: boolean; } | { viewingId: string; amount: number; currency: string; } | { transactionId: string; reasonLength: number; } | { requestId: string; decision: "rejected" | "approved"; }'.
+src/pay/pages/PayPayments.tsx(183,13): error TS2345: Argument of type '() => (() => Socket<DefaultEventsMap, DefaultEventsMap>) | undefined' is not assignable to parameter of type 'EffectCallback'.
+  Type '(() => Socket<DefaultEventsMap, DefaultEventsMap>) | undefined' is not assignable to type 'void | Destructor'.
+    Type '() => Socket<DefaultEventsMap, DefaultEventsMap>' is not assignable to type 'void | Destructor'.
+      Type '() => Socket<DefaultEventsMap, DefaultEventsMap>' is not assignable to type 'Destructor'.
+        Type 'Socket<DefaultEventsMap, DefaultEventsMap>' is not assignable to type 'void | { [UNDEFINED_VOID_ONLY]: never; }'.
+src/pay/pages/PayPayments.tsx(195,24): error TS2322: Type '"property_paid"' is not assignable to type '"viewing_requested" | "viewing_fee_paid" | "refund_requested" | "refund_resolved"'.
+src/pay/pages/PayPayments.tsx(195,82): error TS2353: Object literal may only specify known properties, and 'purpose' does not exist in type '{ listingId: string; viewingId: string; hasFee: boolean; } | { viewingId: string; amount: number; currency: string; } | { transactionId: string; reasonLength: number; } | { requestId: string; decision: "rejected" | "approved"; }'.
+src/pay/pages/PayProfile.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pay/pages/PayProfile.tsx(25,30): error TS2345: Argument of type 'Dispatch<SetStateAction<PayAccount | null>>' is not assignable to parameter of type '(value: unknown) => void | PromiseLike<void>'.
+  Types of parameters 'value' and 'value' are incompatible.
+    Type 'unknown' is not assignable to type 'SetStateAction<PayAccount | null>'.
+src/pay/pages/PayProfile.tsx(134,29): error TS2322: Type 'string | undefined' is not assignable to type '"mpesa_stk" | "card" | "bank_transfer" | undefined'.
+  Type 'string' is not assignable to type '"mpesa_stk" | "card" | "bank_transfer" | undefined'.
+src/pay/pages/PayProfile.tsx(136,38): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'SetStateAction<PayAccount | null>'.
+src/pay/pages/PayReceipt.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pay/pages/PayTransactions.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pay/pages/PayTransactions.tsx(22,9): error TS6133: '_navigate' is declared but its value is never read.
