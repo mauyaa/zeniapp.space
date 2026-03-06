@@ -13,9 +13,6 @@ concurrency:
 jobs:
   frontend:
     runs-on: ubuntu-latest
-    env:
-      NODE_ENV: development
-      NPM_CONFIG_PRODUCTION: "false"
     defaults:
       run:
         working-directory: .
@@ -30,9 +27,6 @@ jobs:
 
   backend:
     runs-on: ubuntu-latest
-    env:
-      NODE_ENV: development
-      NPM_CONFIG_PRODUCTION: "false"
     services:
       mongo:
         image: mongo:7
