@@ -4,6 +4,7 @@ import fs from 'fs';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
 import mongoose from 'mongoose';
@@ -59,6 +60,9 @@ app.use(
     credentials: true,
   })
 );
+
+// Compress all responses (gzip/deflate) — big win on slow mobile networks
+app.use(compression({ level: 6, threshold: 512 }));
 
 // Stripe webhook needs raw body for signature verification (must be before express.json)
 app.post('/api/pay/stripe/webhook', express.raw({ type: 'application/json' }), stripeWebhook);

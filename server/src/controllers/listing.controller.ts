@@ -48,6 +48,10 @@ export async function search(req: AuthRequest, res: Response) {
 
   const parsed = querySchema.parse(req.query);
   const result = await searchListings(parsed as ListingSearchQuery);
+  // Allow short caching for public search results (30s fresh, 5min stale-while-revalidate)
+  if (!req.user) {
+    res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=300');
+  }
   res.json(result);
 }
 
@@ -143,9 +147,9 @@ export async function updateAgentListing(req: AuthRequest, res: Response) {
   const body = listingBody.partial().parse(req.body);
   const location: ListingDocument['location'] | undefined = body.location
     ? {
-        ...body.location,
-        coordinates: (body.location.coordinates ?? [36.8219, -1.2921]) as [number, number],
-      }
+      ...body.location,
+      coordinates: (body.location.coordinates ?? [36.8219, -1.2921]) as [number, number],
+    }
     : undefined;
   const payload = {
     ...body,
