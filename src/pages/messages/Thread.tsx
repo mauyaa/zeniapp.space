@@ -429,10 +429,12 @@ export function ThreadPage() {
                 const isBot = message.senderType === 'bot' || message.senderType === 'system';
                 const isMine = selfSenderType !== null && message.senderType === selfSenderType;
                 const roundClass = isMine
-                  ? `${isFirstInGroup ? 'rounded-tr-2xl' : 'rounded-tr-md'} ${isLastInGroup ? 'rounded-br-2xl' : 'rounded-br-md'
-                  } rounded-l-2xl`
-                  : `${isFirstInGroup ? 'rounded-tl-2xl' : 'rounded-tl-md'} ${isLastInGroup ? 'rounded-bl-2xl' : 'rounded-bl-md'
-                  } rounded-r-2xl`;
+                  ? `${isFirstInGroup ? 'rounded-tr-2xl' : 'rounded-tr-md'} ${
+                      isLastInGroup ? 'rounded-br-2xl' : 'rounded-br-md'
+                    } rounded-l-2xl`
+                  : `${isFirstInGroup ? 'rounded-tl-2xl' : 'rounded-tl-md'} ${
+                      isLastInGroup ? 'rounded-bl-2xl' : 'rounded-bl-md'
+                    } rounded-r-2xl`;
 
                 return (
                   <React.Fragment key={message.id}>

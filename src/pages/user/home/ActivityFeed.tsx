@@ -23,9 +23,7 @@ export const ActivityFeed = React.memo(function ActivityFeed({ items }: Activity
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="zeni-spec-label flex items-center gap-2">
-          Activity
-        </h2>
+        <h2 className="zeni-spec-label flex items-center gap-2">Activity</h2>
         <button
           type="button"
           onClick={() => navigate('/app/messages')}

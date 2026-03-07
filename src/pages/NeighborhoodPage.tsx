@@ -136,7 +136,7 @@ export function NeighborhoodPage() {
   const { neighborhood, purpose } = useParams<{ neighborhood: string; purpose: 'rent' | 'buy' }>();
   const navigate = useNavigate();
   const [listings, setListings] = React.useState<ListingCard[]>(() => {
-    return (mockProperties as any[])
+    return (mockProperties as Array<(typeof mockProperties)[number]>)
       .filter((p) => {
         const matchProp =
           p.location.neighborhood.toLowerCase() === (neighborhood || '').toLowerCase();

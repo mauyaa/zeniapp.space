@@ -87,9 +87,9 @@ export function PublicMapPage() {
             images:
               listing.images && listing.images.length > 0
                 ? listing.images.map((img) => ({
-                  ...img,
-                  url: resolveApiAssetUrl(img.url) || fallbackImage,
-                }))
+                    ...img,
+                    url: resolveApiAssetUrl(img.url) || fallbackImage,
+                  }))
                 : [{ url: image }],
             agent: {
               name: listing.agent?.name || 'Agent',
@@ -148,9 +148,9 @@ export function PublicMapPage() {
               images:
                 listing.images && listing.images.length > 0
                   ? listing.images.map((img: { url?: string }) => ({
-                    ...img,
-                    url: resolveApiAssetUrl(img.url) || fallbackImage,
-                  }))
+                      ...img,
+                      url: resolveApiAssetUrl(img.url) || fallbackImage,
+                    }))
                   : [{ url: image }],
               agent: {
                 name: listing.agent?.name || 'Agent',

@@ -119,8 +119,8 @@ export function HomePage() {
             </Button>
           </div>
           <p className="mt-2 text-sm text-gray-600">
-            Once you book a tour, your schedule will appear here with agent details and
-            real-time status updates.
+            Once you book a tour, your schedule will appear here with agent details and real-time
+            status updates.
           </p>
           <div className="mt-4 text-xs text-gray-500">Join 200+ users booking today</div>
         </div>

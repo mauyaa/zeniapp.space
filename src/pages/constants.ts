@@ -100,8 +100,6 @@ export const JOURNEYS = [
   },
 ];
 
-
-
 /** Shared CTA link class names for landing page (avoids repeating long Tailwind strings). */
 export const CTA_LINK_CLASSES = {
   outline:
