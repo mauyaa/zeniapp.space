@@ -72,7 +72,7 @@ export function HomePage() {
           </h1>
         </div>
         <div className="flex items-center gap-3">
-          {refreshing && <span className="text-xs font-mono text-emerald-600">Live updating…</span>}
+          {refreshing && <span className="text-xs font-mono text-emerald-600">Updating…</span>}
           <Button
             type="button"
             size="zeni-md"
@@ -97,7 +97,7 @@ export function HomePage() {
           icon={<MessageCircle className="w-5 h-5 text-blue-600" />}
           label="Active Chats"
           value={unreadMessages > 0 ? `${unreadMessages} new` : dedupedConversations.length || '0'}
-          helper="Live"
+          helper=""
           onClick={() => navigate('/app/messages')}
         />
         <StatCard
@@ -119,7 +119,7 @@ export function HomePage() {
             </Button>
           </div>
           <p className="mt-2 text-sm text-gray-600">
-            Once you book a tour, your live command will appear here with agent details and
+            Once you book a tour, your schedule will appear here with agent details and
             real-time status updates.
           </p>
           <div className="mt-4 text-xs text-gray-500">Join 200+ users booking today</div>

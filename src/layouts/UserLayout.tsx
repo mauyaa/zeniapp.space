@@ -190,10 +190,6 @@ export function UserLayout() {
               <p className="text-xs font-bold text-black uppercase tracking-wide truncate">
                 {displayName}
               </p>
-              <p className="text-[10px] text-green-600 font-bold flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                Online
-              </p>
             </div>
           </div>
         </div>

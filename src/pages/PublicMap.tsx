@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { PropertyMap } from '../components/PropertyMap';
 import { Map as MapIcon, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthProvider';
-import { searchListings } from '../lib/api/listings';
+import { searchListings, type ListingCard } from '../lib/api/listings';
 import { normalizeKenyaLatLng } from '../utils/geo';
 import { properties as FALLBACK_PROPERTIES, type Property } from '../utils/mockData';
 import { listingThumbUrl } from '../lib/cloudinary';
@@ -87,9 +87,9 @@ export function PublicMapPage() {
             images:
               listing.images && listing.images.length > 0
                 ? listing.images.map((img) => ({
-                    ...img,
-                    url: resolveApiAssetUrl(img.url) || fallbackImage,
-                  }))
+                  ...img,
+                  url: resolveApiAssetUrl(img.url) || fallbackImage,
+                }))
                 : [{ url: image }],
             agent: {
               name: listing.agent?.name || 'Agent',
@@ -112,7 +112,7 @@ export function PublicMapPage() {
           // Re-map and update... (abstracted/simplified here for brevity as previously done)
           // For true performance, we'd reuse the conversion logic, but here we just re-run the fetch
           // and the conversion is identical.
-          const converted: PropertyWithMeta[] = res.items.map((listing: any) => {
+          const converted: PropertyWithMeta[] = res.items.map((listing: ListingCard) => {
             const [lat, lng] = normalizeKenyaLatLng(
               listing.location?.lat ?? listing.location?.coordinates?.[1],
               listing.location?.lng ?? listing.location?.coordinates?.[0]
@@ -147,10 +147,10 @@ export function PublicMapPage() {
               imageUrl: image,
               images:
                 listing.images && listing.images.length > 0
-                  ? listing.images.map((img: any) => ({
-                      ...img,
-                      url: resolveApiAssetUrl(img.url) || fallbackImage,
-                    }))
+                  ? listing.images.map((img: { url?: string }) => ({
+                    ...img,
+                    url: resolveApiAssetUrl(img.url) || fallbackImage,
+                  }))
                   : [{ url: image }],
               agent: {
                 name: listing.agent?.name || 'Agent',
@@ -229,7 +229,7 @@ export function PublicMapPage() {
         {/* Floating card prompting auth when a marker is selected */}
         <div className="pointer-events-none absolute inset-0 flex items-end justify-center md:justify-start md:items-start p-4 z-[400]">
           <div
-            className={`transition-all duration-300 ease-out ${selected ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'} pointer-events-auto max-w-sm w-full md:w-96`}
+            className={`transition - all duration - 300 ease - out ${selected ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'} pointer - events - auto max - w - sm w - full md: w - 96`}
           >
             {selected && (
               <div className="rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden">

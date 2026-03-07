@@ -100,13 +100,7 @@ export const JOURNEYS = [
   },
 ];
 
-/** Marquee items (rendered in a row with "/" separators; can be duplicated for seamless loop). */
-export const MARQUEE_ITEMS = [
-  'Verified Listings',
-  'Curated For Kenya',
-  'Transparent Viewings',
-  'ZENI. Real Estate',
-] as const;
+
 
 /** Shared CTA link class names for landing page (avoids repeating long Tailwind strings). */
 export const CTA_LINK_CLASSES = {
@@ -128,8 +122,8 @@ export const FAQS = [
     a: 'We verify agent identity, property documents, and title deeds, and match listings to on-site details before they go live.',
   },
   {
-    q: 'Do I need to pay to browse?',
-    a: 'No. Browsing is free. Fees apply only when you list or complete a transaction with Zeni.',
+    q: 'Do I need to pay to use ZENI?',
+    a: 'No. ZENI is completely free to use — browsing, saving, scheduling viewings, and messaging agents are all at no cost.',
   },
   {
     q: 'How are viewings scheduled?',

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { fetchInsights, subscribeNewsletter, searchListings } from '../lib/api';
 import type { ListingCard } from '../lib/api';
 import { PropertyMap } from '../components/PropertyMap';
-import { SERVICES, FAQS, MARQUEE_ITEMS, CTA_LINK_CLASSES } from './constants';
+import { SERVICES, FAQS, CTA_LINK_CLASSES } from './constants';
 import { getFallbackHomeImage } from '../constants/images';
 import { getPublicSocket, disconnectPublicSocket } from '../lib/publicSocket';
 import { useAsyncEffect } from '../hooks/useAsyncEffect';
@@ -17,7 +17,7 @@ import { StepsSlider } from '../components/landing/StepsSlider';
 import { TrustTiles } from '../components/landing/TrustTiles';
 import { SafetySection } from '../components/landing/SafetySection';
 import { AgentSection } from '../components/landing/AgentSection';
-import { SiteIndexSection } from '../components/landing/SiteIndexSection';
+
 import { resolveApiAssetUrl } from '../lib/runtime';
 import { listingThumbUrl } from '../lib/cloudinary';
 
@@ -125,9 +125,7 @@ const meta = import.meta as unknown as { env?: Record<string, string | undefined
 const env = meta?.env || {};
 const CONTACT_EMAIL = (env.VITE_CONTACT_EMAIL as string)?.trim() || 'zeniapp.ke@gmail.com';
 const CONTACT_PHONE = (env.VITE_CONTACT_PHONE as string)?.trim() || '';
-const SOCIAL_INSTAGRAM = (env.VITE_SOCIAL_INSTAGRAM as string)?.trim() || '';
-const SOCIAL_LINKEDIN = (env.VITE_SOCIAL_LINKEDIN as string)?.trim() || '';
-const SOCIAL_TWITTER = (env.VITE_SOCIAL_TWITTER as string)?.trim() || '';
+
 
 function formatKesPrice(price: number, isRental = false): string {
   if (isRental) return `KES ${(price / 1000).toFixed(0)}K/mo`;
@@ -173,7 +171,7 @@ const MAP_EXPLORE_PATH = '/map';
 const RING_IMAGE_COUNT = 8;
 const MAP_LISTINGS_LIMIT = 50;
 const INSIGHTS_LIMIT = 3;
-const HERO_STATUS_CYCLE_MS = 1600;
+
 const SCROLL_OFFSET_PX = -80;
 const LANDING_REFRESH_MS = 8000;
 
@@ -246,16 +244,7 @@ function arraysEqual(a: string[], b: string[]) {
   return true;
 }
 
-const HERO_STATUS_LABELS = [
-  'Verified',
-  'Pending',
-  'Syncing',
-  'Locked',
-  'Alert',
-  'Processing',
-  'Valuing',
-  'Encrypting',
-];
+
 
 function listingCardToProject(item: ListingCard): Project {
   const isRental =
@@ -331,18 +320,16 @@ function FaqAccordion({ faqs }: { faqs: { q: string; a: string }[] }) {
             aria-expanded={openIndex === i}
           >
             <span
-              className={`text-base font-light transition-colors ${
-                openIndex === i ? 'text-[var(--zeni-black)]' : 'text-[var(--zeni-black)]/70'
-              } group-hover:text-[var(--zeni-black)]`}
+              className={`text-base font-light transition-colors ${openIndex === i ? 'text-[var(--zeni-black)]' : 'text-[var(--zeni-black)]/70'
+                } group-hover:text-[var(--zeni-black)]`}
             >
               {faq.q}
             </span>
             <span
-              className={`ml-4 flex-shrink-0 w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-300 ${
-                openIndex === i
-                  ? 'border-[var(--zeni-green)] bg-[var(--zeni-green)] text-white rotate-45'
-                  : 'border-[var(--zeni-black)]/15 text-[var(--zeni-black)]/40 group-hover:border-[var(--zeni-green)] group-hover:text-[var(--zeni-green)]'
-              }`}
+              className={`ml-4 flex-shrink-0 w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-300 ${openIndex === i
+                ? 'border-[var(--zeni-green)] bg-[var(--zeni-green)] text-white rotate-45'
+                : 'border-[var(--zeni-black)]/15 text-[var(--zeni-black)]/40 group-hover:border-[var(--zeni-green)] group-hover:text-[var(--zeni-green)]'
+                }`}
             >
               <svg
                 viewBox="0 0 24 24"
@@ -356,9 +343,8 @@ function FaqAccordion({ faqs }: { faqs: { q: string; a: string }[] }) {
             </span>
           </button>
           <div
-            className={`overflow-hidden transition-all duration-300 ease-in-out ${
-              openIndex === i ? 'max-h-48 pb-6' : 'max-h-0'
-            }`}
+            className={`overflow-hidden transition-all duration-300 ease-in-out ${openIndex === i ? 'max-h-48 pb-6' : 'max-h-0'
+              }`}
           >
             <p className="text-sm text-[var(--zeni-black)]/60 leading-relaxed font-light pr-12">
               {faq.a}
@@ -396,7 +382,7 @@ export function ZeniLanding() {
   const rootRef = useRef<HTMLDivElement>(null);
   const previewContainer = useRef<HTMLDivElement>(null);
   const previewImg = useRef<HTMLImageElement>(null);
-  const heroStatusTextRef = useRef<HTMLSpanElement>(null);
+
 
   const { reduceMotion, coarsePointer, disableMotion, gsap, lenis, ScrollTrigger } = useMotion();
   useCursor({ enabled: false, gsap });
@@ -581,16 +567,7 @@ export function ZeniLanding() {
     [lenis]
   );
 
-  useEffect(() => {
-    let currentIndex = 0;
-    const timer = setInterval(() => {
-      currentIndex = (currentIndex + 1) % HERO_STATUS_LABELS.length;
-      if (heroStatusTextRef.current) {
-        heroStatusTextRef.current.textContent = HERO_STATUS_LABELS[currentIndex];
-      }
-    }, HERO_STATUS_CYCLE_MS);
-    return () => clearInterval(timer);
-  }, []);
+
 
   useAsyncEffect(async (signal) => {
     setInsightsStatus('loading');
@@ -847,47 +824,7 @@ export function ZeniLanding() {
   const newsletterMessageClassName =
     newsletterStatus === 'error' ? 'zeni-orange-text' : 'text-[#059669]';
 
-  const socialLinks = [
-    {
-      href: SOCIAL_INSTAGRAM || '#contact',
-      label: 'Instagram',
-      abbr: 'IG',
-      icon: (
-        <svg
-          viewBox="0 0 24 24"
-          className="h-4 w-4"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-        >
-          <rect x="2" y="2" width="20" height="20" rx="5" strokeLinecap="round" />
-          <circle cx="12" cy="12" r="4" />
-          <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" />
-        </svg>
-      ),
-    },
-    {
-      href: SOCIAL_LINKEDIN || '#contact',
-      label: 'LinkedIn',
-      abbr: 'LI',
-      icon: (
-        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-          <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z" />
-          <circle cx="4" cy="4" r="2" />
-        </svg>
-      ),
-    },
-    {
-      href: SOCIAL_TWITTER || '#contact',
-      label: 'X (Twitter)',
-      abbr: 'X',
-      icon: (
-        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-        </svg>
-      ),
-    },
-  ];
+
 
   return (
     <div
@@ -1068,7 +1005,7 @@ export function ZeniLanding() {
               Log in
             </Link>
             <Link to="/register" className={CTA_LINK_CLASSES.primary}>
-              Sign up free
+              Sign up
             </Link>
           </div>
           <div className="flex md:hidden items-center gap-2">
@@ -1122,21 +1059,6 @@ export function ZeniLanding() {
           />
 
           <div className="relative z-10 flex-1 flex flex-col justify-center w-full max-w-[1600px] mx-auto px-6 md:px-16 pt-4 pb-12">
-            {/* Top row: live pill + tagline */}
-            <div className="hero-animate flex flex-wrap items-center gap-4 mb-10">
-              <div className="flex items-center gap-2 bg-white/85 border border-[var(--zeni-black)]/12 rounded-full px-4 py-2">
-                <span
-                  className="w-2 h-2 rounded-full bg-[var(--zeni-green)] animate-pulse"
-                  aria-hidden="true"
-                />
-                <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-[var(--zeni-black)]/60">
-                  Live · <span ref={heroStatusTextRef}>Verified</span>
-                </span>
-              </div>
-              <span className="font-mono text-[11px] uppercase tracking-[0.25em] text-[var(--zeni-green)]/70 hidden md:block">
-                Kenya's #1 Verified Property Platform
-              </span>
-            </div>
 
             {/* Main headline + ring side by side */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-0 items-center">
@@ -1160,7 +1082,7 @@ export function ZeniLanding() {
                     to="/register"
                     className="font-mono text-xs uppercase tracking-[0.15em] px-8 py-4 rounded-xl bg-[var(--zeni-green)] text-white hover:opacity-90 transition-all shadow-lg shadow-emerald-900/40"
                   >
-                    Get started free →
+                    Get started →
                   </Link>
                   <a
                     href="#projects"
@@ -1230,69 +1152,54 @@ export function ZeniLanding() {
                   >
                     <div className="kinetic-ball-inner" />
                   </div>
-                  {ringImages.map((src, i) => (
-                    <div
-                      key={i}
-                      className="ring-item"
-                      style={{ transform: `rotateY(${i * 45}deg) translateZ(320px)` }}
-                    >
-                      <img
-                        src={src}
-                        alt={featuredProjects[i]?.alt || 'Property preview'}
-                        className="w-full h-full object-cover rounded-sm shadow-2xl"
-                        loading="eager"
-                        decoding="async"
-                        onError={(event) => {
-                          const fallback = FALLBACK_RING_IMAGES[i % FALLBACK_RING_IMAGES.length];
-                          if (event.currentTarget.src !== fallback) {
-                            event.currentTarget.src = fallback;
-                          }
-                        }}
-                      />
-                    </div>
-                  ))}
+                  {ringImages.map((src, i) => {
+                    const project = featuredProjects[i];
+                    return (
+                      <div
+                        key={i}
+                        className="ring-item relative"
+                        style={{ transform: `rotateY(${i * 45}deg) translateZ(320px)` }}
+                      >
+                        <img
+                          src={src}
+                          alt={project?.alt || 'Property preview'}
+                          className="w-full h-full object-cover rounded-sm shadow-2xl"
+                          loading="eager"
+                          decoding="async"
+                          onError={(event) => {
+                            const fallback = FALLBACK_RING_IMAGES[i % FALLBACK_RING_IMAGES.length];
+                            if (event.currentTarget.src !== fallback) {
+                              event.currentTarget.src = fallback;
+                            }
+                          }}
+                        />
+                        {project && (
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 rounded-b-sm">
+                            <p className="text-white text-[11px] font-semibold leading-tight truncate">
+                              {project.title}
+                            </p>
+                            <p className="text-white/70 text-[9px] font-mono uppercase tracking-wider mt-0.5 truncate">
+                              {project.location} · {project.type}
+                            </p>
+                            {project.price && (
+                              <p className="text-[var(--zeni-green)] text-[10px] font-mono font-bold mt-0.5">
+                                {project.price}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Bottom ticker bar */}
-          <div className="relative z-10 border-t border-[var(--zeni-black)]/8 py-3 overflow-hidden bg-[var(--zeni-white)]">
-            <div className="flex gap-12 font-mono text-[10px] uppercase tracking-widest text-[var(--zeni-black)]/45 whitespace-nowrap animate-[marquee_30s_linear_infinite]">
-              {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, i) => (
-                <span key={i} className="flex items-center gap-3">
-                  <span className="w-1 h-1 rounded-full bg-[var(--zeni-green)] inline-block" />
-                  {item === 'Verified Listings' && listingStats
-                    ? `${listingStats.verified.toLocaleString()} Verified Listings`
-                    : item}
-                </span>
-              ))}
-            </div>
-          </div>
+
         </section>
 
-        {/* ── MARQUEE ── */}
-        <div
-          className="py-5 border-b border-[var(--zeni-black)]/5 overflow-hidden bg-[var(--zeni-white)]"
-          aria-hidden="true"
-        >
-          <div className="flex gap-16 font-mono text-xs uppercase tracking-widest text-[var(--zeni-black)]/65 whitespace-nowrap animate-[marquee_25s_linear_infinite]">
-            {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].flatMap((item, i, arr) => {
-              const text =
-                item === 'Verified Listings' && listingStats
-                  ? `${listingStats.verified.toLocaleString()} Verified Listings`
-                  : item;
-              const parts: React.ReactNode[] = [<span key={`t-${i}`}>{text}</span>];
-              if (i < arr.length - 1)
-                parts.push(
-                  <span key={`s-${i}`} className="zeni-orange-text">
-                    /
-                  </span>
-                );
-              return parts;
-            })}
-          </div>
-        </div>
+
 
         {/* ── MAP SECTION ── */}
         <section
@@ -1417,9 +1324,8 @@ export function ZeniLanding() {
             {SERVICES.map((service, index) => (
               <article
                 key={service.id}
-                className={`p-16 border-[var(--zeni-black)]/5 hover:bg-[var(--zeni-white)] transition-colors group ${
-                  index % 2 === 0 ? 'md:border-r' : ''
-                } ${index < 2 ? 'border-b' : ''}`}
+                className={`p-16 border-[var(--zeni-black)]/5 hover:bg-[var(--zeni-white)] transition-colors group ${index % 2 === 0 ? 'md:border-r' : ''
+                  } ${index < 2 ? 'border-b' : ''}`}
               >
                 <div className="font-mono text-xs text-[var(--zeni-green)] mb-8" aria-hidden="true">
                   {service.id}.
@@ -1729,67 +1635,28 @@ export function ZeniLanding() {
       {/* ── FOOTER ── */}
       <footer
         id="contact"
-        className="py-24 px-4 md:px-12 bg-[var(--zeni-black)] text-white scroll-mt-28"
+        className="py-16 px-4 md:px-12 bg-[var(--zeni-black)] text-white scroll-mt-28"
       >
         <div className="max-w-7xl mx-auto">
-          {/* Site index */}
-          <div className="mb-20 pb-16 border-b border-white/10">
-            <div className="[&_a]:text-white/50 [&_a:hover]:text-white [&_a]:transition-colors [&_.text-xs]:text-white/30 [&_.text-sm]:text-white/50 [&_h2]:text-white [&_p]:text-white/50">
-              <SiteIndexSection />
-            </div>
-          </div>
-
-          {/* Footer main */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-16">
-            <div className="col-span-12 md:col-span-6">
-              <h2 className="text-4xl md:text-5xl font-serif font-bold tracking-tight mb-8 text-white">
-                <Link to="/" className="hover:opacity-80 transition-opacity" aria-label="Zeni Home">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 items-start">
+            {/* Brand */}
+            <div className="col-span-12 md:col-span-4">
+              <Link to="/" className="hover:opacity-80 transition-opacity" aria-label="Zeni Home">
+                <span className="text-3xl font-serif font-bold tracking-tight text-white">
                   ZENI<span className="text-[var(--zeni-green)]">.</span>
-                </Link>
-              </h2>
-              <p className="text-lg md:text-xl font-light leading-relaxed text-white/70 max-w-sm mb-10">
+                </span>
+              </Link>
+              <p className="mt-4 text-sm font-light leading-relaxed text-white/50 max-w-xs">
                 The standard for Kenyan property. Verified spaces, clear viewings.
               </p>
-              {/* Social links — always shown */}
-              <nav className="flex gap-4" aria-label="Social Links">
-                {socialLinks.map(({ href, label, abbr, icon }) => (
-                  <a
-                    key={abbr}
-                    href={href}
-                    target={href.startsWith('http') ? '_blank' : undefined}
-                    rel={href.startsWith('http') ? 'noopener noreferrer' : undefined}
-                    aria-label={label}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-white/50 hover:border-white/50 hover:text-white transition-all"
-                  >
-                    {icon}
-                  </a>
-                ))}
-              </nav>
             </div>
 
-            <div className="col-span-12 md:col-span-4 md:col-start-9 flex flex-col justify-end">
-              <address className="space-y-4 not-italic">
-                <p className="font-mono text-xs uppercase tracking-widest text-white/40 block mb-2">
-                  Contact
-                </p>
-                <a
-                  href={`mailto:${CONTACT_EMAIL}`}
-                  className="block font-light text-white/70 hover:text-white transition-colors"
-                >
-                  {CONTACT_EMAIL}
-                </a>
-                {CONTACT_PHONE && (
-                  <a
-                    href={`tel:${CONTACT_PHONE.replace(/\s/g, '')}`}
-                    className="block font-light text-white/70 hover:text-white transition-colors mt-1"
-                  >
-                    {CONTACT_PHONE}
-                  </a>
-                )}
-              </address>
-
-              {/* Quick links */}
-              <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2">
+            {/* Quick links */}
+            <div className="col-span-6 md:col-span-3">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-white/35 mb-4">
+                Quick links
+              </p>
+              <nav className="flex flex-col gap-2.5">
                 {[
                   { label: 'Browse Map', to: MAP_EXPLORE_PATH },
                   { label: 'Sign Up', to: '/register' },
@@ -1799,19 +1666,41 @@ export function ZeniLanding() {
                   <Link
                     key={label}
                     to={to}
-                    className="font-mono text-xs uppercase tracking-widest text-white/40 hover:text-white transition-colors"
+                    className="text-sm font-light text-white/50 hover:text-white transition-colors"
                   >
                     {label}
                   </Link>
                 ))}
-              </div>
+              </nav>
+            </div>
+
+            {/* Contact */}
+            <div className="col-span-6 md:col-span-3 md:col-start-10">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-white/35 mb-4">
+                Contact
+              </p>
+              <address className="not-italic space-y-2">
+                <a
+                  href={`mailto:${CONTACT_EMAIL}`}
+                  className="block text-sm font-light text-white/50 hover:text-white transition-colors"
+                >
+                  {CONTACT_EMAIL}
+                </a>
+                {CONTACT_PHONE && (
+                  <a
+                    href={`tel:${CONTACT_PHONE.replace(/\s/g, '')}`}
+                    className="block text-sm font-light text-white/50 hover:text-white transition-colors"
+                  >
+                    {CONTACT_PHONE}
+                  </a>
+                )}
+              </address>
             </div>
           </div>
 
-          <div className="mt-24 pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between gap-4 text-xs font-mono uppercase tracking-widest text-white/30">
-            <span>© 2026 ZENI. Kenya</span>
-            <span>Verified · Transparent · Trusted</span>
-            <span>Kenya, KE</span>
+          <div className="mt-12 pt-6 border-t border-white/8 flex flex-col sm:flex-row justify-between gap-3 text-[10px] font-mono uppercase tracking-widest text-white/25">
+            <span>© 2026 ZENI</span>
+            <span>Nairobi, Kenya</span>
           </div>
         </div>
       </footer>

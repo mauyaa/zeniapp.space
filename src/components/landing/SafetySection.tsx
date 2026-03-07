@@ -2,44 +2,48 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 const checks = [
-  'Verified badges show listings reviewed by ZENI (Kenyan Real Estate Management System).',
+  'Verified badges show listings reviewed by ZENI.',
   'Report suspicious listings directly from any card.',
   'Schedule safe viewings and use in-app chat first.',
 ];
 
 export function SafetySection() {
   return (
-    <div className="rounded-3xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+    <div className="rounded-2xl border border-[var(--zeni-black)]/8 bg-[var(--zeni-white)] p-8">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <div className="text-xs uppercase tracking-[0.3em] text-[rgb(var(--muted))]">Safety</div>
-          <h2 className="mt-3 text-2xl sm:text-3xl font-semibold tracking-tight text-[rgb(var(--text))]">
-            Safety and trust, explained.
+          <div className="font-mono text-xs uppercase tracking-widest text-[var(--zeni-black)]/45">
+            Safety
+          </div>
+          <h2 className="mt-3 text-2xl sm:text-3xl font-light tracking-tight text-[var(--zeni-black)]">
+            Safety and trust, <span className="font-medium">explained.</span>
           </h2>
-          <p className="mt-2 text-sm text-[rgb(var(--muted))] max-w-xl">
+          <p className="mt-2 text-sm text-[var(--zeni-black)]/55 max-w-xl font-light">
             Anti-scam checks and verified agents across Kenya reduce risk for everyone.
           </p>
         </div>
         <Link
           to="/login"
-          className="text-sm text-[rgb(var(--accent))] underline underline-offset-4"
+          className="font-mono text-xs uppercase tracking-widest text-[var(--zeni-green)] hover:text-[var(--zeni-black)] transition-colors"
         >
-          Learn how verification works &rarr;
+          Learn more →
         </Link>
       </div>
-      <div className="mt-6 grid gap-3 sm:grid-cols-3 text-sm text-[rgb(var(--muted))]">
+      <div className="mt-8 grid gap-4 sm:grid-cols-3">
         {checks.map((check) => (
-          <div key={check} className="flex items-start gap-2">
+          <div key={check} className="flex items-start gap-3">
             <svg
               viewBox="0 0 24 24"
-              className="mt-0.5 h-4 w-4 text-[rgb(var(--accent))]"
+              className="mt-0.5 h-4 w-4 flex-shrink-0 text-[var(--zeni-green)]"
               fill="none"
               stroke="currentColor"
               strokeWidth="1.5"
             >
               <path d="M5 12l4 4L19 6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <span>{check}</span>
+            <span className="text-sm text-[var(--zeni-black)]/55 font-light leading-relaxed">
+              {check}
+            </span>
           </div>
         ))}
       </div>

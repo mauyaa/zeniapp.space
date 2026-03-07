@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { MapPin, BedDouble, ShieldCheck, ChevronRight, ArrowLeft } from 'lucide-react';
-import { searchListings, type ListingCard } from '../lib/api';
+import { searchListings, type ListingCard } from '../lib/api/listings';
 import { getPublicSocket, disconnectPublicSocket } from '../lib/publicSocket';
 import { listingThumbUrl } from '../lib/cloudinary';
 import { resolveApiAssetUrl } from '../lib/runtime';
@@ -127,16 +127,16 @@ const NEIGHBORHOODS: Record<
 function formatCompact(price: number, currency: string, purpose?: string) {
   const sym = currency?.includes('KES') ? 'KES' : currency || 'KES';
   const unit = purpose === 'rent' ? '/mo' : '';
-  if (price >= 1_000_000) return `${sym} ${(price / 1_000_000).toFixed(1)}M${unit}`;
-  if (price >= 1_000) return `${sym} ${(price / 1_000).toFixed(0)}K${unit}`;
-  return `${sym} ${price.toLocaleString()}${unit}`;
+  if (price >= 1_000_000) return `${sym} ${(price / 1_000_000).toFixed(1)}M${unit} `;
+  if (price >= 1_000) return `${sym} ${(price / 1_000).toFixed(0)}K${unit} `;
+  return `${sym} ${price.toLocaleString()}${unit} `;
 }
 
 export function NeighborhoodPage() {
   const { neighborhood, purpose } = useParams<{ neighborhood: string; purpose: 'rent' | 'buy' }>();
   const navigate = useNavigate();
   const [listings, setListings] = React.useState<ListingCard[]>(() => {
-    return mockProperties
+    return (mockProperties as any[])
       .filter((p) => {
         const matchProp =
           p.location.neighborhood.toLowerCase() === (neighborhood || '').toLowerCase();
@@ -195,7 +195,7 @@ export function NeighborhoodPage() {
 
   useEffect(() => {
     document.title = `${purposeLabel} in ${data?.title || neighborhood} - Zeni`;
-    const desc = `Browse ${purpose === 'buy' ? 'properties for sale' : 'rentals'} in ${data?.title || neighborhood}, Kenya. Verified listings updated daily.`;
+    const desc = `Browse ${purpose === 'buy' ? 'properties for sale' : 'rentals'} in ${data?.title || neighborhood}, Kenya.Verified listings updated daily.`;
     let el = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
     if (!el) {
       el = document.createElement('meta');
@@ -291,7 +291,7 @@ export function NeighborhoodPage() {
       <header>
         <div className="flex items-center gap-2 mb-3">
           <span
-            className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-widest rounded-md ${purpose === 'buy' ? 'bg-zinc-900 text-white' : 'bg-emerald-600 text-white'}`}
+            className={`px - 2 py - 1 text - [10px] font - mono font - bold uppercase tracking - widest rounded - md ${purpose === 'buy' ? 'bg-zinc-900 text-white' : 'bg-emerald-600 text-white'} `}
           >
             For {purposeLabel}
           </span>
@@ -308,7 +308,7 @@ export function NeighborhoodPage() {
       {/* Listings grid */}
       <section>
         <h2 className="text-xs font-mono uppercase tracking-widest text-zinc-400 mb-4">
-          {loading ? 'Loading listings…' : `${listings.length} listings in ${data.title}`}
+          {loading ? 'Loading listings…' : `${listings.length} listings in ${data.title} `}
         </h2>
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -321,7 +321,7 @@ export function NeighborhoodPage() {
             {listings.map((l) => (
               <Link
                 key={l.id}
-                to={`/listing/${l.id}`}
+                to={`/ listing / ${l.id} `}
                 className="group block rounded-xl overflow-hidden border border-zinc-200 bg-white hover:border-emerald-400 hover:shadow-md transition-all"
               >
                 <div className="aspect-[4/3] bg-zinc-100 overflow-hidden">
@@ -364,7 +364,7 @@ export function NeighborhoodPage() {
         {listings.length > 0 && (
           <div className="mt-6 text-center">
             <button
-              onClick={() => navigate(`/explore?q=${neighborhood}&purpose=${purpose}`)}
+              onClick={() => navigate(`/ explore ? q = ${neighborhood}& purpose=${purpose} `)}
               className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-zinc-800 transition-colors"
             >
               See all listings in {data.title} <ChevronRight className="w-4 h-4" />

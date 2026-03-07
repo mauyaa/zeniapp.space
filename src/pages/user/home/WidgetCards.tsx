@@ -43,7 +43,7 @@ export const ScheduleWidget = React.memo(function ScheduleWidget({
       <div className="mt-6 relative z-10">
         <div className="flex justify-between text-[10px] font-bold uppercase text-zinc-500 mb-2">
           <span>Today&apos;s capacity</span>
-          <span>{upcomingCount === 0 ? '100% Free' : `${upcomingCount} scheduled`}</span>
+          <span>{upcomingCount === 0 ? 'All clear' : `${upcomingCount} scheduled`}</span>
         </div>
         <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
           <div
@@ -92,8 +92,8 @@ export const MarketPulseWidget = React.memo(function MarketPulseWidget({
         <div className="bg-zinc-800 text-white p-2 rounded-lg">
           <TrendingUp className="w-5 h-5" />
         </div>
-        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-          <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" /> Live
+        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+          Market
         </span>
       </div>
       <div className="relative z-10">

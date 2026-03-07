@@ -11,30 +11,29 @@ export function AgentSection() {
   return (
     <div className="grid gap-10 lg:grid-cols-[1.1fr,0.9fr] lg:items-center">
       <div>
-        <div className="text-xs uppercase tracking-[0.3em] text-[rgb(var(--muted))]">
-          For agents
-        </div>
-        <h2 className="mt-4 text-3xl sm:text-4xl font-semibold tracking-tight text-[rgb(var(--text))]">
-          For agents who want serious leads.
+        <h2 className="text-3xl sm:text-4xl font-light tracking-tight text-[var(--zeni-black)]">
+          For agents who want <span className="font-medium">serious leads.</span>
         </h2>
-        <p className="mt-3 text-base text-[rgb(var(--muted))] max-w-xl">
+        <p className="mt-3 text-[var(--zeni-black)]/55 max-w-xl font-light">
           ZENI helps verified agents across Kenya build trust and respond faster.
         </p>
       </div>
-      <div className="rounded-3xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-        <div className="space-y-3 text-sm text-[rgb(var(--muted))]">
+      <div className="rounded-2xl border border-[var(--zeni-black)]/8 bg-[var(--zeni-white)] p-6">
+        <div className="space-y-4">
           {benefits.map((benefit) => (
-            <div key={benefit} className="flex items-start gap-2">
-              <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[rgb(var(--accent))]" />
-              <span>{benefit}</span>
+            <div key={benefit} className="flex items-start gap-3">
+              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[var(--zeni-green)] flex-shrink-0" />
+              <span className="text-sm text-[var(--zeni-black)]/55 font-light leading-relaxed">
+                {benefit}
+              </span>
             </div>
           ))}
         </div>
         <Link
           to="/agentlogin"
-          className="mt-6 inline-flex text-sm text-[rgb(var(--accent))] underline underline-offset-4"
+          className="mt-8 inline-flex font-mono text-xs uppercase tracking-widest text-[var(--zeni-green)] hover:text-[var(--zeni-black)] transition-colors"
         >
-          Open Agent Portal &rarr;
+          Open Agent Portal →
         </Link>
       </div>
     </div>

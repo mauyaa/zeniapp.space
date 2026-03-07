@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Fingerprint, CheckCircle2, AlertCircle, Lock, ArrowLeft } from 'lucide-react';
+import { AlertCircle, Lock, ArrowLeft } from 'lucide-react';
 import { usePayAuth } from '../PayAuthContext';
 
 export function PayLogin() {
@@ -176,7 +176,7 @@ export function PayLogin() {
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
                 ) : (
                   <>
-                    <Fingerprint className="h-4 w-4 text-emerald-400 transition-colors group-hover:text-white" />
+                    <Lock className="h-4 w-4 text-emerald-400 transition-colors group-hover:text-white" />
                     <span>Authenticate & Pay</span>
                   </>
                 )}
@@ -204,22 +204,7 @@ export function PayLogin() {
           <div className="absolute inset-0 bg-gradient-to-t from-[#0f5132] via-transparent to-transparent opacity-80" />
 
           <div className="absolute bottom-12 left-12 right-12">
-            <div className="rounded-xl border border-white/15 bg-white/12 p-5 backdrop-blur-md shadow-lg shadow-black/25">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-xs font-bold text-white">System Status</span>
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                </span>
-              </div>
-              <div className="space-y-2">
-                <StatusRow label="PAYMENT GATEWAY" status="ONLINE" />
-                <StatusRow label="MPESA EXPRESS" status="ONLINE" />
-                <StatusRow label="CARD PROCESSING" status="ONLINE" />
-              </div>
-            </div>
-
-            <p className="mt-4 text-center text-[10px] text-white/40">
+            <p className="text-center text-[10px] text-white/40">
               Authorized Access Only. All activities are monitored.
             </p>
           </div>
@@ -229,14 +214,4 @@ export function PayLogin() {
   );
 }
 
-function StatusRow({ label, status }: { label: string; status: string }) {
-  return (
-    <div className="flex justify-between font-mono text-[10px] text-stone-300">
-      <span>{label}</span>
-      <div className="flex items-center gap-1.5 text-emerald-400">
-        <CheckCircle2 className="h-3 w-3" />
-        <span>{status}</span>
-      </div>
-    </div>
-  );
-}
+

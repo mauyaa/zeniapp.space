@@ -7,7 +7,7 @@ const tiles = [
     icon: (
       <svg
         viewBox="0 0 24 24"
-        className="h-4 w-4"
+        className="h-5 w-5"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.5"
@@ -27,7 +27,7 @@ const tiles = [
     icon: (
       <svg
         viewBox="0 0 24 24"
-        className="h-4 w-4"
+        className="h-5 w-5"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.5"
@@ -42,7 +42,7 @@ const tiles = [
     icon: (
       <svg
         viewBox="0 0 24 24"
-        className="h-4 w-4"
+        className="h-5 w-5"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.5"
@@ -57,7 +57,7 @@ const tiles = [
     icon: (
       <svg
         viewBox="0 0 24 24"
-        className="h-4 w-4"
+        className="h-5 w-5"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.5"
@@ -77,7 +77,7 @@ const tiles = [
     icon: (
       <svg
         viewBox="0 0 24 24"
-        className="h-4 w-4"
+        className="h-5 w-5"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.5"
@@ -95,13 +95,15 @@ export function TrustTiles() {
       {tiles.map((tile) => (
         <div
           key={tile.title}
-          className="rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4 text-sm shadow-[0_12px_26px_rgba(15,23,42,0.06)]"
+          className="rounded-2xl border border-[var(--zeni-black)]/8 bg-[var(--zeni-white)] p-5 transition-all hover:shadow-lg hover:border-[var(--zeni-black)]/15 group"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[rgb(var(--border))] text-[rgb(var(--accent))]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--zeni-green)]/10 text-[var(--zeni-green)] group-hover:bg-[var(--zeni-green)] group-hover:text-white transition-colors">
             {tile.icon}
           </div>
-          <div className="mt-3 font-semibold text-[rgb(var(--text))]">{tile.title}</div>
-          <p className="mt-2 text-xs text-[rgb(var(--muted))]">{tile.description}</p>
+          <div className="mt-4 text-sm font-semibold text-[var(--zeni-black)]">{tile.title}</div>
+          <p className="mt-2 text-xs text-[var(--zeni-black)]/55 leading-relaxed font-light">
+            {tile.description}
+          </p>
         </div>
       ))}
     </div>

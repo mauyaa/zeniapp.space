@@ -11,7 +11,7 @@ import {
   Bookmark,
   MessageSquare,
   Shield,
-  Fingerprint,
+
   CloudUpload,
   FileText,
 } from 'lucide-react';
@@ -326,7 +326,7 @@ export function ProfilePage() {
           <div id="kyc" className="bg-white border border-zinc-200 rounded-xl p-6 scroll-mt-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
-                <Fingerprint className="w-5 h-5" />
+                <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
                 <h2 className="text-base font-serif font-semibold text-zinc-900">
@@ -610,7 +610,7 @@ export function ProfilePage() {
                         </div>
                         {session.stepUpVerifiedAt && (
                           <div className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-green-600">
-                            <Fingerprint className="w-3 h-3" />
+                            <ShieldCheck className="w-3 h-3" />
                             Step-up verified
                           </div>
                         )}
