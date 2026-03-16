@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { env } from './env';
 
-const DEFAULT_MAX_RETRIES_PROD = 5;
+const DEFAULT_MAX_RETRIES_PROD = 15;
 const DEFAULT_MAX_RETRIES_DEV = 120; // ~6min with default delay; avoids manual restarts while Docker Mongo boots
 const DEFAULT_RETRY_DELAY_MS = 3000;
 const isTest = process.env.NODE_ENV === 'test';
@@ -69,7 +69,7 @@ export async function connectDB(retries?: number): Promise<void> {
   for (let attempt = 0; ; attempt++) {
     try {
       await mongoose.connect(env.mongoUri, {
-        serverSelectionTimeoutMS: 5000,
+        serverSelectionTimeoutMS: isProd ? 30000 : 5000,
         socketTimeoutMS: 45000,
         maxPoolSize: isProd ? 20 : 10,
         minPoolSize: isProd ? 5 : 2,
@@ -85,7 +85,16 @@ export async function connectDB(retries?: number): Promise<void> {
       if (!isTest) console.error(`[DB] Connection failed: ${err.message}`);
 
       if (attempt >= maxRetries) {
-        if (!isTest) console.error('[DB] Max retries exceeded.');
+        if (!isTest) {
+          console.error('[DB] Max retries exceeded.');
+          if (err.name === 'MongooseServerSelectionError' || err.message.includes('selection timed out')) {
+            console.error('\n' + '='.repeat(80));
+            console.error('CRITICAL: MongoDB Atlas connection failed.');
+            console.error('This is usually because Render\'s IP addresses are not whitelisted in MongoDB Atlas.');
+            console.error('Solution: Go to MongoDB Atlas > Network Access and allow access from 0.0.0.0/0');
+            console.error('='.repeat(80) + '\n');
+          }
+        }
         throw err;
       }
 
