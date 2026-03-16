@@ -1,15 +1,19 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import { logger } from '../lib/logger';
 import type { Property } from '../utils/mockData';
 import { isWithinKenya } from '../utils/geo';
 import { getFallbackHomeImage } from '../constants/images';
 
 const DefaultIcon = L.icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
@@ -17,8 +21,9 @@ const DefaultIcon = L.icon({
 });
 
 const SelectedIcon = L.icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
   iconSize: [32, 52],
   iconAnchor: [16, 52],
   popupAnchor: [1, -44],
@@ -113,6 +118,8 @@ export function PropertyMap({
   center,
   zoom,
 }: PropertyMapProps) {
+  const [initialTilesLoaded, setInitialTilesLoaded] = useState(false);
+  const [tilesLoading, setTilesLoading] = useState(true);
   const selectedProperty = properties.find((p) => p.id === selectedId);
   const hasValidSelectedLocation =
     selectedProperty &&
@@ -164,6 +171,19 @@ export function PropertyMap({
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          eventHandlers={{
+            loading: () => {
+              if (!initialTilesLoaded) setTilesLoading(true);
+            },
+            load: () => {
+              setTilesLoading(false);
+              setInitialTilesLoaded(true);
+            },
+            tileerror: () => {
+              setTilesLoading(false);
+              setInitialTilesLoaded(true);
+            },
+          }}
         />
         <ZoomControl position="bottomright" />
         <MapController
@@ -215,6 +235,14 @@ export function PropertyMap({
             );
           })}
       </MapContainer>
+
+      {!initialTilesLoaded && tilesLoading && (
+        <div className="pointer-events-none absolute inset-0 z-[500] flex items-center justify-center bg-[#F7F2EA]/80 backdrop-blur-sm">
+          <div className="rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-[11px] font-mono uppercase tracking-widest text-slate-700 shadow-sm">
+            Loading map...
+          </div>
+        </div>
+      )}
     </div>
   );
 }

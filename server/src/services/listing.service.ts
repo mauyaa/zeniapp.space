@@ -103,6 +103,16 @@ function geocodeKenya(area?: string): [number, number] | null {
     parklands: [-1.2648, 36.8147],
     runda: [-1.2185, 36.811],
     nairobi: [-1.2921, 36.8219],
+    'nairobi cbd': [-1.2921, 36.8219],
+    cbd: [-1.2921, 36.8219],
+    kasarani: [-1.2191, 36.8974],
+    embakasi: [-1.3296, 36.8956],
+    langata: [-1.368, 36.752],
+    ruiru: [-1.1482, 36.9655],
+    ruaka: [-1.2025, 36.7647],
+    kitengela: [-1.4803, 36.9616],
+    jkia: [-1.3192, 36.9275],
+    'jomo kenyatta international airport': [-1.3192, 36.9275],
     // Coast & other major towns
     lamu: [-2.2717, 40.902],
     'lamu county': [-2.2717, 40.902],
@@ -120,7 +130,27 @@ function geocodeKenya(area?: string): [number, number] | null {
     machakos: [-1.5177, 37.2634],
     nyeri: [-0.4167, 36.95],
   };
-  return table[key] || null;
+
+  const direct = table[key];
+  if (direct) return direct;
+
+  // Handle compound names (e.g. "Westlands, Nairobi" or "Nairobi - Westlands").
+  const parts = key
+    .split(/[,/|;-]/g)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  for (const part of parts) {
+    const hit = table[part];
+    if (hit) return hit;
+  }
+
+  // Best-effort contains match.
+  const contains = Object.keys(table)
+    .filter((k) => key.includes(k))
+    .sort((a, b) => b.length - a.length)[0];
+  if (contains) return table[contains] || null;
+
+  return null;
 }
 
 function haversineKm(a: [number, number], b: [number, number]): number {
@@ -136,57 +166,56 @@ function haversineKm(a: [number, number], b: [number, number]): number {
 
 function normalizeLocation(
   location?: Partial<ListingDocument['location']>
-): ListingDocument['location'] | undefined {
-  if (!location) return location as ListingDocument['location'] | undefined;
-  const coords = Array.isArray(location.coordinates)
-    ? location.coordinates.slice(0, 2).map((c: any) => (typeof c === 'number' ? c : Number(c)))
-    : [];
-  let lng = coords?.[0];
-  let lat = coords?.[1];
+): ListingDocument['location'] {
+  const loc = location || {};
+  const rawCoords = Array.isArray(loc.coordinates)
+    ? loc.coordinates.slice(0, 2).map((c: any) => (typeof c === 'number' ? c : Number(c)))
+    : undefined;
 
-  if (isValidCoordinate(lat, lng) && !isWithinKenya(lat as number, lng as number)) {
-    if (isValidCoordinate(lng, lat) && isWithinKenya(lng as number, lat as number)) {
-      const tmp = lat;
-      lat = lng;
-      lng = tmp;
+  let lat: number | undefined;
+  let lng: number | undefined;
+
+  if (rawCoords && rawCoords.length === 2) {
+    const a = rawCoords[0];
+    const b = rawCoords[1];
+
+    // Try GeoJSON order first: [lng, lat]
+    const geoLat = b;
+    const geoLng = a;
+    if (isValidCoordinate(geoLat, geoLng) && isWithinKenya(geoLat, geoLng)) {
+      lat = geoLat;
+      lng = geoLng;
+    } else {
+      // Some clients send [lat, lng] by mistake. Accept it if it matches Kenya bounds.
+      const swappedLat = a;
+      const swappedLng = b;
+      if (isValidCoordinate(swappedLat, swappedLng) && isWithinKenya(swappedLat, swappedLng)) {
+        lat = swappedLat;
+        lng = swappedLng;
+      }
     }
   }
 
-  const hasValid = isValidCoordinate(lat, lng) && isWithinKenya(lat as number, lng as number);
-  const fallback =
-    !hasValid &&
-    geocodeKenya(
-      location.area || location.city || (location as any).subCounty || (location as any).county
-    );
-
-  const finalLat = hasValid ? lat : fallback ? fallback[0] : undefined;
-  const finalLng = hasValid ? lng : fallback ? fallback[1] : undefined;
-
-  // If coordinates exist but are far from the geocoded hint, snap to the hint (helps fix mis-keyed Lamu vs Nairobi).
-  if (hasValid && fallback) {
-    const dist = haversineKm([lat as number, lng as number], [fallback[0], fallback[1]]);
-    if (dist > 100) {
-      // more than 100 km away from expected area: trust text hint
-      lat = fallback[0];
-      lng = fallback[1];
-    }
+  const hint = geocodeKenya(loc.area || loc.city || (loc as any).subCounty || (loc as any).county);
+  if ((!isValidCoordinate(lat, lng) || !isWithinKenya(lat as number, lng as number)) && hint) {
+    lat = hint[0];
+    lng = hint[1];
   }
 
-  const coordinates =
-    isValidCoordinate(finalLat, finalLng) && isWithinKenya(finalLat as number, finalLng as number)
-      ? [finalLng as number, finalLat as number]
-      : coords && coords.length === 2
-        ? [coords[0], coords[1]]
-        : ([DEFAULT_CENTER[1], DEFAULT_CENTER[0]] as [number, number]); // fallback keeps listing mappable (lng, lat)
+  if (!isValidCoordinate(lat, lng) || !isWithinKenya(lat as number, lng as number)) {
+    // Last-resort fallback so listings always remain mappable inside Kenya.
+    lat = DEFAULT_CENTER[0];
+    lng = DEFAULT_CENTER[1];
+  }
 
   return {
     type: 'Point',
-    coordinates: coordinates as [number, number],
-    address: location.address,
-    city: location.city,
-    area: location.area,
-    county: (location as any).county,
-    subCounty: (location as any).subCounty,
+    coordinates: [lng as number, lat as number],
+    address: loc.address,
+    city: loc.city,
+    area: loc.area,
+    county: (loc as any).county,
+    subCounty: (loc as any).subCounty,
   } as ListingDocument['location'];
 }
 
@@ -225,7 +254,8 @@ function mapListingDocument(
     }
   }
 
-  // If stored coords are valid but far from the text-based geocode hint, snap to the hint.
+  // If stored coords look like a legacy fallback (Nairobi CBD), but text hints point elsewhere,
+  // snap to the hint so old listings remain discoverable without requiring a DB migration.
   const hint = geocodeKenya(
     listing.location?.area ||
     listing.location?.city ||
@@ -233,8 +263,10 @@ function mapListingDocument(
     (listing as any).location?.county
   );
   if (hint && isValidCoordinate(lat, lng) && isWithinKenya(lat as number, lng as number)) {
-    const dist = haversineKm([lat as number, lng as number], hint);
-    if (dist > 100) {
+    const distToHint = haversineKm([lat as number, lng as number], hint);
+    const distToDefault = haversineKm([lat as number, lng as number], DEFAULT_CENTER);
+    const looksLikeFallbackDefault = distToDefault < 5;
+    if (looksLikeFallbackDefault && distToHint > 100) {
       lat = hint[0];
       lng = hint[1];
     }
@@ -479,7 +511,11 @@ function escapeRegex(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-export function createListing(agentId: string, data: Partial<ListingDocument>) {
+export type ListingUpsertData = Omit<Partial<ListingDocument>, 'location'> & {
+  location?: Partial<ListingDocument['location']>;
+};
+
+export function createListing(agentId: string, data: ListingUpsertData) {
   const images = (data.images || []).slice(0, LISTING_MAX_IMAGES);
   const location = normalizeLocation(data.location);
   return ListingModel.create({ ...data, location, images, agentId }).then(async (listing) => {
@@ -512,7 +548,7 @@ export function createListing(agentId: string, data: Partial<ListingDocument>) {
   });
 }
 
-export async function updateListing(agentId: string, id: string, data: Partial<ListingDocument>) {
+export async function updateListing(agentId: string, id: string, data: ListingUpsertData) {
   const before = await ListingModel.findOne({ _id: id, agentId }).lean();
   const payload = { ...data };
   if (payload.location) payload.location = normalizeLocation(payload.location);

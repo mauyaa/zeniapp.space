@@ -20,16 +20,54 @@ type PropertyWithMeta = Property & {
   saved?: boolean;
 };
 
-/**
- * Races a promise against a timeout.
- * If timeout wins, returns the fallback value.
- */
-async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
-  let timer: ReturnType<typeof setTimeout>;
-  const timeoutPromise = new Promise<T>((resolve) => {
-    timer = setTimeout(() => resolve(fallback), ms);
-  });
-  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
+function listingToProperty(listing: ListingCard): PropertyWithMeta {
+  const [lat, lng] = normalizeKenyaLatLng(
+    listing.location?.lat ?? listing.location?.coordinates?.[1],
+    listing.location?.lng ?? listing.location?.coordinates?.[0]
+  );
+
+  const rawImg = listing.imageUrl || listing.images?.[0]?.url || listing.agent?.image;
+  const resolvedImg = resolveApiAssetUrl(rawImg);
+  const image = listingThumbUrl(resolvedImg) || fallbackImage;
+
+  return {
+    id: listing.id,
+    title: listing.title,
+    category: listing.category,
+    description: listing.description,
+    price: listing.price,
+    currency: listing.currency,
+    purpose: (listing.purpose as Property['purpose']) || 'rent',
+    type: (listing.type as Property['type']) || 'Apartment',
+    agentId: listing.agent?.id,
+    location: {
+      neighborhood: listing.location?.neighborhood || '',
+      city: listing.location?.city || '',
+      lat,
+      lng,
+    },
+    features: {
+      bedrooms: listing.beds ?? 0,
+      bathrooms: listing.baths ?? 0,
+      sqm: listing.sqm ?? 0,
+    },
+    amenities: listing.amenities,
+    catalogueUrl: listing.catalogueUrl,
+    isVerified: Boolean(listing.verified),
+    imageUrl: image,
+    images:
+      listing.images && listing.images.length > 0
+        ? listing.images.map((img) => ({
+            ...img,
+            url: resolveApiAssetUrl(img.url) || fallbackImage,
+          }))
+        : [{ url: image }],
+    agent: {
+      name: listing.agent?.name || 'Agent',
+      image: listingThumbUrl(resolveApiAssetUrl(listing.agent?.image)) || fallbackImage,
+    },
+    saved: listing.saved,
+  };
 }
 
 export function PublicMapPage() {
@@ -42,135 +80,49 @@ export function PublicMapPage() {
 
   useEffect(() => {
     let cancelled = false;
+    let inflight: AbortController | null = null;
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
-    const searchPromise = searchListings({ limit: 50, verifiedOnly: true, noCache: true });
+    const load = () => {
+      inflight?.abort();
+      const controller = new AbortController();
+      inflight = controller;
 
-    withTimeout(searchPromise, 5000, { items: [], total: 0 })
-      .then((res) => {
-        if (cancelled) return;
-        const raw = res?.items || [];
-        const converted: PropertyWithMeta[] = raw.map((listing) => {
-          const [lat, lng] = normalizeKenyaLatLng(
-            listing.location?.lat ?? listing.location?.coordinates?.[1],
-            listing.location?.lng ?? listing.location?.coordinates?.[0]
-          );
-
-          const rawImg = listing.imageUrl || listing.images?.[0]?.url || listing.agent?.image;
-          const resolvedImg = resolveApiAssetUrl(rawImg);
-          const image = listingThumbUrl(resolvedImg) || fallbackImage;
-
-          return {
-            id: listing.id,
-            title: listing.title,
-            category: listing.category,
-            description: listing.description,
-            price: listing.price,
-            currency: listing.currency,
-            purpose: (listing.purpose as Property['purpose']) || 'rent',
-            type: (listing.type as Property['type']) || 'Apartment',
-            agentId: listing.agent?.id,
-            location: {
-              neighborhood: listing.location?.neighborhood || '',
-              city: listing.location?.city || '',
-              lat,
-              lng,
-            },
-            features: {
-              bedrooms: listing.beds ?? 0,
-              bathrooms: listing.baths ?? 0,
-              sqm: listing.sqm ?? 0,
-            },
-            amenities: listing.amenities,
-            catalogueUrl: listing.catalogueUrl,
-            isVerified: Boolean(listing.verified),
-            imageUrl: image,
-            images:
-              listing.images && listing.images.length > 0
-                ? listing.images.map((img) => ({
-                    ...img,
-                    url: resolveApiAssetUrl(img.url) || fallbackImage,
-                  }))
-                : [{ url: image }],
-            agent: {
-              name: listing.agent?.name || 'Agent',
-              image: listingThumbUrl(resolveApiAssetUrl(listing.agent?.image)) || fallbackImage,
-            },
-            saved: listing.saved,
-          };
+      return searchListings({ limit: 50, verifiedOnly: true }, { signal: controller.signal })
+        .then((res) => {
+          if (cancelled) return;
+          const raw = res?.items || [];
+          const converted = raw.map(listingToProperty);
+          setMapProps((prev) => (converted.length ? converted : prev));
+        })
+        .catch((err: unknown) => {
+          if (cancelled) return;
+          if ((err as { name?: string })?.name === 'AbortError') return;
+          console.error('Failed to load map items', err);
         });
-        setMapProps((prev) => (converted.length ? converted : prev));
-      })
-      .catch((err) => {
-        console.error('Failed to load map items', err);
-      });
+    };
+
+    load();
 
     // Real-time updates
     const socket = getPublicSocket(PUBLIC_FEED_KEY);
-    const handleUpdate = () => {
-      searchListings({ limit: 50, verifiedOnly: true, noCache: true }).then((res) => {
-        if (res?.items && !cancelled) {
-          // Re-map and update... (abstracted/simplified here for brevity as previously done)
-          // For true performance, we'd reuse the conversion logic, but here we just re-run the fetch
-          // and the conversion is identical.
-          const converted: PropertyWithMeta[] = res.items.map((listing: ListingCard) => {
-            const [lat, lng] = normalizeKenyaLatLng(
-              listing.location?.lat ?? listing.location?.coordinates?.[1],
-              listing.location?.lng ?? listing.location?.coordinates?.[0]
-            );
-            const rawImg = listing.imageUrl || listing.images?.[0]?.url || listing.agent?.image;
-            const resolvedImg = resolveApiAssetUrl(rawImg);
-            const image = listingThumbUrl(resolvedImg) || fallbackImage;
-            return {
-              id: listing.id,
-              title: listing.title,
-              category: listing.category,
-              description: listing.description,
-              price: listing.price,
-              currency: listing.currency,
-              purpose: (listing.purpose as Property['purpose']) || 'rent',
-              type: (listing.type as Property['type']) || 'Apartment',
-              agentId: listing.agent?.id,
-              location: {
-                neighborhood: listing.location?.neighborhood || '',
-                city: listing.location?.city || '',
-                lat,
-                lng,
-              },
-              features: {
-                bedrooms: listing.beds ?? 0,
-                bathrooms: listing.baths ?? 0,
-                sqm: listing.sqm ?? 0,
-              },
-              amenities: listing.amenities,
-              catalogueUrl: listing.catalogueUrl,
-              isVerified: Boolean(listing.verified),
-              imageUrl: image,
-              images:
-                listing.images && listing.images.length > 0
-                  ? listing.images.map((img: { url?: string }) => ({
-                      ...img,
-                      url: resolveApiAssetUrl(img.url) || fallbackImage,
-                    }))
-                  : [{ url: image }],
-              agent: {
-                name: listing.agent?.name || 'Agent',
-                image: listingThumbUrl(resolveApiAssetUrl(listing.agent?.image)) || fallbackImage,
-              },
-              saved: listing.saved,
-            };
-          });
-          setMapProps(converted);
-        }
-      });
+    const scheduleRefresh = () => {
+      if (refreshTimer) return;
+      refreshTimer = setTimeout(() => {
+        refreshTimer = null;
+        load();
+      }, 750);
     };
 
-    socket.on('listing:changed', handleUpdate);
-    socket.on('listing:deleted', handleUpdate);
+    socket.on('listing:changed', scheduleRefresh);
+    socket.on('listing:deleted', scheduleRefresh);
 
     return () => {
       cancelled = true;
-      socket.off('listing:changed', handleUpdate);
-      socket.off('listing:deleted', handleUpdate);
+      inflight?.abort();
+      if (refreshTimer) clearTimeout(refreshTimer);
+      socket.off('listing:changed', scheduleRefresh);
+      socket.off('listing:deleted', scheduleRefresh);
       disconnectPublicSocket();
     };
   }, []);
@@ -229,7 +181,7 @@ export function PublicMapPage() {
         {/* Floating card prompting auth when a marker is selected */}
         <div className="pointer-events-none absolute inset-0 flex items-end justify-center md:justify-start md:items-start p-4 z-[400]">
           <div
-            className={`transition - all duration - 300 ease - out ${selected ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'} pointer - events - auto max - w - sm w - full md: w - 96`}
+            className={`transition-all duration-300 ease-out ${selected ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'} pointer-events-auto max-w-sm w-full md:w-96`}
           >
             {selected && (
               <div className="rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden">

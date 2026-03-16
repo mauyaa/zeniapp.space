@@ -12,6 +12,7 @@ import {
 import type { AgentListing } from '../../lib/api';
 import { errors } from '../../constants/messages';
 import { LISTING_TYPES } from '../../constants/listings';
+import { isWithinKenya } from '../../utils/geo';
 
 export function ListingEditorPage() {
   const { listingId } = useParams<{ listingId: string }>();
@@ -111,8 +112,24 @@ export function ListingEditorPage() {
   }, [form, isEdit]);
 
   const payload = useMemo(() => {
-    const lat = Number(form.lat);
-    const lng = Number(form.lng);
+    const latRaw = form.lat.trim();
+    const lngRaw = form.lng.trim();
+    const hasLat = latRaw.length > 0;
+    const hasLng = lngRaw.length > 0;
+
+    let coordinates: [number, number] | undefined;
+    if (hasLat && hasLng) {
+      const lat = Number(latRaw);
+      const lng = Number(lngRaw);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        if (isWithinKenya(lat, lng)) {
+          coordinates = [lng, lat]; // GeoJSON: [lng, lat]
+        } else if (isWithinKenya(lng, lat)) {
+          // Agent entered in the wrong order (lng/lat). Swap to correct GeoJSON order.
+          coordinates = [lat, lng];
+        }
+      }
+    }
     const beds = form.beds ? Number(form.beds) : undefined;
     const baths = form.baths ? Number(form.baths) : undefined;
     const sqm = form.sqm ? Number(form.sqm) : undefined;
@@ -137,7 +154,7 @@ export function ListingEditorPage() {
       amenities,
       location: {
         type: 'Point',
-        coordinates: [lng, lat],
+        ...(coordinates ? { coordinates } : {}),
         address: form.address.trim() || undefined,
         city: form.city.trim() || undefined,
         area: form.area.trim() || undefined,
@@ -147,7 +164,7 @@ export function ListingEditorPage() {
   }, [form]);
 
   const completeness = useMemo(() => {
-    const required = ['title', 'price', 'lat', 'lng', 'imageUrl'];
+    const required = ['title', 'price', 'imageUrl'];
     const optional = [
       'category',
       'description',
@@ -173,8 +190,26 @@ export function ListingEditorPage() {
     let message: string | null = null;
     if (!form.title.trim()) message = 'Title is required';
     else if (!form.price || Number.isNaN(Number(form.price))) message = 'Valid price is required';
-    else if (!form.lat || Number.isNaN(Number(form.lat))) message = 'Valid latitude is required';
-    else if (!form.lng || Number.isNaN(Number(form.lng))) message = 'Valid longitude is required';
+    else {
+      const latRaw = form.lat.trim();
+      const lngRaw = form.lng.trim();
+      const hasLat = latRaw.length > 0;
+      const hasLng = lngRaw.length > 0;
+
+      if (hasLat !== hasLng) {
+        message = 'Provide both latitude and longitude, or leave both blank';
+      } else if (hasLat && hasLng) {
+        const lat = Number(latRaw);
+        const lng = Number(lngRaw);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          message = 'Valid coordinates are required';
+        } else if (!isWithinKenya(lat, lng) && !isWithinKenya(lng, lat)) {
+          message = 'Coordinates must be within Kenya (or leave blank to auto-detect from city/area)';
+        }
+      } else if (!form.city.trim() && !form.area.trim()) {
+        message = 'Provide at least a city or area if coordinates are not set';
+      }
+    }
     setValidationMessage(message);
     return message;
   };
@@ -429,14 +464,18 @@ export function ListingEditorPage() {
                   value={form.lat}
                   onChange={(e) => setForm((f) => ({ ...f, lat: e.target.value }))}
                   className={fieldClass}
-                  placeholder="Latitude"
+                  placeholder="Latitude (optional)"
                 />
                 <input
                   value={form.lng}
                   onChange={(e) => setForm((f) => ({ ...f, lng: e.target.value }))}
                   className={fieldClass}
-                  placeholder="Longitude"
+                  placeholder="Longitude (optional)"
                 />
+                <div className="md:col-span-2 text-xs text-slate-500">
+                  Coordinates are optional. Leave them blank to auto-detect from City/Area. If you
+                  enter coordinates, they must be within Kenya.
+                </div>
               </div>
             </div>
 

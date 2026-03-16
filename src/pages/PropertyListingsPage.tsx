@@ -68,18 +68,6 @@ function listingToProperty(listing: ListingCard): Property {
   };
 }
 
-/**
- * Races a promise against a timeout.
- * If timeout wins, returns the fallback value.
- */
-async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
-  let timer: ReturnType<typeof setTimeout>;
-  const timeoutPromise = new Promise<T>((resolve) => {
-    timer = setTimeout(() => resolve(fallback), ms);
-  });
-  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
-}
-
 export function PropertyListingsPage() {
   const navigate = useNavigate();
   const { isAuthed, user } = useAuth();
@@ -93,18 +81,21 @@ export function PropertyListingsPage() {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
+    const softTimeout = setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 6000);
     setLoading(true);
 
-    const searchPromise = searchListings({
-      q: searchTerm,
-      verifiedOnly: verifiedOnly || undefined,
-      limit: isAuthed ? 50 : 6,
-      availabilityOnly: true,
-      noCache: true,
-    });
-
-    // 5 second timeout for production resilience
-    withTimeout(searchPromise, 5000, { items: [], total: 0 })
+    searchListings(
+      {
+        q: searchTerm,
+        verifiedOnly: verifiedOnly || undefined,
+        limit: isAuthed ? 50 : 6,
+        availabilityOnly: true,
+      },
+      { signal: controller.signal }
+    )
       .then((res) => {
         if (cancelled) return;
         const converted = (res?.items || []).map(listingToProperty);
@@ -118,6 +109,7 @@ export function PropertyListingsPage() {
         }
       })
       .catch((err) => {
+        if ((err as { name?: string })?.name === 'AbortError') return;
         console.error('Failed to load listings', err);
         if (cancelled) return;
         // Fall back to mock data on total failure
@@ -126,25 +118,34 @@ export function PropertyListingsPage() {
         }
       })
       .finally(() => {
+        clearTimeout(softTimeout);
         if (!cancelled) setLoading(false);
       });
 
     return () => {
       cancelled = true;
+      controller.abort();
+      clearTimeout(softTimeout);
     };
   }, [searchTerm, verifiedOnly, isAuthed, refreshTrigger]);
 
   // Socket updates
   useEffect(() => {
     const socket = getPublicSocket(PUBLIC_FEED_KEY);
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
     const handleUpdate = () => {
-      setRefreshTrigger((prev) => prev + 1);
+      if (refreshTimer) return;
+      refreshTimer = setTimeout(() => {
+        refreshTimer = null;
+        setRefreshTrigger((prev) => prev + 1);
+      }, 750);
     };
 
     socket.on('listing:changed', handleUpdate);
     socket.on('listing:deleted', handleUpdate);
 
     return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
       socket.off('listing:changed', handleUpdate);
       socket.off('listing:deleted', handleUpdate);
       disconnectPublicSocket();

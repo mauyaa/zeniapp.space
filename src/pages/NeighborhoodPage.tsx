@@ -7,18 +7,6 @@ import { listingThumbUrl } from '../lib/cloudinary';
 import { resolveApiAssetUrl } from '../lib/runtime';
 import { properties as mockProperties } from '../utils/mockData';
 
-/**
- * Races a promise against a timeout.
- * If timeout wins, returns the fallback value.
- */
-async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
-  let timer: ReturnType<typeof setTimeout>;
-  const timeoutPromise = new Promise<T>((resolve) => {
-    timer = setTimeout(() => resolve(fallback), ms);
-  });
-  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
-}
-
 const PUBLIC_FEED_KEY =
   (import.meta.env.VITE_PUBLIC_FEED_KEY as string | undefined) || 'public-demo-key';
 
@@ -210,12 +198,14 @@ export function NeighborhoodPage() {
 
   useEffect(() => {
     let cancelled = false;
-    // Don't set loading true if we already have mock data (instant feel)
-    // but if we have none, we can show a small indicator or just wait for background fetch
+    const controller = new AbortController();
 
-    const searchPromise = searchListings({ q: neighborhood, purpose, limit: 12 });
+    const searchPromise = searchListings(
+      { q: neighborhood, purpose, limit: 12 },
+      { signal: controller.signal }
+    );
 
-    withTimeout(searchPromise, 5000, { items: [], total: 0 })
+    searchPromise
       .then((res) => {
         if (cancelled) return;
         if (res?.items && res.items.length > 0) {
@@ -224,16 +214,16 @@ export function NeighborhoodPage() {
           setListings(fallbackFromMock());
         }
       })
-      .catch(() => {
-        if (!cancelled) {
-          setListings(fallbackFromMock());
-        }
+      .catch((err) => {
+        if ((err as { name?: string })?.name === 'AbortError') return;
+        if (!cancelled) setListings(fallbackFromMock());
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [neighborhood, purpose, fallbackFromMock]);
 

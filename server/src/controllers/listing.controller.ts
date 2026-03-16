@@ -12,11 +12,10 @@ import {
   listSavedListings,
   saveListing,
   toggleAlert,
-  ListingSearchQuery,
   recordListingLead,
 } from '../services/listing.service';
+import type { ListingSearchQuery, ListingUpsertData } from '../services/listing.service';
 import { paginationSchema } from '../utils/validators';
-import { ListingDocument } from '../models/Listing';
 
 export async function search(req: AuthRequest, res: Response) {
   const querySchema = z
@@ -122,13 +121,7 @@ const listingBody = z.object({
 
 export async function createAgentListing(req: AuthRequest, res: Response) {
   const body = listingBody.parse(req.body);
-  const payload: Partial<ListingDocument> = {
-    ...body,
-    location: {
-      ...body.location,
-      coordinates: body.location.coordinates ?? [36.8219, -1.2921],
-    },
-  };
+  const payload = body as ListingUpsertData;
   const userId = req.user?.id;
   if (req.user?.agentVerification !== 'verified') {
     return res
@@ -145,16 +138,7 @@ export async function createAgentListing(req: AuthRequest, res: Response) {
 
 export async function updateAgentListing(req: AuthRequest, res: Response) {
   const body = listingBody.partial().parse(req.body);
-  const location: ListingDocument['location'] | undefined = body.location
-    ? {
-      ...body.location,
-      coordinates: (body.location.coordinates ?? [36.8219, -1.2921]) as [number, number],
-    }
-    : undefined;
-  const payload = {
-    ...body,
-    ...(location ? { location } : {}),
-  } as Partial<ListingDocument>;
+  const payload = body as ListingUpsertData;
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
   const listing = await updateListing(userId, req.params.id, payload);
