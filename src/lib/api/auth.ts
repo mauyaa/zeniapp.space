@@ -16,10 +16,10 @@ export type AuthResponse = {
   };
 };
 
-export function login(emailOrPhone: string, password: string) {
+export function login(emailOrPhone: string, password: string, otp?: string) {
   return request<AuthResponse>('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ emailOrPhone, password }),
+    body: JSON.stringify({ emailOrPhone, password, otp }),
   });
 }
 

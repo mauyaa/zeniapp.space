@@ -35,7 +35,7 @@ interface AuthContextValue {
   isAuthed: boolean;
   /** Minutes remaining before session expires, null if no token */
   sessionExpiresIn: number | null;
-  login: (emailOrPhone: string, password: string, options?: AuthActionOptions) => Promise<AuthUser>;
+  login: (emailOrPhone: string, password: string, options?: AuthActionOptions & { otp?: string }) => Promise<AuthUser>;
   loginWithGoogle: (credential: string, options?: AuthActionOptions) => Promise<AuthUser>;
   register: (form: Record<string, unknown>, options?: AuthActionOptions) => Promise<AuthUser>;
   logout: () => void;
@@ -108,11 +108,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => clearInterval(interval);
   }, [token]);
 
-  const login = async (emailOrPhone: string, password: string, options: AuthActionOptions = {}) => {
+  const login = async (emailOrPhone: string, password: string, options: AuthActionOptions & { otp?: string } = {}) => {
     setLoading(true);
     try {
       sessionStorage.removeItem('logout_marker');
-      const res = await api.login(emailOrPhone, password);
+      const res = await api.login(emailOrPhone, password, options.otp);
       setUser(res.user);
       setToken(res.token);
       setRefreshToken(res.refreshToken ?? null);

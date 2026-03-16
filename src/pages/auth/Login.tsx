@@ -39,6 +39,8 @@ export function LoginPage({
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [requireOtp, setRequireOtp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [cooldownSec, setCooldownSec] = useState<number | null>(null);
@@ -104,7 +106,7 @@ export function LoginPage({
     setGoogleError(null);
     setError(null);
     try {
-      const user = await login(emailOrPhone, password);
+      const user = await login(emailOrPhone, password, { otp });
 
       // Prefetch secondary routes for the user's portal so they're instant after login
       const portalRoutes: Record<RoleTab, string[]> = {
@@ -140,7 +142,12 @@ export function LoginPage({
       // Defer so AuthProvider state is committed before protected route renders (avoids redirect back to login)
       setTimeout(() => navigate(target, { replace: true }), 0);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      if (err instanceof ApiError && err.code === 'OTP_REQUIRED') {
+        setRequireOtp(true);
+        setError(err.message || 'Please enter your Security Token (OTP)');
+      } else {
+        setError(err instanceof Error ? err.message : 'Login failed');
+      }
       if (err instanceof ApiError && err.status === 429) {
         setCooldownSec(60);
       }
@@ -227,6 +234,22 @@ export function LoginPage({
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
+
+          {requireOtp && (
+            <div className="mb-10 relative animate-in fade-in slide-in-from-top-4 duration-500">
+              <label className="mb-3 block font-mono text-[11px] font-extrabold uppercase tracking-widest text-black">
+                Security Token
+              </label>
+              <input
+                type="text"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                required
+                placeholder="000000"
+                className="w-full border-0 border-b-[3px] border-black bg-transparent py-2.5 text-2xl font-bold text-black outline-none placeholder:text-[#d1d1d6] transition-colors focus:border-green-500"
+              />
+            </div>
+          )}
 
           {error && (
             <div
@@ -364,6 +387,22 @@ export function LoginPage({
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
+
+            {requireOtp && (
+              <div className="mb-12 relative animate-in fade-in slide-in-from-top-4 duration-500">
+                <label className="mb-3 block font-mono text-[11px] font-bold uppercase tracking-widest text-black">
+                  Security Token
+                </label>
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  required
+                  placeholder="000000"
+                  className="w-full border-0 border-b-[3px] border-black bg-transparent py-3 text-2xl font-semibold text-black outline-none placeholder:text-[#d1d1d6] placeholder:text-lg transition-colors focus:border-green-500"
+                />
+              </div>
+            )}
 
             {error && (
               <div

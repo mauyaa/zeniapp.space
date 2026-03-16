@@ -14,7 +14,37 @@ import { recordStaleRun, recordReceiptScan } from './services/payInsights.servic
 import { runGeoSanitySweep } from './services/listing.service';
 import { verifyEmailTransport, sendMail, renderBrandEmail } from './services/email.service';
 
+function installFatalProcessHandlers() {
+  process.on('unhandledRejection', (reason) => {
+    console.error('[fatal] Unhandled promise rejection', reason);
+    process.exit(1);
+  });
+
+  process.on('uncaughtException', (err) => {
+    console.error('[fatal] Uncaught exception', err);
+    process.exit(1);
+  });
+}
+
+type CronTask = () => Promise<void>;
+
+function scheduleSafeCron(name: string, expression: string, task: CronTask) {
+  let running = false;
+  cron.schedule(expression, async () => {
+    if (running) return;
+    running = true;
+    try {
+      await task();
+    } catch (err) {
+      console.error(`[cron] ${name} failed`, err);
+    } finally {
+      running = false;
+    }
+  });
+}
+
 async function start() {
+  installFatalProcessHandlers();
   validateRuntimeEnv();
   await connectDB();
   const httpServer = createServer(app);
@@ -23,40 +53,44 @@ async function start() {
     console.log(`API running on http://localhost:${env.port}`)
   );
 
-  cron.schedule('0 3 * * *', async () => {
+  if (!env.enableCrons) {
+    console.log('[cron] disabled (set ENABLE_CRONS=true to enable)');
+    return;
+  }
+
+  // Seed gauges once at startup (cron refresh handles ongoing updates).
+  registerPayGauges();
+
+  scheduleSafeCron('expire_pending_invoices', '0 3 * * *', async () => {
     const n = await expirePendingInvoices();
     if (n) console.log(`[cron] expired overdue invoices: ${n}`);
   });
 
-  cron.schedule('*/10 * * * *', async () => {
+  scheduleSafeCron('expire_stale_portal_transactions', '*/10 * * * *', async () => {
     const n = await expireStalePortalTransactions(env.payStaleMinutes);
     if (n) console.log(`[cron] marked ${n} stale pay portal transactions as failed`);
     recordStaleRun();
     registerPayGauges();
   });
 
-  // Nightly geo sanity: snap mislocated listings based on area/city geocode
-  cron.schedule('15 3 * * *', async () => {
-    try {
-      const result = await runGeoSanitySweep();
-      if (result.fixed) {
-        console.log(`[cron] geo sanity sweep corrected ${result.fixed}/${result.scanned} listings`);
-      }
-    } catch (err) {
-      console.error('[cron] geo sanity sweep failed', err);
+  // Nightly geo sanity: snap mislocated listings based on area/city geocode.
+  scheduleSafeCron('geo_sanity_sweep', '15 3 * * *', async () => {
+    const result = await runGeoSanitySweep();
+    if (result.fixed) {
+      console.log(`[cron] geo sanity sweep corrected ${result.fixed}/${result.scanned} listings`);
     }
   });
 
-  // Detect integrity anomalies (paid tx without receipts)
-  cron.schedule('*/15 * * * *', async () => {
+  // Detect integrity anomalies (paid tx without receipts).
+  scheduleSafeCron('detect_paid_without_receipt', '*/15 * * * *', async () => {
     const n = await detectPaidWithoutReceipt();
     if (n) console.warn(`[cron] found ${n} paid transactions missing receipts (logged to audit)`);
     recordReceiptScan();
     registerPayGauges();
   });
 
-  // Daily email transport health at 04:00 (gen4 automation)
-  cron.schedule('0 4 * * *', async () => {
+  // Daily email transport health at 04:00 (gen4 automation).
+  scheduleSafeCron('email_transport_health', '0 4 * * *', async () => {
     const status = await verifyEmailTransport();
     if (!status.ok) {
       console.error('[cron] email health failed', status.reason);
@@ -70,8 +104,11 @@ async function start() {
           })
         ).catch((err) => console.error('[cron] failed to send email health alert', err));
       }
-    } else if (env.nodeEnv !== 'production' && env.zeniAdminEmail?.includes('@')) {
-      // In dev, send a short heartbeat so we can see previews; in prod we stay silent unless failed
+      return;
+    }
+
+    if (env.nodeEnv !== 'production' && env.zeniAdminEmail?.includes('@')) {
+      // In dev, send a short heartbeat so we can see previews; in prod we stay silent unless failed.
       await sendMail(
         env.zeniAdminEmail,
         '[ZENI] Email delivery heartbeat',

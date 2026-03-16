@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'zeni-api',
-      script: 'dist/server.js',
+      script: 'dist/src/server.js',
       instances: 'max',
       exec_mode: 'cluster',
       env: {

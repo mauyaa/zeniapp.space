@@ -1,0 +1,793 @@
+{\rtf1\ansi\deff0
+{\fonttbl{\f0 Calibri;}}
+\viewkind4\uc1
+\fs22
+\pard\sa240\sb240\fs40\b Zeni Real Estate Platform\b0\fs22\par
+\pard\sa240\sb240\fs40\b User Training Manual (User Guide)\b0\fs22\par
+\par
+\pard\sa120 Document version: 1.0\par
+\pard\sa120 Last updated: 2026-03-16\par
+\par
+\pard\sa120 This manual explains how to use the Zeni web application for property discovery, messaging, viewings, and payments.\par
+\par
+\pard\sa120 ---\par
+\par
+\pard\sa200\sb200\fs32\b Document Control\b0\fs22\par
+\par
+\pard\sa120 Fill these in if required by your organization or school:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Document owner: (name / team)\par
+\pard\fi-360\li720\sa120\tx720\bullet Prepared by: (name)\par
+\pard\fi-360\li720\sa120\tx720\bullet Reviewed by: (name)\par
+\pard\fi-360\li720\sa120\tx720\bullet Approved by: (name)\par
+\pard\fi-360\li720\sa120\tx720\bullet Product name: Zeni Real Estate Platform\par
+\pard\fi-360\li720\sa120\tx720\bullet Deployment URL: (for example, https://zeni.co.ke)\par
+\par
+\pard\sa160\sb160\fs26\b Revision History\b0\fs22\par
+\par
+\pard\sa120 | Version | Date       | Description              | Author |\par
+\pard\sa120 |---------|------------|--------------------------|--------|\par
+\pard\sa120 | 1.0     | 2026-03-16 | Initial user manual draft| (name) |\par
+\par
+\pard\sa120 ---\par
+\par
+\pard\sa200\sb200\fs32\b Table of Contents\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120 1. Introduction\par
+\pard\fi-360\li720\sa120 2. Roles and Entry Points\par
+\pard\fi-360\li720\sa120 3. Getting Started\par
+\pard\fi-360\li720\sa120 4. Public Browsing (No Account)\par
+\pard\fi-360\li720\sa120 5. User Portal (/app/*)\par
+\pard\fi-360\li720\sa120 6. Messaging (Chat)\par
+\pard\fi-360\li720\sa120 7. Viewings\par
+\pard\fi-360\li720\sa120 8. Pay Portal (/pay/*)\par
+\pard\fi-360\li720\sa120 9. Agent Portal (/agent/*)\par
+\pard\fi-360\li720\sa120 10. Admin Portal (/admin/*)\par
+\pard\fi-360\li720\sa120 11. Security and Privacy\par
+\pard\fi-360\li720\sa120 12. Frequently Asked Questions (FAQ)\par
+\pard\fi-360\li720\sa120 13. System Messages and Meanings\par
+\pard\fi-360\li720\sa120 14. Troubleshooting\par
+\pard\fi-360\li720\sa120 15. Glossary and Support\par
+\pard\fi-360\li720\sa120 16. Index\par
+\par
+\pard\sa120 ---\par
+\par
+\pard\sa200\sb200\fs32\b 1. Introduction\b0\fs22\par
+\par
+\pard\sa160\sb160\fs26\b 1.1 Purpose\b0\fs22\par
+\par
+\pard\sa120 This document provides step-by-step guidance for end users of Zeni, including:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Users (buyers/tenants)\par
+\pard\fi-360\li720\sa120\tx720\bullet Agents\par
+\pard\fi-360\li720\sa120\tx720\bullet Admin and finance users\par
+\par
+\pard\sa160\sb160\fs26\b 1.2 Scope\b0\fs22\par
+\par
+\pard\sa120 This manual covers the Zeni web app:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Public pages (landing, map, listings)\par
+\pard\fi-360\li720\sa120\tx720\bullet User portal (/app/*)\par
+\pard\fi-360\li720\sa120\tx720\bullet Agent portal (/agent/*)\par
+\pard\fi-360\li720\sa120\tx720\bullet Admin portal (/admin/*)\par
+\pard\fi-360\li720\sa120\tx720\bullet Pay portal (/pay/*)\par
+\par
+\pard\sa160\sb160\fs26\b 1.3 Conventions Used\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet URLs and routes appear like this: /app/explore\par
+\pard\fi-360\li720\sa120\tx720\bullet Buttons and UI labels appear in quotes, for example: "Pay Now"\par
+\pard\fi-360\li720\sa120\tx720\bullet Notes and warnings appear as callouts:\par
+\par
+\pard\li360\sa120\i Note: Helpful extra information.\i0\par
+\par
+\pard\li360\sa120\i Warning: Important information to prevent errors or data loss.\i0\par
+\par
+\pard\sa120 ---\par
+\par
+\pard\sa200\sb200\fs32\b 2. Roles and Entry Points\b0\fs22\par
+\par
+\pard\sa120 Zeni has different portals depending on your role.\par
+\par
+\pard\sa160\sb160\fs26\b 2.1 Public Site (no login required)\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Landing: /\par
+\pard\fi-360\li720\sa120\tx720\bullet Public explore: /explore\par
+\pard\fi-360\li720\sa120\tx720\bullet Public map: /map\par
+\pard\fi-360\li720\sa120\tx720\bullet Listing details: /listing/:id\par
+\pard\fi-360\li720\sa120\tx720\bullet Neighborhood pages: /rent/:neighborhood and /buy/:neighborhood\par
+\par
+\pard\sa160\sb160\fs26\b 2.2 User Portal (authenticated)\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Main app: /app/*\par
+\pard\fi-360\li720\sa120\tx720\bullet Key pages: /app/home, /app/explore, /app/messages, /app/profile\par
+\par
+\pard\sa160\sb160\fs26\b 2.3 Agent Portal (agent accounts only)\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Login shortcut: /agentlogin\par
+\pard\fi-360\li720\sa120\tx720\bullet Portal: /agent/*\par
+\par
+\pard\sa160\sb160\fs26\b 2.4 Admin Portal (admin accounts only)\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Login shortcut: /adminlogin\par
+\pard\fi-360\li720\sa120\tx720\bullet Portal: /admin/*\par
+\par
+\pard\sa160\sb160\fs26\b 2.5 Pay Portal (separate session)\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Login: /pay/login\par
+\pard\fi-360\li720\sa120\tx720\bullet Portal: /pay/*\par
+\par
+\pard\li360\sa120\i Note: The Pay portal is a dedicated area for payments. It can keep its own session separate from the main user portal.\i0\par
+\par
+\pard\sa120 ---\par
+\par
+\pard\sa200\sb200\fs32\b 3. Getting Started\b0\fs22\par
+\par
+\pard\sa160\sb160\fs26\b 3.1 System Requirements\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet A modern browser (Chrome, Edge, Safari, Firefox).\par
+\pard\fi-360\li720\sa120\tx720\bullet Stable internet connection (limited offline behavior exists, but most actions require connectivity).\par
+\par
+\pard\sa160\sb160\fs26\b 3.2 Create an Account\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120 1. Open /register.\par
+\pard\fi-360\li720\sa120 2. Enter your details and create a password.\par
+\pard\fi-360\li720\sa120 3. Submit the form.\par
+\pard\fi-360\li720\sa120 4. After registration, you are taken to the portal that matches your account role.\par
+\par
+\pard\sa160\sb160\fs26\b 3.3 Log In\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120 1. Open /login.\par
+\pard\fi-360\li720\sa120 2. Enter your email and password.\par
+\pard\fi-360\li720\sa120 3. Select "Log in".\par
+\par
+\pard\sa120 Role-specific shortcuts:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Agent login: /agentlogin\par
+\pard\fi-360\li720\sa120\tx720\bullet Admin login: /adminlogin\par
+\pard\fi-360\li720\sa120\tx720\bullet Pay login: /pay/login\par
+\par
+\pard\sa160\sb160\fs26\b 3.4 Reset Your Password\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120 1. Open /forgot.\par
+\pard\fi-360\li720\sa120 2. Follow the on-screen instructions.\par
+\pard\fi-360\li720\sa120 3. Open /reset to set your new password (often via a link).\par
+\par
+\pard\sa160\sb160\fs26\b 3.5 Offline Banner\b0\fs22\par
+\par
+\pard\sa120 If you lose connectivity, Zeni may display an offline banner:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Message: "You're offline. Some actions may be unavailable. We'll retry when you're back online."\par
+\par
+\pard\sa120 When the banner is visible:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Browsing previously loaded content may still work.\par
+\pard\fi-360\li720\sa120\tx720\bullet Actions that require the server (login, saving, sending messages, payments) may fail until you are back online.\par
+\par
+\pard\sa120 ---\par
+\par
+\pard\sa200\sb200\fs32\b 4. Public Browsing (No Account)\b0\fs22\par
+\par
+\pard\sa160\sb160\fs26\b 4.1 Landing Page (/)\b0\fs22\par
+\par
+\pard\sa120 Use the landing page to:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Understand what Zeni offers.\par
+\pard\fi-360\li720\sa120\tx720\bullet Navigate to explore, map, login, and registration.\par
+\par
+\pard\sa160\sb160\fs26\b 4.2 Public Explore (/explore)\b0\fs22\par
+\par
+\pard\sa120 Use the public explore page to:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Browse listings quickly without logging in.\par
+\pard\fi-360\li720\sa120\tx720\bullet Open a listing to see full details.\par
+\par
+\pard\sa160\sb160\fs26\b 4.3 Public Map (/map)\b0\fs22\par
+\par
+\pard\sa120 Use the public map page to:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Explore listings based on location.\par
+\pard\fi-360\li720\sa120\tx720\bullet Zoom and pan to different neighborhoods.\par
+\par
+\pard\sa160\sb160\fs26\b 4.4 Listing Details (/listing/:id)\b0\fs22\par
+\par
+\pard\sa120 A listing typically includes:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Photos and key details (price, beds, baths, location, amenities).\par
+\pard\fi-360\li720\sa120\tx720\bullet Agent information (when available).\par
+\pard\fi-360\li720\sa120\tx720\bullet Actions such as messaging or requesting a viewing (depending on your login status).\par
+\par
+\pard\sa160\sb160\fs26\b 4.5 Neighborhood Pages (/rent/:neighborhood, /buy/:neighborhood)\b0\fs22\par
+\par
+\pard\sa120 Neighborhood pages provide:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet An overview of the area (when configured).\par
+\pard\fi-360\li720\sa120\tx720\bullet Live listings filtered to that neighborhood.\par
+\par
+\pard\sa120 ---\par
+\par
+\pard\sa200\sb200\fs32\b 5. User Portal (/app/*)\b0\fs22\par
+\par
+\pard\sa160\sb160\fs26\b 5.1 Main Pages\b0\fs22\par
+\par
+\pard\sa120 The user portal includes:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Home: /app/home\par
+\pard\fi-360\li720\sa120\tx720\bullet Explore: /app/explore\par
+\pard\fi-360\li720\sa120\tx720\bullet Inventory: /app/inventory\par
+\pard\fi-360\li720\sa120\tx720\bullet Saved: /app/saved\par
+\pard\fi-360\li720\sa120\tx720\bullet Viewings: /app/viewings\par
+\pard\fi-360\li720\sa120\tx720\bullet Refunds: /app/refunds (if enabled)\par
+\pard\fi-360\li720\sa120\tx720\bullet Messages: /app/messages\par
+\pard\fi-360\li720\sa120\tx720\bullet Profile: /app/profile\par
+\par
+\pard\sa160\sb160\fs26\b 5.2 Home (/app/home)\b0\fs22\par
+\par
+\pard\sa120 Home is your starting dashboard after login. Typical items include:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Quick navigation to Explore, Saved, Messages, and Profile\par
+\pard\fi-360\li720\sa120\tx720\bullet Highlights or recommendations (depending on configuration)\par
+\par
+\pard\sa160\sb160\fs26\b 5.3 Explore (/app/explore)\b0\fs22\par
+\par
+\pard\sa120 Explore supports both list and map-based searching.\par
+\par
+\pard\sa120 Common actions:\par
+\par
+\pard\fi-360\li720\sa120 1. Open /app/explore.\par
+\pard\fi-360\li720\sa120 2. Use filters (purpose rent/buy, price range, beds, baths, type).\par
+\pard\fi-360\li720\sa120 3. Switch between "List" and "Map" views.\par
+\pard\fi-360\li720\sa120 4. In map view, you can use "Search this area" after moving the map.\par
+\pard\fi-360\li720\sa120 5. If compare is enabled, you can compare up to 3 listings.\par
+\pard\fi-360\li720\sa120 6. Use "Recently viewed" to quickly reopen the last listings you visited.\par
+\par
+\pard\sa120 Explore filters reference (may vary by deployment):\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Purpose: rent or buy\par
+\pard\fi-360\li720\sa120\tx720\bullet Price: minimum and maximum price\par
+\pard\fi-360\li720\sa120\tx720\bullet Beds and baths: number of bedrooms/bathrooms\par
+\pard\fi-360\li720\sa120\tx720\bullet Type: Apartment, House, Villa, Townhouse, Studio, Penthouse, Commercial, Office, Retail, Warehouse, Land, Other\par
+\pard\fi-360\li720\sa120\tx720\bullet Verified only: if enabled, shows verified listings only (often enabled by default)\par
+\pard\fi-360\li720\sa120\tx720\bullet Amenities: DSQ, Borehole water, Generator, Fiber internet, Ensuite, Furnished, Gym, Pool, CCTV, Lift/Elevator\par
+\par
+\pard\sa120 Explore sorting reference:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Recommended\par
+\pard\fi-360\li720\sa120\tx720\bullet Price (low to high)\par
+\pard\fi-360\li720\sa120\tx720\bullet Price (high to low)\par
+\par
+\pard\sa160\sb160\fs26\b 5.4 Inventory (/app/inventory)\b0\fs22\par
+\par
+\pard\sa120 Inventory is optimized for scanning many listings.\par
+\par
+\pard\sa120 Common actions:\par
+\par
+\pard\fi-360\li720\sa120 1. Open /app/inventory.\par
+\pard\fi-360\li720\sa120 2. Use the purpose toggle (for example, rental vs buy).\par
+\pard\fi-360\li720\sa120 3. Scroll the listing list and open a listing to view details.\par
+\pard\fi-360\li720\sa120 4. If you receive a deep link with ?listing=<id>, the app can open that listing directly.\par
+\par
+\pard\sa160\sb160\fs26\b 5.5 Saved (/app/saved)\b0\fs22\par
+\par
+\pard\sa120 Saved is used to keep track of listings and searches you want to revisit.\par
+\par
+\pard\sa120 Common actions:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Save a listing from Explore/Inventory using the heart/bookmark action.\par
+\pard\fi-360\li720\sa120\tx720\bullet Open /app/saved to view your saved listings.\par
+\pard\fi-360\li720\sa120\tx720\bullet Create and manage saved searches (filters + query).\par
+\par
+\pard\li360\sa120\i Note: Saved listings can be viewed even when offline, but actions such as messaging or requesting viewings still require internet.\i0\par
+\par
+\pard\sa160\sb160\fs26\b 5.6 Messages (/app/messages)\b0\fs22\par
+\par
+\pard\sa120 Messages contains:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Inbox (conversation list)\par
+\pard\fi-360\li720\sa120\tx720\bullet Thread view (messages inside a conversation)\par
+\par
+\pard\sa120 Common actions:\par
+\par
+\pard\fi-360\li720\sa120 1. Open /app/messages.\par
+\pard\fi-360\li720\sa120 2. Select a conversation in the inbox.\par
+\pard\fi-360\li720\sa120 3. Type your message and send.\par
+\pard\fi-360\li720\sa120 4. If the conversation is tied to a listing, the thread may show the listing context at the top.\par
+\par
+\pard\sa160\sb160\fs26\b 5.7 Viewings (/app/viewings)\b0\fs22\par
+\par
+\pard\sa120 Common actions:\par
+\par
+\pard\fi-360\li720\sa120 1. Open a listing.\par
+\pard\fi-360\li720\sa120 2. Select "Request viewing".\par
+\pard\fi-360\li720\sa120 3. Submit the viewing request.\par
+\pard\fi-360\li720\sa120 4. Track the viewing status under /app/viewings.\par
+\par
+\pard\sa120 Depending on configuration, a viewing fee may be required. If prompted, use the Pay portal.\par
+\par
+\pard\sa160\sb160\fs26\b 5.8 Refunds (/app/refunds)\b0\fs22\par
+\par
+\pard\sa120 Refunds are part of "Zeni Shield" (when enabled).\par
+\par
+\pard\sa120 To request a refund:\par
+\par
+\pard\fi-360\li720\sa120 1. Open /app/refunds.\par
+\pard\fi-360\li720\sa120 2. Select "Request refund".\par
+\pard\fi-360\li720\sa120 3. Choose an eligible payment.\par
+\pard\fi-360\li720\sa120 4. Enter a clear reason (at least 10 characters).\par
+\pard\fi-360\li720\sa120 5. Submit.\par
+\par
+\pard\sa120 After submission, the request is reviewed and its status updates (for example, pending, approved, rejected).\par
+\par
+\pard\sa120 Refund eligibility notes:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Only completed payments that do not already have a refund request are typically eligible.\par
+\pard\fi-360\li720\sa120\tx720\bullet If no payments appear in the selection list, you may not have eligible payments yet.\par
+\par
+\pard\sa160\sb160\fs26\b 5.9 Profile and Identity Verification (/app/profile)\b0\fs22\par
+\par
+\pard\sa120 Profile is used to:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Update your account details\par
+\pard\fi-360\li720\sa120\tx720\bullet Manage identity verification (KYC), when required\par
+\par
+\pard\sa120 If KYC is enabled:\par
+\par
+\pard\fi-360\li720\sa120 1. Open /app/profile.\par
+\pard\fi-360\li720\sa120 2. Select the identity verification action (for example, "Verify my identity").\par
+\pard\fi-360\li720\sa120 3. Upload the requested document(s).\par
+\pard\fi-360\li720\sa120 4. Track the verification status (pending, verified, rejected).\par
+\par
+\pard\sa120 ---\par
+\par
+\pard\sa200\sb200\fs32\b 6. Messaging (Chat)\b0\fs22\par
+\par
+\pard\sa120 Messaging exists in multiple portals:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet User: /app/messages\par
+\pard\fi-360\li720\sa120\tx720\bullet Agent: /agent/messages\par
+\pard\fi-360\li720\sa120\tx720\bullet Admin: /admin/messages\par
+\par
+\pard\sa160\sb160\fs26\b 6.1 Start a Conversation From a Listing\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120 1. Open a listing (/listing/:id or from inside /app/*).\par
+\pard\fi-360\li720\sa120 2. Select "Message agent".\par
+\pard\fi-360\li720\sa120 3. The conversation appears in Messages.\par
+\par
+\pard\sa160\sb160\fs26\b 6.2 Tips for Effective Messaging\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Include the key details: location, budget, preferred move-in date.\par
+\pard\fi-360\li720\sa120\tx720\bullet Use one thread per property to keep context clear.\par
+\pard\fi-360\li720\sa120\tx720\bullet If you need support, use the support conversation when available.\par
+\par
+\pard\sa120 ---\par
+\par
+\pard\sa200\sb200\fs32\b 7. Viewings\b0\fs22\par
+\par
+\pard\sa120 Viewings connect users and agents to coordinate property visits.\par
+\par
+\pard\sa120 Viewing status reference:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet requested: the user submitted a request\par
+\pard\fi-360\li720\sa120\tx720\bullet confirmed: the agent confirmed the viewing\par
+\pard\fi-360\li720\sa120\tx720\bullet declined: the agent declined the request\par
+\pard\fi-360\li720\sa120\tx720\bullet completed: the viewing took place successfully\par
+\pard\fi-360\li720\sa120\tx720\bullet canceled: the viewing was canceled\par
+\pard\fi-360\li720\sa120\tx720\bullet no_show: one party did not show up\par
+\par
+\pard\sa120 Operational rules (may vary by deployment):\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Viewing requests may require a minimum lead time (commonly 24 hours from now).\par
+\pard\fi-360\li720\sa120\tx720\bullet Agents may have a daily limit of confirmed viewings (commonly 8 per day).\par
+\par
+\pard\sa160\sb160\fs26\b 7.1 User: Request a Viewing\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120 1. Open a listing.\par
+\pard\fi-360\li720\sa120 2. Select "Request viewing".\par
+\pard\fi-360\li720\sa120 3. Provide the requested information.\par
+\pard\fi-360\li720\sa120 4. Track the request under /app/viewings.\par
+\par
+\pard\sa160\sb160\fs26\b 7.2 Agent: Manage Viewings\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120 1. Open /agent/viewings.\par
+\pard\fi-360\li720\sa120 2. Review incoming requests.\par
+\pard\fi-360\li720\sa120 3. Confirm, reschedule, or decline as needed.\par
+\pard\fi-360\li720\sa120 4. Use messages to coordinate details.\par
+\par
+\pard\sa120 ---\par
+\par
+\pard\sa200\sb200\fs32\b 8. Pay Portal (/pay/*)\b0\fs22\par
+\par
+\pard\sa120 The Pay portal is the dedicated place for payment actions and receipts.\par
+\par
+\pard\sa160\sb160\fs26\b 8.1 Key Pages\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Login: /pay/login\par
+\pard\fi-360\li720\sa120\tx720\bullet Dashboard: /pay/dashboard\par
+\pard\fi-360\li720\sa120\tx720\bullet Make payment: /pay/payments\par
+\pard\fi-360\li720\sa120\tx720\bullet Transaction ledger: /pay/transactions\par
+\pard\fi-360\li720\sa120\tx720\bullet Receipt detail: /pay/receipts/:id\par
+\pard\fi-360\li720\sa120\tx720\bullet Pay profile: /pay/profile\par
+\pard\fi-360\li720\sa120\tx720\bullet Admin reconcile (restricted): /pay/admin/reconcile\par
+\par
+\pard\sa160\sb160\fs26\b 8.2 Dashboard (/pay/dashboard)\b0\fs22\par
+\par
+\pard\sa120 The dashboard typically shows:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Total outstanding balance\par
+\pard\fi-360\li720\sa120\tx720\bullet A "Pay Now" action\par
+\pard\fi-360\li720\sa120\tx720\bullet A "View History" action\par
+\pard\fi-360\li720\sa120\tx720\bullet Recent transactions\par
+\par
+\pard\sa160\sb160\fs26\b 8.3 Make a Payment (/pay/payments)\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120 1. Open /pay/payments.\par
+\pard\fi-360\li720\sa120 2. Enter amount and choose a payment method (for example, M-Pesa STK, card, bank transfer).\par
+\pard\fi-360\li720\sa120 3. Submit and follow the on-screen steps.\par
+\pard\fi-360\li720\sa120 4. Track status under /pay/transactions.\par
+\par
+\pard\sa160\sb160\fs26\b 8.4 Transactions (/pay/transactions)\b0\fs22\par
+\par
+\pard\sa120 The transaction ledger includes:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Status (for example, pending, paid, failed, reversed)\par
+\pard\fi-360\li720\sa120\tx720\bullet Amount and currency\par
+\pard\fi-360\li720\sa120\tx720\bullet Reference information (when available)\par
+\par
+\pard\sa160\sb160\fs26\b 8.5 Receipts (/pay/receipts/:id)\b0\fs22\par
+\par
+\pard\sa120 Receipts are available after a payment is confirmed as paid.\par
+\par
+\pard\sa120 If you cannot find a receipt:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Confirm the transaction status is "paid".\par
+\pard\fi-360\li720\sa120\tx720\bullet Open the transaction and follow the receipt link.\par
+\par
+\pard\sa160\sb160\fs26\b 8.6 Admin/Finance Reconciliation (/pay/admin/reconcile)\b0\fs22\par
+\par
+\pard\sa120 Admin and finance users can:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Review pending/failed transactions\par
+\pard\fi-360\li720\sa120\tx720\bullet Resolve or refund transactions (depending on role and configuration)\par
+\par
+\pard\sa120 Some actions may require "step-up verification" (a short code).\par
+\par
+\pard\sa120 ---\par
+\par
+\pard\sa200\sb200\fs32\b 9. Agent Portal (/agent/*)\b0\fs22\par
+\par
+\pard\sa160\sb160\fs26\b 9.1 Access\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Agents can log in using /agentlogin.\par
+\pard\fi-360\li720\sa120\tx720\bullet Some agent accounts may require verification approval by an admin before full access.\par
+\par
+\pard\sa160\sb160\fs26\b 9.2 Main Pages\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Dashboard: /agent/dashboard\par
+\pard\fi-360\li720\sa120\tx720\bullet Listings: /agent/listings\par
+\pard\fi-360\li720\sa120\tx720\bullet Create listing: /agent/listings/new\par
+\pard\fi-360\li720\sa120\tx720\bullet Edit listing: /agent/listings/:listingId/edit\par
+\pard\fi-360\li720\sa120\tx720\bullet Boost: /agent/boost\par
+\pard\fi-360\li720\sa120\tx720\bullet Leads: /agent/leads\par
+\pard\fi-360\li720\sa120\tx720\bullet Analytics: /agent/analytics\par
+\pard\fi-360\li720\sa120\tx720\bullet Verification: /agent/verification\par
+\pard\fi-360\li720\sa120\tx720\bullet Viewings: /agent/viewings\par
+\pard\fi-360\li720\sa120\tx720\bullet Messages: /agent/messages\par
+\pard\fi-360\li720\sa120\tx720\bullet Settings: /agent/settings\par
+\par
+\pard\sa160\sb160\fs26\b 9.3 Verification (/agent/verification)\b0\fs22\par
+\par
+\pard\sa120 Agents submit verification evidence (and business documents if required).\par
+\pard\sa120 Admins review these in the admin verification queue.\par
+\par
+\pard\sa120 Agent verification status reference:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet unverified: verification not submitted or not started\par
+\pard\fi-360\li720\sa120\tx720\bullet pending: submitted and awaiting admin review\par
+\pard\fi-360\li720\sa120\tx720\bullet verified: approved by admin\par
+\pard\fi-360\li720\sa120\tx720\bullet rejected: rejected by admin (resubmission may be required)\par
+\par
+\pard\sa120 If your deployment requires professional verification, you may be asked to provide an EARB number for manual verification.\par
+\par
+\pard\sa160\sb160\fs26\b 9.4 Listings (/agent/listings)\b0\fs22\par
+\par
+\pard\sa120 Common actions:\par
+\par
+\pard\fi-360\li720\sa120 1. Open /agent/listings.\par
+\pard\fi-360\li720\sa120 2. Select "New" to create a listing.\par
+\pard\fi-360\li720\sa120 3. Fill in listing details and upload images.\par
+\pard\fi-360\li720\sa120 4. Submit for review if required by your organization.\par
+\par
+\pard\sa120 After approval, listings become visible to users in Explore/Inventory.\par
+\par
+\pard\sa120 Listing status reference:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet draft: not submitted / not visible to users\par
+\pard\fi-360\li720\sa120\tx720\bullet pending_review: awaiting admin approval\par
+\pard\fi-360\li720\sa120\tx720\bullet live: visible to users\par
+\pard\fi-360\li720\sa120\tx720\bullet rejected: rejected during review (fix and resubmit)\par
+\pard\fi-360\li720\sa120\tx720\bullet archived: removed from active browsing\par
+\par
+\pard\sa120 Listing availability reference:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet available\par
+\pard\fi-360\li720\sa120\tx720\bullet under_offer\par
+\pard\fi-360\li720\sa120\tx720\bullet sold\par
+\pard\fi-360\li720\sa120\tx720\bullet let\par
+\par
+\pard\sa120 Listing media limits (typical defaults):\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Maximum images per listing: 15\par
+\pard\fi-360\li720\sa120\tx720\bullet Maximum image size: 10 MB per image\par
+\pard\fi-360\li720\sa120\tx720\bullet Videos: not supported\par
+\par
+\pard\sa160\sb160\fs26\b 9.5 Boost (/agent/boost)\b0\fs22\par
+\par
+\pard\sa120 Boost lets an agent request promotion for a listing.\par
+\par
+\pard\fi-360\li720\sa120 1. Open /agent/boost.\par
+\pard\fi-360\li720\sa120 2. Select a listing to promote.\par
+\pard\fi-360\li720\sa120 3. Submit the request.\par
+\par
+\pard\sa120 The app confirms with a message such as "Campaign requested" and the team can follow up.\par
+\par
+\pard\sa160\sb160\fs26\b 9.6 Leads (/agent/leads)\b0\fs22\par
+\par
+\pard\sa120 Leads help agents track the status of client interest.\par
+\par
+\pard\sa120 Lead stage reference:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet new\par
+\pard\fi-360\li720\sa120\tx720\bullet contacted\par
+\pard\fi-360\li720\sa120\tx720\bullet viewing\par
+\pard\fi-360\li720\sa120\tx720\bullet offer\par
+\pard\fi-360\li720\sa120\tx720\bullet closed\par
+\par
+\pard\sa120 ---\par
+\par
+\pard\sa200\sb200\fs32\b 10. Admin Portal (/admin/*)\b0\fs22\par
+\par
+\pard\sa120 Admins manage verification, moderation, and platform safety.\par
+\par
+\pard\sa160\sb160\fs26\b 10.1 Access\b0\fs22\par
+\par
+\pard\sa120 Admins can log in using /adminlogin.\par
+\par
+\pard\sa120 Depending on deployment, admin access may be restricted using:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Allowed email domains\par
+\pard\fi-360\li720\sa120\tx720\bullet IP allowlists\par
+\pard\fi-360\li720\sa120\tx720\bullet Secure network policies (for example, a tailnet)\par
+\par
+\pard\sa160\sb160\fs26\b 10.2 Main Pages\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Verification queue: /admin/verification\par
+\pard\fi-360\li720\sa120\tx720\bullet Admin overview: /admin/overview\par
+\pard\fi-360\li720\sa120\tx720\bullet Listings: /admin/listings\par
+\pard\fi-360\li720\sa120\tx720\bullet Users: /admin/users\par
+\pard\fi-360\li720\sa120\tx720\bullet Reports: /admin/reports\par
+\pard\fi-360\li720\sa120\tx720\bullet Messages: /admin/messages\par
+\pard\fi-360\li720\sa120\tx720\bullet Audit log: /admin/audit\par
+\pard\fi-360\li720\sa120\tx720\bullet Network access: /admin/network-access\par
+\pard\fi-360\li720\sa120\tx720\bullet Refund requests: /admin/refund-requests\par
+\pard\fi-360\li720\sa120\tx720\bullet Settings: /admin/settings\par
+\par
+\pard\sa160\sb160\fs26\b 10.3 Verification Queue (/admin/verification)\b0\fs22\par
+\par
+\pard\sa120 The verification queue can include:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Agent verification requests\par
+\pard\fi-360\li720\sa120\tx720\bullet New listing approvals\par
+\pard\fi-360\li720\sa120\tx720\bullet KYC (user identity verification)\par
+\pard\fi-360\li720\sa120\tx720\bullet Business verification (agent/company documents)\par
+\par
+\pard\sa120 Common actions:\par
+\par
+\pard\fi-360\li720\sa120 1. Open /admin/verification.\par
+\pard\fi-360\li720\sa120 2. Expand a request to review evidence.\par
+\pard\fi-360\li720\sa120 3. Select "Approve" or "Reject".\par
+\par
+\pard\sa120 Some actions may require step-up verification.\par
+\par
+\pard\sa120 ---\par
+\par
+\pard\sa160\sb160\fs26\b 10.4 Reports (/admin/reports)\b0\fs22\par
+\par
+\pard\sa120 Reports help admins track and resolve issues raised by users.\par
+\par
+\pard\sa120 Common report category reference:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet scam\par
+\pard\fi-360\li720\sa120\tx720\bullet abuse\par
+\pard\fi-360\li720\sa120\tx720\bullet duplicates\par
+\pard\fi-360\li720\sa120\tx720\bullet spam\par
+\pard\fi-360\li720\sa120\tx720\bullet other\par
+\par
+\pard\sa120 Common severity reference:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet low\par
+\pard\fi-360\li720\sa120\tx720\bullet medium\par
+\pard\fi-360\li720\sa120\tx720\bullet high\par
+\par
+\pard\sa160\sb160\fs26\b 10.5 Audit Log (/admin/audit)\b0\fs22\par
+\par
+\pard\sa120 Audit logs record sensitive actions (for example, approvals, role changes, and reconciliation actions) to support traceability and compliance.\par
+\par
+\pard\sa160\sb160\fs26\b 10.6 Network Access (/admin/network-access)\b0\fs22\par
+\par
+\pard\sa120 Network access controls may restrict admin access by:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet allowed IP addresses (allowlist)\par
+\pard\fi-360\li720\sa120\tx720\bullet secure network policies (for example, a tailnet)\par
+\par
+\pard\sa120 If you cannot access admin pages, confirm your network policy with your deployment owner.\par
+\par
+\pard\sa160\sb160\fs26\b 10.7 Refund Requests (/admin/refund-requests)\b0\fs22\par
+\par
+\pard\sa120 Refund requests appear here for review and resolution when refunds are enabled.\par
+\par
+\pard\sa200\sb200\fs32\b 11. Security and Privacy\b0\fs22\par
+\par
+\pard\sa160\sb160\fs26\b 11.1 Password Safety\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Use a strong password and do not reuse passwords from other sites.\par
+\pard\fi-360\li720\sa120\tx720\bullet Log out on shared devices.\par
+\pard\fi-360\li720\sa120\tx720\bullet Reset your password if you suspect unauthorized access.\par
+\par
+\pard\sa160\sb160\fs26\b 11.2 Step-Up Verification (Admin/Finance)\b0\fs22\par
+\par
+\pard\sa120 Some sensitive actions can require an additional short code ("step-up").\par
+\par
+\pard\sa120 If you are prompted for step-up:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Enter the code provided by your organization.\par
+\pard\fi-360\li720\sa120\tx720\bullet If you do not have the code, contact your admin/finance lead.\par
+\par
+\pard\sa160\sb160\fs26\b 11.3 Identity Verification (KYC)\b0\fs22\par
+\par
+\pard\sa120 If KYC is enabled:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Upload clear documents.\par
+\pard\fi-360\li720\sa120\tx720\bullet Wait for admin review.\par
+\pard\fi-360\li720\sa120\tx720\bullet Check your Profile for status updates.\par
+\par
+\pard\sa120 ---\par
+\par
+\pard\sa200\sb200\fs32\b 12. Frequently Asked Questions (FAQ)\b0\fs22\par
+\par
+\pard\sa120 Q: Why am I redirected away from /agent/ or /admin/?\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Your account does not have the required role, or your role is pending verification.\par
+\par
+\pard\sa120 Q: Why are listings not loading?\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Check your internet connection, refresh the page, and try again.\par
+\par
+\pard\sa120 Q: Why is my payment still pending?\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Check /pay/transactions for status updates. If it remains pending, contact support with the reference and time.\par
+\par
+\pard\sa120 Q: How do I reset my password?\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Use /forgot and follow the reset steps.\par
+\par
+\pard\sa120 Q: Why do I only see verified listings in Explore?\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet The "Verified only" filter may be enabled by default. Turn it off to include unverified listings.\par
+\par
+\pard\sa120 Q: Why can't I request a viewing for tomorrow?\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Some deployments enforce a minimum lead time (commonly 24 hours from now) before a viewing can be requested.\par
+\par
+\pard\sa120 Q: Why is my listing not visible to users?\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Check the listing status. Draft and pending_review listings are not visible to users until approved and live.\par
+\par
+\pard\sa120 ---\par
+\par
+\pard\sa200\sb200\fs32\b 13. System Messages and Meanings\b0\fs22\par
+\par
+\pard\sa120 These are common user-facing messages and what they mean.\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet "You're offline. Some actions may be unavailable. We'll retry when you're back online."\par
+\pard\sa120   - Meaning: Your device has no internet connection.\par
+\pard\sa120   - Action: Restore connectivity and try again.\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet "Refund requested"\par
+\pard\sa120   - Meaning: Your refund request was submitted successfully.\par
+\pard\sa120   - Action: Wait for review; check /app/refunds for status.\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet "Invalid request" (refunds)\par
+\pard\sa120   - Meaning: Missing payment selection or the reason is too short.\par
+\pard\sa120   - Action: Select an eligible payment and enter a reason of at least 10 characters.\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet "Campaign requested" (boost)\par
+\pard\sa120   - Meaning: A request to promote a listing was submitted.\par
+\pard\sa120   - Action: Wait for follow-up from the team.\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet "Select a listing" (boost)\par
+\pard\sa120   - Meaning: You attempted to submit without choosing a listing.\par
+\pard\sa120   - Action: Select one listing and try again.\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet "Payment confirmed"\par
+\pard\sa120   - Meaning: A payment status was updated to paid.\par
+\pard\sa120   - Action: View receipt in /pay/transactions or /pay/receipts/:id.\par
+\par
+\pard\sa120 ---\par
+\par
+\pard\sa200\sb200\fs32\b 14. Troubleshooting\b0\fs22\par
+\par
+\pard\sa160\sb160\fs26\b 14.1 I Cannot Log In\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Use the correct login page: /login, /agentlogin, /adminlogin, or /pay/login.\par
+\pard\fi-360\li720\sa120\tx720\bullet Confirm email and password.\par
+\pard\fi-360\li720\sa120\tx720\bullet Use /forgot to reset your password.\par
+\par
+\pard\sa160\sb160\fs26\b 14.2 I Cannot Access Agent/Admin Pages\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Confirm your account role (user vs agent vs admin).\par
+\pard\fi-360\li720\sa120\tx720\bullet If your account is pending verification, wait for admin approval.\par
+\par
+\pard\sa160\sb160\fs26\b 14.3 The App Loads Slowly\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Confirm your internet connection is stable.\par
+\pard\fi-360\li720\sa120\tx720\bullet Close other heavy browser tabs and try again.\par
+\pard\fi-360\li720\sa120\tx720\bullet If you are on mobile data, switch to a stronger connection.\par
+\par
+\pard\sa160\sb160\fs26\b 14.4 Receipts Not Found\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Confirm the transaction status is "paid".\par
+\pard\fi-360\li720\sa120\tx720\bullet If still missing, contact support with transaction details.\par
+\par
+\pard\sa160\sb160\fs26\b 14.5 I Cannot Request a Viewing\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Some deployments enforce a minimum lead time (commonly 24 hours). Try a later date/time.\par
+\pard\fi-360\li720\sa120\tx720\bullet If the agent has reached a daily limit, choose another slot or try again later.\par
+\par
+\pard\sa160\sb160\fs26\b 14.6 Listing Photos Will Not Upload (Agents)\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Confirm each image is under 10 MB.\par
+\pard\fi-360\li720\sa120\tx720\bullet Confirm the listing has 15 images or fewer.\par
+\pard\fi-360\li720\sa120\tx720\bullet Try a different image format (for example, JPG/PNG) and try again.\par
+\par
+\pard\sa120 ---\par
+\par
+\pard\sa200\sb200\fs32\b 15. Glossary and Support\b0\fs22\par
+\par
+\pard\sa160\sb160\fs26\b 15.1 Glossary\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Listing: A property advertisement posted by an agent.\par
+\pard\fi-360\li720\sa120\tx720\bullet Lead: A potential customer interaction related to a listing.\par
+\pard\fi-360\li720\sa120\tx720\bullet KYC: "Know Your Customer" identity verification.\par
+\pard\fi-360\li720\sa120\tx720\bullet Step-up verification: Extra verification code for sensitive actions.\par
+\pard\fi-360\li720\sa120\tx720\bullet Receipt: Proof of payment issued after a transaction is paid.\par
+\par
+\pard\sa160\sb160\fs26\b 15.2 Support\b0\fs22\par
+\par
+\pard\sa120 Add your support details here:\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Support email:\par
+\pard\fi-360\li720\sa120\tx720\bullet Support phone:\par
+\pard\fi-360\li720\sa120\tx720\bullet Support hours:\par
+\par
+\pard\sa120 ---\par
+\par
+\pard\sa200\sb200\fs32\b 16. Index\b0\fs22\par
+\par
+\pard\fi-360\li720\sa120\tx720\bullet Admin portal: Section 10\par
+\pard\fi-360\li720\sa120\tx720\bullet Agent portal: Section 9\par
+\pard\fi-360\li720\sa120\tx720\bullet Audit log: Section 10.5\par
+\pard\fi-360\li720\sa120\tx720\bullet Boost: Section 9.5\par
+\pard\fi-360\li720\sa120\tx720\bullet Explore (filters, map search): Section 5.3\par
+\pard\fi-360\li720\sa120\tx720\bullet FAQ: Section 12\par
+\pard\fi-360\li720\sa120\tx720\bullet KYC (identity verification): Section 5.9 and Section 11.3\par
+\pard\fi-360\li720\sa120\tx720\bullet Lead stages: Section 9.6\par
+\pard\fi-360\li720\sa120\tx720\bullet Listing status and availability: Section 9.4\par
+\pard\fi-360\li720\sa120\tx720\bullet Offline banner: Section 3.5 and Section 13\par
+\pard\fi-360\li720\sa120\tx720\bullet Pay portal: Section 8\par
+\pard\fi-360\li720\sa120\tx720\bullet Receipts: Section 8.5\par
+\pard\fi-360\li720\sa120\tx720\bullet Refunds: Section 5.8 and Section 13\par
+\pard\fi-360\li720\sa120\tx720\bullet Saved listings/searches: Section 5.5\par
+\pard\fi-360\li720\sa120\tx720\bullet Step-up verification: Section 11.2\par
+\pard\fi-360\li720\sa120\tx720\bullet Viewings: Section 7\par
+\pard\fi-360\li720\sa120\tx720\bullet Verification queue: Section 10.3\par
+\par
+}

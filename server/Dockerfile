@@ -15,4 +15,4 @@ RUN addgroup -S app && adduser -S app -G app \
   && chown -R app:app /app
 USER app
 EXPOSE 4000
-CMD ["node", "dist/server.js"]
+CMD ["node", "dist/src/server.js"]

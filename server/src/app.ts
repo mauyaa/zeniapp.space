@@ -25,6 +25,43 @@ export const app = express();
 app.set('trust proxy', env.trustProxy);
 app.set('etag', 'weak');
 
+const distIndexPath = path.resolve(__dirname, '../../dist/index.html');
+const devIndexPath = path.resolve(__dirname, '../../index.html');
+
+let resolvedSpaIndexPath: string | null | undefined;
+
+function resolveSpaIndexPath(): string | null {
+  if (resolvedSpaIndexPath && fs.existsSync(resolvedSpaIndexPath)) return resolvedSpaIndexPath;
+  const htmlPath = fs.existsSync(distIndexPath)
+    ? distIndexPath
+    : fs.existsSync(devIndexPath)
+      ? devIndexPath
+      : null;
+  resolvedSpaIndexPath = htmlPath;
+  return htmlPath;
+}
+
+type SpaIndexCache = { path: string; mtimeMs: number; html: string };
+let spaIndexCache: SpaIndexCache | null = null;
+
+async function getSpaIndexHtml(): Promise<string | null> {
+  const htmlPath = resolveSpaIndexPath();
+  if (!htmlPath) return null;
+  if (env.nodeEnv === 'production' && spaIndexCache?.path === htmlPath) return spaIndexCache.html;
+
+  try {
+    const stat = await fs.promises.stat(htmlPath);
+    if (spaIndexCache && spaIndexCache.path === htmlPath && spaIndexCache.mtimeMs === stat.mtimeMs) {
+      return spaIndexCache.html;
+    }
+    const html = await fs.promises.readFile(htmlPath, 'utf8');
+    spaIndexCache = { path: htmlPath, mtimeMs: stat.mtimeMs, html };
+    return html;
+  } catch {
+    return null;
+  }
+}
+
 // Optional Sentry
 const sentryEnabled = initSentry();
 if (sentryEnabled) {
@@ -171,16 +208,9 @@ app.get('/listing/:id', async (req: Request, res: Response, next: NextFunction) 
     const listing = await ListingModel.findById(listingId).lean();
     if (!listing) return next();
 
-    // Check where index.html is located
-    const distPath = path.resolve(__dirname, '../../dist/index.html');
-    const devPath = path.resolve(__dirname, '../../index.html');
-    const htmlPath = fs.existsSync(distPath) ? distPath : fs.existsSync(devPath) ? devPath : null;
-
-    if (!htmlPath) {
-      return next();
-    }
-
-    let html = fs.readFileSync(htmlPath, 'utf8');
+    const template = await getSpaIndexHtml();
+    if (!template) return next();
+    let html = template;
 
     const title = `${listing.title} | Zeni`;
     const description =
@@ -228,9 +258,7 @@ app.get('/listing/:id', async (req: Request, res: Response, next: NextFunction) 
 app.get(
   ['/app/*', '/explore', '/login', '/map', '/rent/*', '/buy/*'],
   (req: Request, res: Response, next: NextFunction) => {
-    const distPath = path.resolve(__dirname, '../../dist/index.html');
-    const devPath = path.resolve(__dirname, '../../index.html');
-    const htmlPath = fs.existsSync(distPath) ? distPath : fs.existsSync(devPath) ? devPath : null;
+    const htmlPath = resolveSpaIndexPath();
     if (htmlPath) {
       res.sendFile(htmlPath);
     } else {

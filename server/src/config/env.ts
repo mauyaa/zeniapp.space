@@ -1,6 +1,8 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+const nodeEnv = process.env.NODE_ENV || 'development';
+
 const parseCsv = (v?: string) =>
   (v || '')
     .split(',')
@@ -39,7 +41,8 @@ export const env = {
   corsOrigin:
     process.env.CORS_ORIGIN ||
     'http://localhost:5173,http://localhost:4173,http://localhost:5175,capacitor://localhost',
-  nodeEnv: process.env.NODE_ENV || 'development',
+  nodeEnv,
+  enableCrons: parseBoolean(process.env.ENABLE_CRONS, nodeEnv === 'production'),
   trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
   // Allow any domain for admins in development unless explicitly locked down via ADMIN_DOMAIN
   adminDomains: parseCsv(process.env.ADMIN_DOMAIN || '*'),
