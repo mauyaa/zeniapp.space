@@ -11,7 +11,7 @@ import {
   getTransaction,
 } from '../services/pay.service';
 import { handlePortalCallback } from '../services/payPortal.service';
-import { verifyCallbackSignature } from '../services/mpesa.service';
+import { isMpesaCallbackSecretConfigured, verifyCallbackSignature } from '../services/mpesa.service';
 
 export async function invoices(req: AuthRequest, res: Response) {
   const userId = req.user?.id;
@@ -91,9 +91,25 @@ function normalizeMpesaCallbackBody(
 }
 
 export async function mpesaCallback(req: Request, res: Response) {
+  if (process.env.NODE_ENV === 'production' && !isMpesaCallbackSecretConfigured()) {
+    return res.status(503).json({
+      code: 'MPESA_DISABLED',
+      message: 'M-Pesa callbacks are disabled (MPESA_CALLBACK_SECRET not configured)',
+    });
+  }
+
+  const querySecret = req.query?.secret;
+  const querySecretValue =
+    typeof querySecret === 'string'
+      ? querySecret
+      : Array.isArray(querySecret) && typeof querySecret[0] === 'string'
+        ? querySecret[0]
+        : undefined;
+
   const signature =
     (req.headers['x-callback-secret'] as string | undefined) ||
-    (req.headers['x-mpesa-signature'] as string | undefined);
+    (req.headers['x-mpesa-signature'] as string | undefined) ||
+    querySecretValue;
 
   if (!verifyCallbackSignature(signature)) {
     return res

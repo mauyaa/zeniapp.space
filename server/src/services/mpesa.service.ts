@@ -1,7 +1,10 @@
 /**
  * M-Pesa Daraja API: STK push (Lipa Na M-Pesa Online).
  * Set MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET, MPESA_SHORTCODE, MPESA_PASSKEY, MPESA_CALLBACK_URL
- * for real requests. If unset or "dev", returns a mock ref (no real push).
+ * for real requests.
+ *
+ * - In non-production: if unset or placeholder values are used, returns a mock ref (no real push).
+ * - In production: M-Pesa is treated as disabled until it is fully configured.
  */
 import crypto from 'crypto';
 import { logger } from '../utils/logger';
@@ -36,35 +39,60 @@ const isValidCallbackUrl = (value?: string) => {
   }
 };
 
+const isProd = env.nodeEnv === 'production';
+const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1']);
+
+const parseCallbackUrlSafe = (value?: string): URL | null => {
+  if (!value) return null;
+  try {
+    return new URL(value);
+  } catch {
+    return null;
+  }
+};
+
 const hasConsumerKey = !isPlaceholder(env.mpesa.consumerKey);
 const hasConsumerSecret = !isPlaceholder(env.mpesa.consumerSecret);
 const hasShortcode = !isPlaceholder(env.mpesa.shortcode);
 const hasPasskey = !isPlaceholder(env.mpesa.passkey);
-const hasCallbackUrl = isValidCallbackUrl(env.mpesa.callbackUrl);
+const hasCallbackSecret = !isPlaceholder(env.mpesa.callbackSecret);
+
+const callbackUrlCandidate = isValidCallbackUrl(env.mpesa.callbackUrl)
+  ? parseCallbackUrlSafe(env.mpesa.callbackUrl)
+  : null;
+const callbackUrlIsLocal = Boolean(
+  callbackUrlCandidate && LOCAL_HOSTNAMES.has(callbackUrlCandidate.hostname)
+);
+const callbackUrlIsHttps = callbackUrlCandidate?.protocol === 'https:';
+const hasCallbackUrl = Boolean(
+  callbackUrlCandidate && (!isProd || (callbackUrlIsHttps && !callbackUrlIsLocal))
+);
+
+const hasCallbackUrlCandidate = Boolean(callbackUrlCandidate && (!isProd || !callbackUrlIsLocal));
 
 const hasAnyConfig =
-  hasConsumerKey || hasConsumerSecret || hasShortcode || hasPasskey || hasCallbackUrl;
+  hasConsumerKey ||
+  hasConsumerSecret ||
+  hasShortcode ||
+  hasPasskey ||
+  hasCallbackUrlCandidate ||
+  hasCallbackSecret;
 const isLiveConfigured =
   hasConsumerKey && hasConsumerSecret && hasShortcode && hasPasskey && hasCallbackUrl;
+const isLiveEnabled = isLiveConfigured && (!isProd || hasCallbackSecret);
 const isMockMode = !isLiveConfigured;
 let partialConfigWarned = false;
 let localCallbackWarned = false;
 
-if (process.env.NODE_ENV === 'production' && !env.mpesa.callbackSecret) {
-  throw new Error('MPESA_CALLBACK_SECRET is required in production');
-}
-
-if (process.env.NODE_ENV === 'production' && hasAnyConfig && !isLiveConfigured) {
-  throw new Error(
-    'M-Pesa is partially configured. Set MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET, MPESA_SHORTCODE, MPESA_PASSKEY and MPESA_CALLBACK_URL.'
-  );
-}
-
-if (process.env.NODE_ENV === 'production' && hasCallbackUrl) {
-  const callbackUrl = new URL(env.mpesa.callbackUrl);
-  if (callbackUrl.protocol !== 'https:') {
-    throw new Error('MPESA_CALLBACK_URL must be https in production');
-  }
+if (isProd && hasAnyConfig && !isLiveEnabled) {
+  const missing: string[] = [];
+  if (!hasConsumerKey) missing.push('MPESA_CONSUMER_KEY');
+  if (!hasConsumerSecret) missing.push('MPESA_CONSUMER_SECRET');
+  if (!hasShortcode) missing.push('MPESA_SHORTCODE');
+  if (!hasPasskey) missing.push('MPESA_PASSKEY');
+  if (!hasCallbackUrl) missing.push('MPESA_CALLBACK_URL (https, public)');
+  if (!hasCallbackSecret) missing.push('MPESA_CALLBACK_SECRET');
+  logger.warn('[MPESA] Disabled in production (incomplete configuration).', { missing });
 }
 
 export interface StkResult {
@@ -124,6 +152,23 @@ export async function initiateStk(
     throw Object.assign(new Error('Invalid phone format. Use 07XXXXXXXX or 2547XXXXXXXX'), {
       status: 400,
       code: 'INVALID_PHONE',
+    });
+  }
+
+  if (isProd && !isLiveEnabled) {
+    throw Object.assign(new Error('M-Pesa is not configured on this server'), {
+      status: 503,
+      code: 'MPESA_DISABLED',
+      details: {
+        required: [
+          'MPESA_CONSUMER_KEY',
+          'MPESA_CONSUMER_SECRET',
+          'MPESA_SHORTCODE',
+          'MPESA_PASSKEY',
+          'MPESA_CALLBACK_URL (https, public)',
+          'MPESA_CALLBACK_SECRET',
+        ],
+      },
     });
   }
 
@@ -214,14 +259,20 @@ export async function initiateStk(
 }
 
 export function verifyCallbackSignature(signature?: string): boolean {
-  if (!env.mpesa.callbackSecret) {
-    return true;
+  const secret = env.mpesa.callbackSecret;
+  if (!secret || isPlaceholder(secret)) {
+    // Never allow unauthenticated callbacks in production.
+    return !isProd;
   }
   if (!signature) return false;
 
-  const expected = Buffer.from(env.mpesa.callbackSecret);
+  const expected = Buffer.from(secret);
   const received = Buffer.from(signature);
   if (expected.length !== received.length) return false;
 
   return crypto.timingSafeEqual(expected, received);
+}
+
+export function isMpesaCallbackSecretConfigured(): boolean {
+  return hasCallbackSecret;
 }
