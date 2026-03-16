@@ -173,23 +173,6 @@ export async function login(req: Request, res: Response) {
       return res.status(403).json({ code: 'FORBIDDEN', message: 'IP not allowed for admin' });
     }
 
-    if (user.mfaEnabled) {
-      const otp = body.otp;
-      const validOtp = Boolean(otp && user.mfaSecret && verifyTOTP(otp, user.mfaSecret));
-      const recoveryIndex = user.mfaRecoveryCodes?.findIndex((c) => c === otp) ?? -1;
-      const validRecovery = recoveryIndex >= 0;
-      if (!validOtp && !validRecovery) {
-        return res.status(401).json({ code: 'OTP_REQUIRED', message: 'MFA code required' });
-      }
-      if (validRecovery && user.mfaRecoveryCodes) {
-        user.mfaRecoveryCodes.splice(recoveryIndex, 1);
-        await user.save();
-      }
-    } else if (env.adminOtp) {
-      if (!body.otp || body.otp !== env.adminOtp) {
-        return res.status(401).json({ code: 'OTP_REQUIRED', message: 'Admin OTP required' });
-      }
-    }
   }
   if (user.role === 'agent' && user.agentVerification !== 'verified') {
     return res

@@ -5,15 +5,15 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://zygomorphic-catrina-zeniapp-c91be0b3.koyeb.app/api/$1"
+      "destination": "https://zeni-api.onrender.com/api/$1"
     },
     {
       "source": "/uploads/(.*)",
-      "destination": "https://zygomorphic-catrina-zeniapp-c91be0b3.koyeb.app/uploads/$1"
+      "destination": "https://zeni-api.onrender.com/uploads/$1"
     },
     {
       "source": "/socket.io/(.*)",
-      "destination": "https://zygomorphic-catrina-zeniapp-c91be0b3.koyeb.app/socket.io/$1"
+      "destination": "https://zeni-api.onrender.com/socket.io/$1"
     },
     {
       "source": "/(.*)",

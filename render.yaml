@@ -3,8 +3,8 @@ services:
     name: zeni-api
     runtime: node
     rootDir: server
-    buildCommand: npm install && npm run build
-    startCommand: node dist/server.js
+    buildCommand: npm ci && npm run build
+    startCommand: node dist/src/server.js
     envVars:
       - key: NODE_ENV
         value: production
@@ -19,6 +19,6 @@ services:
       - key: ADMIN_DOMAIN
         value: zeniapp.space,gmail.com
       - key: ADMIN_STEP_UP_CODE
-        sync: false
+        generateValue: true
       - key: PAY_STEP_UP_CODE
-        sync: false
+        generateValue: true
