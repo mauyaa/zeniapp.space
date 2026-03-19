@@ -4,7 +4,6 @@ import { sendLimiter } from '../middlewares/rateLimit';
 import { asyncHandler } from '../middlewares/errorHandler';
 import {
   conversations,
-  bootstrapConversations,
   createConversation,
   messages,
   postMessage,
@@ -16,7 +15,6 @@ const router = Router();
 router.use(auth);
 
 router.get('/conversations', asyncHandler(conversations));
-router.post('/conversations/bootstrap', asyncHandler(bootstrapConversations));
 router.post('/conversations', asyncHandler(createConversation));
 router.get('/conversations/:id/messages', asyncHandler(messages));
 router.post('/conversations/:id/messages', sendLimiter, asyncHandler(postMessage));

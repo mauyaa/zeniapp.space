@@ -235,16 +235,24 @@ describe('staff conversation labels', () => {
 describe('shouldIncludeConversationForRole', () => {
   it('keeps both Zeni welcome threads for users', () => {
     expect(
-      shouldIncludeConversationForRole('user', {
-        ...baseConversation,
-        agentSnapshot: { id: 'system-agent-1', name: 'Zeni Agent' },
-      }, 'user-1')
+      shouldIncludeConversationForRole(
+        'user',
+        {
+          ...baseConversation,
+          agentSnapshot: { id: 'system-agent-1', name: 'Zeni Agent' },
+        },
+        'user-1'
+      )
     ).toBe(true);
     expect(
-      shouldIncludeConversationForRole('user', {
-        ...baseConversation,
-        agentSnapshot: { id: 'system-admin-1', name: 'Zeni Admin' },
-      }, 'user-1')
+      shouldIncludeConversationForRole(
+        'user',
+        {
+          ...baseConversation,
+          agentSnapshot: { id: 'system-admin-1', name: 'Zeni Admin' },
+        },
+        'user-1'
+      )
     ).toBe(true);
   });
 

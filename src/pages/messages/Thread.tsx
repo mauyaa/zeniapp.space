@@ -113,11 +113,11 @@ export function ThreadPage() {
   const canSend = text.trim().length > 0;
   const canCompose = Boolean(
     conversation &&
-      user &&
-      (conversation.userId === user.id ||
-        conversation.agentId === user.id ||
-        (role === 'admin' &&
-          getSystemConversationLabel(conversation.agentSnapshot?.name) === 'Zeni Admin'))
+    user &&
+    (conversation.userId === user.id ||
+      conversation.agentId === user.id ||
+      (role === 'admin' &&
+        getSystemConversationLabel(conversation.agentSnapshot?.name) === 'Zeni Admin'))
   );
 
   const allSuggestions = role === 'user' ? userSuggestions : staffSuggestions;

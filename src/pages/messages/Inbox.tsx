@@ -113,9 +113,16 @@ export function InboxPage() {
   };
 
   return (
-    <div className="flex h-full w-full flex-col bg-[linear-gradient(180deg,rgba(248,250,245,0.96)_0%,rgba(241,246,238,0.96)_100%)]" role="region" aria-label="Inbox">
+    <div
+      className="flex h-full w-full flex-col bg-[linear-gradient(180deg,rgba(248,250,245,0.96)_0%,rgba(241,246,238,0.96)_100%)]"
+      role="region"
+      aria-label="Inbox"
+    >
       <div className="border-b border-[var(--zeni-line)] bg-white/70 px-4 py-4 backdrop-blur-sm">
-        <h2 id="inbox-title" className="font-serif text-[2rem] leading-none text-[var(--zeni-black)]">
+        <h2
+          id="inbox-title"
+          className="font-serif text-[2rem] leading-none text-[var(--zeni-black)]"
+        >
           Messages
         </h2>
         <div className="group relative mt-3" role="search">
@@ -202,7 +209,8 @@ export function InboxPage() {
                 role="listitem"
                 className={cn(
                   'w-full border-b border-[rgba(7,17,12,0.06)] px-4 py-3 text-left transition-colors',
-                  isActive && 'border-l-4 border-l-[var(--zeni-green)] bg-[rgba(28,106,81,0.08)] pl-3',
+                  isActive &&
+                    'border-l-4 border-l-[var(--zeni-green)] bg-[rgba(28,106,81,0.08)] pl-3',
                   !isActive && 'hover:bg-white/70'
                 )}
               >
@@ -229,7 +237,9 @@ export function InboxPage() {
                       </div>
                     )}
                     <div className="mt-0.5 flex items-center gap-2">
-                      <span className="line-clamp-1 text-sm text-[rgba(7,17,12,0.68)]">{preview}</span>
+                      <span className="line-clamp-1 text-sm text-[rgba(7,17,12,0.68)]">
+                        {preview}
+                      </span>
                       {conversation.unreadCount > 0 && (
                         <span className="flex-shrink-0 rounded-full bg-[rgba(240,138,50,0.18)] px-2 py-0.5 text-[10px] font-bold text-[var(--zeni-orange)]">
                           {conversation.unreadCount}

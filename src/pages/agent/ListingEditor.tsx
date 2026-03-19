@@ -204,7 +204,8 @@ export function ListingEditorPage() {
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
           message = 'Valid coordinates are required';
         } else if (!isWithinKenya(lat, lng) && !isWithinKenya(lng, lat)) {
-          message = 'Coordinates must be within Kenya (or leave blank to auto-detect from city/area)';
+          message =
+            'Coordinates must be within Kenya (or leave blank to auto-detect from city/area)';
         }
       } else if (!form.city.trim() && !form.area.trim()) {
         message = 'Provide at least a city or area if coordinates are not set';

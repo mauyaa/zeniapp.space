@@ -106,8 +106,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const canActAsSystemAdmin = (conversation?: Conversation | null) =>
     Boolean(
       user?.role === 'admin' &&
-        conversation &&
-        getSystemConversationLabel(conversation.agentSnapshot?.name) === 'Zeni Admin'
+      conversation &&
+      getSystemConversationLabel(conversation.agentSnapshot?.name) === 'Zeni Admin'
     );
 
   // Defer initial conversation fetch so it doesn't block first paint.
