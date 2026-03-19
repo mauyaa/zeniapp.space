@@ -11,6 +11,7 @@ import { getSocket } from '../../lib/socket';
 import { Message } from '../../types/chat';
 import { cn } from '../../utils/cn';
 import {
+  getSystemConversationLabel,
   resolveUserContactLabel,
   getAgentOtherPartyLabel,
   getAdminOtherPartyLabel,
@@ -66,10 +67,14 @@ export function ThreadPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const suggestionsRef = useRef<HTMLDivElement | null>(null);
   const lastTypingEmit = useRef(0);
+  const loadMessagesRef = useRef(loadMessages);
+  const markReadRef = useRef(markRead);
+  const sendLockRef = useRef(false);
   const { push: pushToast } = useToast();
 
   const [text, setText] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [sending, setSending] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
 
@@ -108,11 +113,11 @@ export function ThreadPage() {
   const canSend = text.trim().length > 0;
   const canCompose = Boolean(
     conversation &&
-    user &&
-    (conversation.userId === user.id ||
-      conversation.agentId === user.id ||
-      role === 'admin' ||
-      role === 'agent')
+      user &&
+      (conversation.userId === user.id ||
+        conversation.agentId === user.id ||
+        (role === 'admin' &&
+          getSystemConversationLabel(conversation.agentSnapshot?.name) === 'Zeni Admin'))
   );
 
   const allSuggestions = role === 'user' ? userSuggestions : staffSuggestions;
@@ -157,11 +162,20 @@ export function ThreadPage() {
   }, [threadMessages]);
 
   useEffect(() => {
+    loadMessagesRef.current = loadMessages;
+  }, [loadMessages]);
+
+  useEffect(() => {
+    markReadRef.current = markRead;
+  }, [markRead]);
+
+  useEffect(() => {
     if (!conversationId) return;
     setActiveConversation(conversationId);
-    loadMessages(conversationId);
-    markRead(conversationId);
-  }, [conversationId, loadMessages, setActiveConversation, markRead]);
+    void loadMessagesRef.current(conversationId);
+    void markReadRef.current(conversationId);
+    return () => setActiveConversation(null);
+  }, [conversationId, setActiveConversation]);
 
   useEffect(() => {
     if (!conversationId || !token) return;
@@ -199,8 +213,15 @@ export function ThreadPage() {
 
   const handleSend = useCallback(
     async (value: string) => {
-      if (!conversationId) return;
-      await sendMessage(conversationId, { type: 'text', content: value });
+      if (!conversationId || sendLockRef.current) return;
+      sendLockRef.current = true;
+      setSending(true);
+      try {
+        await sendMessage(conversationId, { type: 'text', content: value });
+      } finally {
+        sendLockRef.current = false;
+        setSending(false);
+      }
     },
     [conversationId, sendMessage]
   );
@@ -293,8 +314,8 @@ export function ThreadPage() {
   };
 
   const sendFromComposer = () => {
-    if (!canCompose || !canSend) return;
-    handleSend(text.trim());
+    if (!canCompose || !canSend || sending) return;
+    void handleSend(text.trim());
     setText('');
     setShowSuggestions(false);
     if (textareaRef.current) textareaRef.current.style.height = '48px';
@@ -392,23 +413,30 @@ export function ThreadPage() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-gray-50">
-      <header className="border-b border-gray-200 bg-white px-4 py-3 md:px-5">
+    <div className="flex h-full flex-col bg-[linear-gradient(180deg,rgba(248,250,245,0.9)_0%,rgba(241,246,238,0.94)_100%)]">
+      <header className="border-b border-[var(--zeni-line)] bg-white/78 px-4 py-3 backdrop-blur-sm md:px-5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
-              className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:border-black hover:text-black md:hidden"
+              className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-[var(--zeni-line)] text-[var(--zeni-muted)] hover:border-[var(--zeni-green)] hover:text-[var(--zeni-green)] md:hidden"
               onClick={() => navigate(basePath)}
               aria-label="Back to inbox"
             >
               <ArrowLeft size={16} />
             </button>
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-black text-sm font-semibold text-white">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[var(--zeni-black)] text-sm font-semibold text-white">
               {headerInitials}
             </div>
             <div className="min-w-0">
-              <h2 className="line-clamp-1 text-base font-semibold text-black">{headerName}</h2>
+              <h2 className="line-clamp-1 font-serif text-[1.35rem] font-semibold text-[var(--zeni-black)]">
+                {headerName}
+              </h2>
+              {conversation.listingSnapshot && (
+                <p className="line-clamp-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--zeni-green)]">
+                  {conversation.listingSnapshot.title}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -416,10 +444,10 @@ export function ThreadPage() {
 
       <div
         ref={scrollRef}
-        className="no-scrollbar custom-scroll flex-1 overflow-y-auto bg-gray-50 px-4 py-5 md:px-6"
+        className="no-scrollbar custom-scroll flex-1 overflow-y-auto px-4 py-5 md:px-6"
       >
         {threadMessages.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-sm text-gray-400">
+          <div className="flex h-full items-center justify-center text-sm text-[var(--zeni-muted)]">
             Send a message to start the conversation.
           </div>
         ) : (
@@ -440,7 +468,7 @@ export function ThreadPage() {
                   <React.Fragment key={message.id}>
                     {showDateSeparator && (
                       <div className="flex justify-center py-3">
-                        <span className="rounded-full bg-gray-200/70 px-3 py-1 text-[10px] font-medium text-gray-500">
+                        <span className="rounded-full bg-white/85 px-3 py-1 text-[10px] font-medium text-[var(--zeni-muted)] shadow-[0_12px_24px_-20px_rgba(7,17,12,0.4)]">
                           {formatDateLabel(message.createdAt)}
                         </span>
                       </div>
@@ -451,17 +479,17 @@ export function ThreadPage() {
                           'max-w-[80%] px-3.5 py-2 md:max-w-md',
                           roundClass,
                           isMine
-                            ? 'bg-black text-white'
+                            ? 'bg-[var(--zeni-black)] text-white'
                             : isBot
-                              ? 'bg-amber-50 border border-amber-200 text-black'
-                              : 'bg-white border border-gray-200 text-black'
+                              ? 'border border-[rgba(240,138,50,0.22)] bg-[rgba(255,247,238,0.96)] text-[var(--zeni-black)]'
+                              : 'border border-[var(--zeni-line)] bg-white/92 text-[var(--zeni-black)]'
                         )}
                       >
                         {renderMessageContent(message)}
                         <div
                           className={cn(
                             'mt-1 flex items-center gap-1 text-[10px]',
-                            isMine ? 'justify-end text-gray-400' : 'text-gray-400'
+                            isMine ? 'justify-end text-white/60' : 'text-[var(--zeni-muted)]'
                           )}
                         >
                           <span>{formatTime(message.createdAt)}</span>
@@ -482,15 +510,15 @@ export function ThreadPage() {
         )}
 
         {typing[conversationId] && (
-          <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-white border border-gray-200 px-3 py-1.5 text-xs text-gray-500">
+          <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--zeni-line)] bg-white/88 px-3 py-1.5 text-xs text-[var(--zeni-muted)]">
             <span className="flex gap-0.5">
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--zeni-orange)]" />
               <span
-                className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400"
+                className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--zeni-orange)]"
                 style={{ animationDelay: '0.15s' }}
               />
               <span
-                className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400"
+                className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--zeni-orange)]"
                 style={{ animationDelay: '0.3s' }}
               />
             </span>
@@ -499,13 +527,13 @@ export function ThreadPage() {
         )}
       </div>
 
-      <div className="border-t border-gray-200 bg-white px-4 py-3 md:px-5">
+      <div className="border-t border-[var(--zeni-line)] bg-white/82 px-4 py-3 backdrop-blur-sm md:px-5">
         {canCompose ? (
           <div className="relative">
             {showSuggestions && filteredSuggestions.length > 0 && (
               <div
                 ref={suggestionsRef}
-                className="absolute bottom-full left-0 right-0 mb-1 max-h-48 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg"
+                className="absolute bottom-full left-0 right-0 mb-1 max-h-48 overflow-y-auto rounded-xl border border-[var(--zeni-line)] bg-white shadow-lg"
               >
                 {filteredSuggestions.slice(0, 5).map((suggestion, idx) => (
                   <button
@@ -518,8 +546,8 @@ export function ThreadPage() {
                     className={cn(
                       'w-full px-4 py-2.5 text-left text-sm transition-colors',
                       idx === selectedSuggestionIndex
-                        ? 'bg-gray-100 text-black'
-                        : 'text-gray-700 hover:bg-gray-50'
+                        ? 'bg-[var(--zeni-soft-green)] text-[var(--zeni-black)]'
+                        : 'text-[rgba(7,17,12,0.74)] hover:bg-[rgba(28,106,81,0.06)]'
                     )}
                   >
                     {suggestion}
@@ -539,8 +567,8 @@ export function ThreadPage() {
               <button
                 type="button"
                 onClick={handleAttachClick}
-                disabled={uploading}
-                className="flex-shrink-0 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:border-black hover:text-black disabled:opacity-50"
+                disabled={uploading || sending}
+                className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-[var(--zeni-line)] text-[var(--zeni-muted)] hover:border-[var(--zeni-green)] hover:text-[var(--zeni-green)] disabled:opacity-50"
                 aria-label="Attach image"
                 title="Attach image"
               >
@@ -576,13 +604,13 @@ export function ThreadPage() {
                 }}
                 placeholder="Type a message..."
                 rows={1}
-                className="min-h-[44px] flex-1 resize-none rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-slate-700 placeholder:text-gray-400 focus:border-gray-300 focus:outline-none"
+                className="min-h-[44px] flex-1 resize-none rounded-xl border border-[var(--zeni-line)] bg-white px-4 py-2.5 text-sm text-[var(--zeni-black)] placeholder:text-[var(--zeni-muted)] focus:border-[var(--zeni-green)] focus:outline-none"
               />
               <button
                 type="button"
                 onClick={sendFromComposer}
-                disabled={!canSend}
-                className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-black text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!canSend || sending || uploading}
+                className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--zeni-green)] text-white hover:bg-[var(--zeni-green-deep)] disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Send message"
               >
                 <Send className="h-4 w-4" />
@@ -590,7 +618,7 @@ export function ThreadPage() {
             </div>
           </div>
         ) : (
-          <p className="text-xs font-medium uppercase tracking-widest text-gray-500">
+          <p className="text-xs font-medium uppercase tracking-widest text-[var(--zeni-muted)]">
             Read-only thread
           </p>
         )}

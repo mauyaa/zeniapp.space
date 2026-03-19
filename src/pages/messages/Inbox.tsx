@@ -1,22 +1,19 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import { EmptyState, NoSearchResultsState } from '../../components/chat/EmptyState';
 import { useAuth } from '../../context/AuthProvider';
-import { cn } from '../../utils/cn';
 import { useDebounce } from '../../hooks/useDebounce';
+import { cn } from '../../utils/cn';
 import {
   resolveUserContactLabel,
+  getUserConversationKey,
   getAgentOtherPartyLabel,
   getAdminOtherPartyLabel,
   getAgentOtherPartyKey,
   getAdminOtherPartyKey,
 } from './contactLabels';
-
-type InboxTab = 'All' | 'Unread' | 'Archived';
-
-const inboxTabs: InboxTab[] = ['All', 'Unread', 'Archived'];
 
 export function InboxPage() {
   const navigate = useNavigate();
@@ -28,7 +25,6 @@ export function InboxPage() {
     loadingConversations,
     conversationsLoadError,
     refreshConversations,
-    bootstrapConversations,
     activeConversationId,
     searchTerm,
     setSearchTerm,
@@ -36,7 +32,6 @@ export function InboxPage() {
   } = useChat();
   const basePath =
     role === 'agent' ? '/agent/messages' : role === 'admin' ? '/admin/messages' : '/app/messages';
-  const [tab, setTab] = useState<InboxTab>('All');
   const [localSearch, setLocalSearch] = useState(searchTerm);
   const debouncedSearch = useDebounce(localSearch, 250);
   const activeId = conversationId ?? activeConversationId;
@@ -49,17 +44,7 @@ export function InboxPage() {
     setActiveConversation(null);
   }, [setActiveConversation]);
 
-  useEffect(() => {
-    if (inboxTabs.includes(tab)) return;
-    setTab('All');
-  }, [tab]);
-
-  const baseConversations = useMemo(() => {
-    if (role === 'user') {
-      return conversations.filter((c) => !c.listingSnapshot);
-    }
-    return conversations;
-  }, [conversations, role]);
+  const baseConversations = useMemo(() => conversations, [conversations]);
 
   const dedupedByOtherParty = useMemo(() => {
     const byKey = new Map<string, (typeof baseConversations)[0]>();
@@ -69,8 +54,8 @@ export function InboxPage() {
 
     if (role === 'user') {
       sorted.forEach((c) => {
-        const label = resolveUserContactLabel(c.agentSnapshot?.name);
-        if (!byKey.has(label)) byKey.set(label, c);
+        const key = getUserConversationKey(c);
+        if (!byKey.has(key)) byKey.set(key, c);
       });
     } else {
       const getKey = role === 'agent' ? getAgentOtherPartyKey : getAdminOtherPartyKey;
@@ -85,28 +70,36 @@ export function InboxPage() {
     );
   }, [baseConversations, role]);
 
+  const displayName = useCallback(
+    (conversation: (typeof dedupedByOtherParty)[number]) => {
+      if (role === 'user') return resolveUserContactLabel(conversation.agentSnapshot?.name);
+      if (role === 'agent') return getAgentOtherPartyLabel(conversation);
+      if (role === 'admin') return getAdminOtherPartyLabel(conversation);
+      return 'Chat';
+    },
+    [role]
+  );
+
   const filteredConversations = useMemo(() => {
-    if (role !== 'user') return dedupedByOtherParty;
-    switch (tab) {
-      case 'Unread':
-        return dedupedByOtherParty.filter((conversation) => conversation.unreadCount > 0);
-      case 'Archived':
-        return dedupedByOtherParty.filter((conversation) => conversation.status === 'closed');
-      default:
-        return dedupedByOtherParty;
-    }
-  }, [role, tab, dedupedByOtherParty]);
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return dedupedByOtherParty;
+    return dedupedByOtherParty.filter((conversation) => {
+      const name = displayName(conversation).toLowerCase();
+      const preview = (conversation.lastMessagePreview || '').toLowerCase();
+      const listingTitle = (conversation.listingSnapshot?.title || '').toLowerCase();
+      const location = (conversation.listingSnapshot?.locationText || '').toLowerCase();
+      return (
+        name.includes(query) ||
+        preview.includes(query) ||
+        listingTitle.includes(query) ||
+        location.includes(query)
+      );
+    });
+  }, [dedupedByOtherParty, displayName, searchTerm]);
 
   const handleOpenConversation = (conversationIdToOpen: string) => {
     setActiveConversation(conversationIdToOpen);
     navigate(`${basePath}/${conversationIdToOpen}`);
-  };
-
-  const displayName = (conversation: (typeof filteredConversations)[0]) => {
-    if (role === 'user') return resolveUserContactLabel(conversation.agentSnapshot?.name);
-    if (role === 'agent') return getAgentOtherPartyLabel(conversation);
-    if (role === 'admin') return getAdminOtherPartyLabel(conversation);
-    return 'Chat';
   };
 
   const formatTime = (dateStr: string) => {
@@ -120,14 +113,14 @@ export function InboxPage() {
   };
 
   return (
-    <div className="flex h-full w-full flex-col bg-white" role="region" aria-label="Inbox">
-      <div className="border-b border-gray-200 px-4 py-4">
-        <h2 id="inbox-title" className="font-serif text-[2rem] leading-none text-black">
+    <div className="flex h-full w-full flex-col bg-[linear-gradient(180deg,rgba(248,250,245,0.96)_0%,rgba(241,246,238,0.96)_100%)]" role="region" aria-label="Inbox">
+      <div className="border-b border-[var(--zeni-line)] bg-white/70 px-4 py-4 backdrop-blur-sm">
+        <h2 id="inbox-title" className="font-serif text-[2rem] leading-none text-[var(--zeni-black)]">
           Messages
         </h2>
         <div className="group relative mt-3" role="search">
           <Search
-            className="absolute left-3 top-2.5 h-4 w-4 text-gray-400 group-focus-within:text-black"
+            className="absolute left-3 top-2.5 h-4 w-4 text-[var(--zeni-muted)] group-focus-within:text-[var(--zeni-green)]"
             aria-hidden
           />
           <input
@@ -136,46 +129,20 @@ export function InboxPage() {
             placeholder="Search chats..."
             aria-label="Search conversations"
             aria-describedby="inbox-title"
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-4 text-sm text-slate-700 placeholder:text-gray-400 focus:border-gray-300 focus:outline-none"
+            className="w-full rounded-xl border border-[var(--zeni-line)] bg-white/90 py-2.5 pl-10 pr-4 text-sm text-[var(--zeni-black)] placeholder:text-[var(--zeni-muted)] focus:border-[var(--zeni-green)] focus:outline-none"
           />
         </div>
-        {role === 'user' && (
-          <div
-            className="mt-3 flex flex-wrap gap-2"
-            role="tablist"
-            aria-label="Filter conversations"
-          >
-            {inboxTabs.map((item) => (
-              <button
-                key={item}
-                type="button"
-                role="tab"
-                aria-selected={tab === item}
-                aria-controls="conversation-list"
-                onClick={() => setTab(item)}
-                className={cn(
-                  'rounded-lg border px-3 py-1.5 text-xs font-bold uppercase tracking-widest transition-colors',
-                  tab === item
-                    ? 'border-black bg-black text-white'
-                    : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-black hover:text-black'
-                )}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {conversationsLoadError ? (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-center dark:border-amber-800 dark:bg-amber-950/30">
-          <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+        <div className="rounded-xl border border-[rgba(240,138,50,0.22)] bg-[rgba(255,247,238,0.96)] p-6 text-center">
+          <p className="text-sm font-medium text-[var(--zeni-black)]">
             Couldn&apos;t load conversations.
           </p>
           <button
             type="button"
             onClick={() => refreshConversations()}
-            className="mt-3 rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-amber-700"
+            className="mt-3 rounded-xl bg-[var(--zeni-orange)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-95"
           >
             Retry
           </button>
@@ -191,23 +158,17 @@ export function InboxPage() {
             title="No chats yet"
             subtitle={
               role === 'user'
-                ? 'Zeni Agent and Zeni Admin will appear here. Click Refresh to load them. If they still do not appear, run the seed script to create those users.'
+                ? 'Message an agent from any listing to start a conversation.'
                 : 'No conversations yet.'
             }
           />
           <button
             type="button"
-            onClick={() =>
-              baseConversations.length === 0 ? bootstrapConversations() : refreshConversations()
-            }
+            onClick={() => refreshConversations()}
             disabled={loadingConversations}
-            className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+            className="rounded-xl border border-[var(--zeni-line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--zeni-black)] transition-colors hover:bg-[var(--zeni-soft-green)] disabled:opacity-50"
           >
-            {loadingConversations
-              ? 'Loading...'
-              : baseConversations.length === 0
-                ? 'Create Zeni Agent & Zeni Admin'
-                : 'Refresh'}
+            {loadingConversations ? 'Loading...' : 'Refresh'}
           </button>
         </div>
       ) : (
@@ -240,9 +201,9 @@ export function InboxPage() {
                 key={conversation.id}
                 role="listitem"
                 className={cn(
-                  'w-full border-b border-gray-100 px-4 py-3 text-left transition-colors',
-                  isActive && 'border-l-4 border-l-black bg-slate-100 pl-3',
-                  !isActive && 'hover:bg-slate-50'
+                  'w-full border-b border-[rgba(7,17,12,0.06)] px-4 py-3 text-left transition-colors',
+                  isActive && 'border-l-4 border-l-[var(--zeni-green)] bg-[rgba(28,106,81,0.08)] pl-3',
+                  !isActive && 'hover:bg-white/70'
                 )}
               >
                 <button
@@ -255,17 +216,22 @@ export function InboxPage() {
                 >
                   <div className="min-w-0">
                     <div className="flex items-baseline justify-between gap-2">
-                      <span className="line-clamp-1 text-[1.08rem] font-semibold text-black">
+                      <span className="line-clamp-1 text-[1.08rem] font-semibold text-[var(--zeni-black)]">
                         {name}
                       </span>
-                      <span className="flex-shrink-0 text-xs text-gray-500">
+                      <span className="flex-shrink-0 text-xs text-[var(--zeni-muted)]">
                         {formatTime(conversation.lastMessageAt)}
                       </span>
                     </div>
+                    {conversation.listingSnapshot && (
+                      <div className="mt-1 line-clamp-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--zeni-green)]">
+                        {conversation.listingSnapshot.title}
+                      </div>
+                    )}
                     <div className="mt-0.5 flex items-center gap-2">
-                      <span className="line-clamp-1 text-sm text-slate-600">{preview}</span>
+                      <span className="line-clamp-1 text-sm text-[rgba(7,17,12,0.68)]">{preview}</span>
                       {conversation.unreadCount > 0 && (
-                        <span className="flex-shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">
+                        <span className="flex-shrink-0 rounded-full bg-[rgba(240,138,50,0.18)] px-2 py-0.5 text-[10px] font-bold text-[var(--zeni-orange)]">
                           {conversation.unreadCount}
                         </span>
                       )}

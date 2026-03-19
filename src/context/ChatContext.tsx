@@ -4,7 +4,6 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { Conversation, Message, LeadStage, ConversationStatus, MessageStatus } from '../types/chat';
 import {
   safeFetchConversations,
-  safeBootstrapConversations,
   safeFetchMessages,
   safePostMessage,
   startConversation as startConversationApi,
@@ -16,6 +15,10 @@ import { useAuth } from './AuthProvider';
 import { getSocket, disconnectSocket } from '../lib/socket';
 import { useToast } from './ToastContext';
 import { useNotifications } from './NotificationContext';
+import {
+  getSystemConversationLabel,
+  shouldIncludeConversationForRole,
+} from '../pages/messages/contactLabels';
 
 type Scope = 'all' | 'active' | 'scheduled' | 'closed';
 
@@ -28,7 +31,6 @@ interface ChatContextValue {
   activeConversationId: string | null;
   setActiveConversation: (id: string | null) => void;
   refreshConversations: () => Promise<void>;
-  bootstrapConversations: () => Promise<void>;
   loadMessages: (conversationId: string) => Promise<void>;
   sendMessage: (conversationId: string, body: { type: string; content: unknown }) => Promise<void>;
   startConversation: (listingId: string, agentId: string) => Promise<Conversation>;
@@ -69,6 +71,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [socketConnected, setSocketConnected] = useState(false);
   const [socketReconnecting, setSocketReconnecting] = useState(false);
   const conversationsRef = useRef<Conversation[]>([]);
+  const activeConversationIdRef = useRef<string | null>(null);
   const selfSenderType: Message['senderType'] = user?.role === 'user' ? 'user' : 'agent';
   const senderTypeForConversation = (conversationId: string): Message['senderType'] => {
     const userId = user?.id;
@@ -100,6 +103,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       (a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
     );
   };
+  const canActAsSystemAdmin = (conversation?: Conversation | null) =>
+    Boolean(
+      user?.role === 'admin' &&
+        conversation &&
+        getSystemConversationLabel(conversation.agentSnapshot?.name) === 'Zeni Admin'
+    );
 
   // Defer initial conversation fetch so it doesn't block first paint.
   // The UI renders instantly with empty state, then fills in.
@@ -124,6 +133,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     conversationsRef.current = conversations;
   }, [conversations]);
+
+  useEffect(() => {
+    activeConversationIdRef.current = activeConversationId;
+  }, [activeConversationId]);
 
   // Realtime sockets
   useEffect(() => {
@@ -167,7 +180,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
               ...existing,
               lastMessageAt: msg.createdAt,
               unreadCount:
-                activeConversationId === msg.conversationId || isSelfMessage
+                activeConversationIdRef.current === msg.conversationId || isSelfMessage
                   ? 0
                   : existing.unreadCount + 1,
             }
@@ -179,7 +192,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
               status: 'active' as const,
               leadStage: 'new' as const,
               lastMessageAt: msg.createdAt,
-              unreadCount: activeConversationId === msg.conversationId || isSelfMessage ? 0 : 1,
+              unreadCount:
+                activeConversationIdRef.current === msg.conversationId || isSelfMessage ? 0 : 1,
               listingSnapshot: null,
               agentSnapshot: { id: '', name: 'Agent' },
               userSnapshot: { id: '', name: 'User', role: 'user' as const },
@@ -187,7 +201,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         const rest = prev.filter((c) => c.id !== msg.conversationId);
         return dedupeConversations([updated, ...rest]);
       });
-      if (activeConversationId === msg.conversationId) {
+      if (activeConversationIdRef.current === msg.conversationId) {
         markRead(msg.conversationId);
       } else if (!isSelfMessage) {
         push({
@@ -240,9 +254,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       });
     };
 
-    const activeConvIdRef = { current: activeConversationId };
-    activeConvIdRef.current = activeConversationId;
-
     s.on('connect', () => {
       setSocketConnected(true);
       setSocketReconnecting(false);
@@ -260,7 +271,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         tone: 'success',
       });
       refreshConversations();
-      if (activeConvIdRef.current) loadMessages(activeConvIdRef.current);
+      if (activeConversationIdRef.current) loadMessages(activeConversationIdRef.current);
     });
     s.io?.on?.('reconnect_failed', () => {
       setSocketReconnecting(false);
@@ -286,7 +297,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       disconnectSocket();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, activeConversationId]);
+  }, [user?.id]);
 
   const refreshConversations = async () => {
     if (!user || !getToken()) {
@@ -302,47 +313,22 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setConversationsLoadError(false);
     try {
       const data = await safeFetchConversations();
-      if (data.length > 0) {
-        setConversations(dedupeConversations(data));
-        return;
-      }
-
-      // Auto-bootstrap default support chats when inbox is empty.
-      const bootstrapped = await safeBootstrapConversations();
-      const list = dedupeConversations(bootstrapped);
-      setConversations(list);
-    } catch {
-      setConversationsLoadError(true);
-    } finally {
-      setLoadingConversations(false);
-    }
-  };
-
-  const bootstrapConversations = async () => {
-    if (!user || !getToken()) return;
-    setLoadingConversations(true);
-    setConversationsLoadError(false);
-    try {
-      const data = await safeBootstrapConversations();
       const list = dedupeConversations(data);
       setConversations(list);
-      if (list.length > 0) {
-        push({ title: 'Zeni Agent & Zeni Admin are ready', tone: 'success' });
-      } else {
-        push({
-          title: 'No chats created',
-          description:
-            'Check that the server is running and the database is connected. Look at the server terminal for errors.',
-          tone: 'error',
-        });
+      setMessages((prev) => {
+        const allowedIds = new Set(list.map((conversation) => conversation.id));
+        return Object.fromEntries(
+          Object.entries(prev).filter(([conversationId]) => allowedIds.has(conversationId))
+        ) as Record<string, Message[]>;
+      });
+      if (
+        activeConversationIdRef.current &&
+        !list.some((item) => item.id === activeConversationIdRef.current)
+      ) {
+        setActiveConversationId(null);
       }
     } catch {
       setConversationsLoadError(true);
-      push({
-        title: 'Request failed',
-        description: 'Check the server and try again.',
-        tone: 'error',
-      });
     } finally {
       setLoadingConversations(false);
     }
@@ -360,10 +346,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const sendMessage = async (conversationId: string, body: { type: string; content: unknown }) => {
     const conversation = conversationsRef.current.find((item) => item.id === conversationId);
-    const isParticipant =
-      conversation && user && (conversation.userId === user.id || conversation.agentId === user.id);
-    const isStaff = user?.role === 'admin' || user?.role === 'agent';
-    if (user && conversation && !isParticipant && !isStaff) {
+    const isParticipant = Boolean(
+      conversation && user && (conversation.userId === user.id || conversation.agentId === user.id)
+    );
+    if (user && conversation && !isParticipant && !canActAsSystemAdmin(conversation)) {
       push({
         title: 'Read-only thread',
         description: 'You can view this conversation but cannot send messages.',
@@ -382,6 +368,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       createdAt: new Date().toISOString(),
       status: 'sending',
     };
+    const clientTempId = optimistic.id;
 
     setMessages((prev) => ({
       ...prev,
@@ -389,7 +376,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     }));
 
     try {
-      const real = await safePostMessage(conversationId, body);
+      const real = await safePostMessage(conversationId, { ...body, clientTempId });
       setMessages((prev) => ({
         ...prev,
         [conversationId]: (prev[conversationId] ?? []).map((m) =>
@@ -455,20 +442,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<ChatContextValue>(
     () => ({
       conversations: conversations
-        .filter((c) => {
-          if (user?.role === 'agent' && c.userSnapshot?.role) {
-            // Agent inbox includes user/admin threads plus the agent's own internal admin/support thread.
-            return (
-              c.userSnapshot.role === 'user' ||
-              c.userSnapshot.role === 'admin' ||
-              (c.userSnapshot.role === 'agent' && c.userId === user.id)
-            );
-          }
-          if (user?.role === 'admin') {
-            return true;
-          }
-          return true;
-        })
+        .filter((c) => shouldIncludeConversationForRole(user?.role, c, user?.id))
         .filter((c) => {
           if (filter === 'all') return true;
           return c.status === filter;
@@ -486,7 +460,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       activeConversationId,
       setActiveConversation: setActiveConversationId,
       refreshConversations,
-      bootstrapConversations,
       loadMessages,
       sendMessage,
       startConversation,
@@ -509,6 +482,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       activeConversationId,
       filter,
       searchTerm,
+      user?.id,
       user?.role,
       typing,
       socketConnected,

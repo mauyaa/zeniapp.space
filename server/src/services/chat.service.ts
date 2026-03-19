@@ -94,6 +94,149 @@ function normalizeId(value: any): string {
   return String(value);
 }
 
+function normalizeLabel(value?: string | null): string {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+function getSystemConversationKey(name?: string | null): 'zeni-admin' | 'zeni-agent' | null {
+  const normalized = normalizeLabel(name);
+  if (
+    normalized === 'zeni support' ||
+    normalized === 'zeni admin' ||
+    normalized === 'zei admin' ||
+    normalized === 'support' ||
+    normalized === 'admin' ||
+    normalized === 'customer support'
+  ) {
+    return 'zeni-admin';
+  }
+  if (normalized === 'zeni agent' || normalized === 'demo agent') {
+    return 'zeni-agent';
+  }
+  return null;
+}
+
+function getUserSystemConversationKey(name?: string | null): 'zeni-admin' | 'zeni-agent' | null {
+  return normalizeLabel(name) === 'agent' ? 'zeni-agent' : getSystemConversationKey(name);
+}
+
+async function resolveConversationActorContext(
+  conv: { userId?: any; agentId?: any },
+  actorId: string,
+  actorRole?: string
+): Promise<{
+  userIdStr: string;
+  agentIdStr: string;
+  actingParticipantId: string;
+  senderType: 'user' | 'agent';
+  otherId: string;
+} | null> {
+  const userIdStr = normalizeId(conv.userId);
+  const agentIdStr = normalizeId(conv.agentId);
+
+  if (actorId === userIdStr) {
+    return {
+      userIdStr,
+      agentIdStr,
+      actingParticipantId: userIdStr,
+      senderType: 'user',
+      otherId: agentIdStr,
+    };
+  }
+
+  if (actorId === agentIdStr) {
+    return {
+      userIdStr,
+      agentIdStr,
+      actingParticipantId: agentIdStr,
+      senderType: 'agent',
+      otherId: userIdStr,
+    };
+  }
+
+  if (actorRole === 'admin') {
+    const adminAccount = await findZeniAdminAccount();
+    if (adminAccount && agentIdStr === adminAccount.id) {
+      return {
+        userIdStr,
+        agentIdStr,
+        actingParticipantId: agentIdStr,
+        senderType: 'agent',
+        otherId: userIdStr,
+      };
+    }
+  }
+
+  return null;
+}
+
+function shouldIncludeConversationForRole(conv: any, userId: string, role?: string): boolean {
+  if (role === 'agent') {
+    const userRole = conv.userId?.role;
+    if (!userRole || userRole === 'user' || userRole === 'admin') {
+      return true;
+    }
+    return (
+      userRole === 'agent' &&
+      normalizeId(conv.userId) === userId &&
+      getSystemConversationKey(conv.agentId?.name) === 'zeni-admin'
+    );
+  }
+
+  if (role === 'user') {
+    const agentRole = conv.agentId?.role;
+    return !agentRole || agentRole === 'agent';
+  }
+
+  if (role === 'admin') {
+    if (conv.userId?.role === 'user') {
+      return getSystemConversationKey(conv.agentId?.name) === 'zeni-admin';
+    }
+    return (
+      conv.userId?.role === 'admin' &&
+      normalizeId(conv.userId) === userId &&
+      getSystemConversationKey(conv.agentId?.name) !== 'zeni-admin'
+    );
+  }
+
+  return true;
+}
+
+function conversationDedupKey(conv: any, role?: string): string {
+  const listingKey = normalizeId(conv.listingId);
+  const userKey = normalizeId(conv.userId);
+  const agentKey = normalizeId(conv.agentId);
+  const systemKey = getSystemConversationKey(conv.agentId?.name);
+
+  if (role === 'user') {
+    const userSystemKey = getUserSystemConversationKey(conv.agentId?.name);
+    if (userSystemKey) return `user:${userKey}:system:${userSystemKey}`;
+    return `user:${userKey}:agent:${agentKey}`;
+  }
+
+  if (role === 'agent') {
+    const userRole = conv.userId?.role;
+    if (userRole === 'user') return `agent:${agentKey}:user:${userKey}`;
+    if (userRole === 'admin') {
+      return getSystemConversationKey(conv.userId?.name) === 'zeni-admin'
+        ? 'system:zeni-admin'
+        : `agent:${agentKey}:admin:${userKey}`;
+    }
+    if (systemKey) return `system:${systemKey}`;
+    return `agent:${userKey}:agent:${agentKey}`;
+  }
+
+  if (role === 'admin') {
+    if (systemKey) return `admin:${userKey}:system:${systemKey}`;
+    return `admin:${userKey}:agent:${agentKey}`;
+  }
+
+  return `${listingKey}:${userKey}:${agentKey}`;
+}
+
 function formatPrice(price?: number, currency?: string) {
   if (price === undefined || price === null) return `${currency || 'KES'} 0`;
   return `${currency || 'KES'} ${Number(price).toLocaleString()}`;
@@ -164,6 +307,7 @@ function logChatSideEffectError(scope: string, err: unknown): void {
 }
 
 export async function listConversations(userId: string, role?: string) {
+  const adminAccount = role === 'admin' ? await findZeniAdminAccount() : null;
   let query: any;
   if (role === 'agent') {
     // Agents should only see threads they participate in (as the agent or as the user when
@@ -173,7 +317,9 @@ export async function listConversations(userId: string, role?: string) {
   } else if (role === 'user') {
     query = { userId };
   } else if (role === 'admin') {
-    query = {};
+    query = {
+      $or: [{ agentId: userId }, { userId }, ...(adminAccount ? [{ agentId: adminAccount.id }] : [])],
+    };
   } else {
     query = { $or: [{ userId }, { agentId: userId }] };
   }
@@ -185,29 +331,11 @@ export async function listConversations(userId: string, role?: string) {
     .populate('userId', 'name role')
     .lean();
 
-  const roleFiltered = items.filter((conv: any) => {
-    if (role === 'agent') {
-      const userRole = conv.userId?.role;
-      return (
-        !userRole ||
-        userRole === 'user' ||
-        userRole === 'admin' ||
-        (userRole === 'agent' && normalizeId(conv.userId) === userId)
-      );
-    }
-    if (role === 'user') {
-      const agentRole = conv.agentId?.role;
-      return !agentRole || agentRole === 'agent';
-    }
-    if (role === 'admin') {
-      return true;
-    }
-    return true;
-  });
+  const roleFiltered = items.filter((conv: any) => shouldIncludeConversationForRole(conv, userId, role));
 
   const deduped = new Map<string, any>();
   roleFiltered.forEach((conv: any) => {
-    const key = `${normalizeId(conv.listingId)}:${normalizeId(conv.userId)}:${normalizeId(conv.agentId)}`;
+    const key = conversationDedupKey(conv, role);
     const existing = deduped.get(key);
     if (!existing) {
       deduped.set(key, conv);
@@ -220,9 +348,20 @@ export async function listConversations(userId: string, role?: string) {
     }
   });
 
-  const formatted = Array.from(deduped.values()).map((conv: any) =>
-    formatConversation(conv, userId)
-  );
+  const formatted = Array.from(deduped.values()).map((conv: any) => {
+    const isAdminSupportConversation =
+      role === 'admin' &&
+      adminAccount &&
+      normalizeId(conv.agentId) === adminAccount.id &&
+      conv.userId?.role === 'user';
+
+    return formatConversation(
+      conv,
+      isAdminSupportConversation
+        ? { unreadFor: adminAccount.id, prefsFor: userId }
+        : userId
+    );
+  });
 
   // Attach last message preview to each conversation in a single bulk query
   try {
@@ -266,7 +405,25 @@ export async function listConversations(userId: string, role?: string) {
   });
 }
 
-export function formatConversation(conv: any, forUserId: string) {
+type ConversationViewer =
+  | string
+  | {
+      unreadFor: string;
+      prefsFor?: string;
+    };
+
+function resolveConversationViewer(viewer: ConversationViewer) {
+  if (typeof viewer === 'string') {
+    return { unreadFor: viewer, prefsFor: viewer };
+  }
+  return {
+    unreadFor: viewer.unreadFor,
+    prefsFor: viewer.prefsFor || viewer.unreadFor,
+  };
+}
+
+export function formatConversation(conv: any, viewer: ConversationViewer) {
+  const { unreadFor, prefsFor } = resolveConversationViewer(viewer);
   const listing = conv.listingId as ListingDocument | null | undefined;
   const agent = conv.agentId as UserDocument | null | undefined;
   const user = conv.userId as UserDocument | null | undefined;
@@ -284,11 +441,11 @@ export function formatConversation(conv: any, forUserId: string) {
     lastMessageAt: conv.lastMessageAt
       ? new Date(conv.lastMessageAt).toISOString()
       : new Date().toISOString(),
-    unreadCount: getUnreadCount(conv.unreadCountBy, forUserId),
-    pinned: isPinned(conv.pinnedBy, forUserId),
-    muted: isMuted(conv.mutedBy, forUserId),
+    unreadCount: getUnreadCount(conv.unreadCountBy, unreadFor),
+    pinned: isPinned(conv.pinnedBy, prefsFor),
+    muted: isMuted(conv.mutedBy, prefsFor),
     createdAt: conv.createdAt ? new Date(conv.createdAt).toISOString() : new Date().toISOString(),
-    responseDueAt: buildResponseDue(conv, forUserId),
+    responseDueAt: buildResponseDue(conv, unreadFor),
     listingSnapshot: listing ? buildListingSnapshot(listing) : null,
     agentSnapshot: buildAgentSnapshot(agent, agentId),
     userSnapshot: buildUserSnapshot(user, userId),
@@ -313,8 +470,8 @@ export async function listMessages(
   if (!isValidObjectId(conversationId)) return [];
   const conv = await ConversationModel.findById(conversationId).select('userId agentId').lean();
   if (!conv) return [];
-  const isParticipant = String(conv.userId) === userId || String(conv.agentId) === userId;
-  if (!isParticipant && role !== 'admin' && role !== 'agent') {
+  const actorContext = await resolveConversationActorContext(conv, userId, role);
+  if (!actorContext) {
     const error = new Error('Access denied');
     (error as any).status = 403;
     throw error;
@@ -357,16 +514,15 @@ export async function sendMessage(
     throw error;
   }
 
-  const isUserActor = actorId === userIdStr;
-  const isAgentActor = actorId === agentIdStr;
-  if (!isUserActor && !isAgentActor) {
+  const actorContext = await resolveConversationActorContext(conv, actorId, actorRole);
+  if (!actorContext) {
     const error = new Error('Caller is not part of this conversation');
     (error as any).status = 403;
     (error as any).code = 'FORBIDDEN';
     throw error;
   }
 
-  const senderType = isAgentActor ? 'agent' : 'user';
+  const senderType = actorContext.senderType;
 
   if (clientTempId) {
     const existing = await MessageModel.findOne({ conversationId, clientTempId });
@@ -384,15 +540,23 @@ export async function sendMessage(
 
   // Side effects — never let these block or fail the message send
   try {
-    const otherId = isUserActor ? agentIdStr : userIdStr;
-    await ConversationModel.findByIdAndUpdate(conversationId, {
-      $set: { lastMessageAt: new Date() },
-      $inc: { [`unreadCountBy.${otherId}`]: 1 },
-    });
+    const otherId = actorContext.otherId;
+    const update: Record<string, unknown> = { $set: { lastMessageAt: new Date() } };
+    if (otherId) {
+      update.$inc = { [`unreadCountBy.${otherId}`]: 1 };
+    }
+    await ConversationModel.findByIdAndUpdate(conversationId, update);
 
     const io = getIO();
     if (io) {
-      const targets = [`user:${conv.userId.toString()}`, `user:${conv.agentId.toString()}`];
+      const adminAccount = await findZeniAdminAccount();
+      const targets = new Set([
+        `user:${conv.userId.toString()}`,
+        `user:${conv.agentId.toString()}`,
+      ]);
+      if (adminAccount && agentIdStr === adminAccount.id) {
+        targets.add('role:admin');
+      }
       targets.forEach((room) => io.to(room).emit('message:new', formatMessage(msg)));
     }
     if (otherId && !isMuted(conv.mutedBy, otherId)) {
@@ -414,12 +578,21 @@ export async function sendMessage(
   return msg;
 }
 
-export async function markRead(conversationId: string, userId: string): Promise<void> {
+export async function markRead(
+  conversationId: string,
+  userId: string,
+  role?: string
+): Promise<void> {
+  if (!isValidObjectId(conversationId)) return;
+  const conv = await ConversationModel.findById(conversationId).select('userId agentId').lean();
+  if (!conv) return;
+  const actorContext = await resolveConversationActorContext(conv, userId, role);
+  if (!actorContext) return;
   const now = new Date();
   await ConversationModel.findByIdAndUpdate(conversationId, {
     $set: {
-      [`unreadCountBy.${userId}`]: 0,
-      [`lastReadAtBy.${userId}`]: now,
+      [`unreadCountBy.${actorContext.actingParticipantId}`]: 0,
+      [`lastReadAtBy.${actorContext.actingParticipantId}`]: now,
     },
   });
 }
@@ -449,10 +622,8 @@ export async function updateConversation(
     throw error;
   }
 
-  const userIdStr = conv.userId?.toString();
-  const agentIdStr = conv.agentId?.toString();
-  const isParticipant = actorId === userIdStr || actorId === agentIdStr;
-  if (!isParticipant && !['agent', 'admin'].includes(actorRole)) {
+  const actorContext = await resolveConversationActorContext(conv, actorId, actorRole);
+  if (!actorContext) {
     const error = new Error('Caller is not part of this conversation');
     (error as any).status = 403;
     (error as any).code = 'FORBIDDEN';
@@ -475,9 +646,21 @@ export async function updateConversation(
     .populate('agentId', 'name role agentVerification')
     .populate('userId', 'name role')
     .lean();
-  if (!updated) return formatConversation(conv, actorId);
+  if (!updated) {
+    return formatConversation(
+      conv,
+      actorRole === 'admin' && actorContext.actingParticipantId !== actorId
+        ? { unreadFor: actorContext.actingParticipantId, prefsFor: actorId }
+        : actorId
+    );
+  }
   await emitConversationUpdate(String(conv._id));
-  return formatConversation(updated, actorId);
+  return formatConversation(
+    updated,
+    actorRole === 'admin' && actorContext.actingParticipantId !== actorId
+      ? { unreadFor: actorContext.actingParticipantId, prefsFor: actorId }
+      : actorId
+  );
 }
 
 export function formatMessage(msg: MessageDocument | any) {
@@ -495,16 +678,24 @@ export function formatMessage(msg: MessageDocument | any) {
 export async function emitConversationUpdate(conversationId: string) {
   const io = getIO();
   if (!io) return;
+  const adminAccount = await findZeniAdminAccount();
   const conv = await ConversationModel.findById(conversationId)
     .populate('listingId', 'title price currency location images')
     .populate('agentId', 'name role agentVerification')
     .populate('userId', 'name role')
     .lean();
   if (!conv) return;
+  const conversationUser = conv.userId as unknown as UserDocument | null | undefined;
   const userId = normalizeId(conv.userId);
   const agentId = normalizeId(conv.agentId);
   io.to(`user:${userId}`).emit('conversation:update', formatConversation(conv, userId));
   io.to(`user:${agentId}`).emit('conversation:update', formatConversation(conv, agentId));
+  if (adminAccount && agentId === adminAccount.id && conversationUser?.role === 'user') {
+    io.to('role:admin').emit(
+      'conversation:update',
+      formatConversation(conv, { unreadFor: adminAccount.id })
+    );
+  }
 }
 
 export async function getConversationForUser(conversationId: string, userId: string) {
@@ -595,21 +786,6 @@ export async function ensureWelcomeAgentsInDb(): Promise<void> {
   }
 }
 
-async function findZeniSupportAgent(): Promise<{ _id: any; role: string } | null> {
-  const supportEmail = env.zeniSupportEmail || 'support@zeni.test';
-  let u = await UserModel.findOne({
-    role: 'agent',
-    $or: [{ emailOrPhone: supportEmail }, { email: supportEmail }],
-  })
-    .select('_id role')
-    .lean();
-  if (u) return u as { _id: any; role: string };
-  u = await UserModel.findOne({ name: /^Zeni Support$/i, role: 'agent' })
-    .select('_id role')
-    .lean();
-  return u as { _id: any; role: string } | null;
-}
-
 async function findZeniMainAgent(): Promise<{ _id: any; role: string } | null> {
   const agentEmail = env.zeniAgentEmail || 'zeniagent.ke@gmail.com';
   let u = await UserModel.findOne({
@@ -634,17 +810,15 @@ async function findZeniMainAgent(): Promise<{ _id: any; role: string } | null> {
 
 async function findZeniAdminAccount(): Promise<{ id: string; name: string } | null> {
   const adminEmail = env.zeniAdminEmail || 'admin@zeni.test';
-  // Try to find the specific system admin account first
-  let u = await UserModel.findOne({
+  // Conversations expect the counterpart to be an agent-style system account.
+  // Use the dedicated "Zeni Admin" agent account and never fall back to a real admin user.
+  const u = await UserModel.findOne({
+    role: 'agent',
     $or: [{ emailOrPhone: adminEmail }, { email: adminEmail }, { name: /^Zeni Admin$/i }],
   })
     .select('_id name')
     .lean();
 
-  if (u) return { id: String(u._id), name: String(u.name) };
-
-  // Fallback to any admin if system one isn't found
-  u = await UserModel.findOne({ role: 'admin' }).select('_id name').sort({ createdAt: 1 }).lean();
   if (u) return { id: String(u._id), name: String(u.name) };
 
   return null;
@@ -698,47 +872,23 @@ export async function ensureWelcomeConversations(userId: string): Promise<void> 
   }
 }
 
-/**
- * Ensure agent has conversations with Zeni Support and Zeni Admin so they can message them.
- */
+/** Ensure agent has a single internal Zeni Admin conversation. */
 export async function ensureAgentSupportConversation(agentUserId: string): Promise<void> {
-  const [supportUser, adminAccount] = await Promise.all([
-    findZeniSupportAgent(),
-    findZeniAdminAccount(),
-  ]);
-  const createdIds = new Set<string>();
-  if (supportUser && supportUser.role === 'agent') {
-    const id = String(supportUser._id);
-    if (id !== agentUserId) {
-      await getOrCreateConversation(null, agentUserId, id);
-      createdIds.add(id);
-    }
-  }
+  const adminAccount = await findZeniAdminAccount();
   if (adminAccount) {
     const id = adminAccount.id;
-    if (id !== agentUserId && !createdIds.has(id)) {
+    if (id !== agentUserId) {
       await getOrCreateConversation(null, agentUserId, id);
     }
   }
 }
 
-/**
- * Ensure admin has conversations with Zeni Agent and Zeni Admin (support channel).
- */
+/** Ensure admin has a single internal Zeni Agent conversation. */
 export async function ensureAdminZeniAgentConversation(adminUserId: string): Promise<void> {
-  const [mainAgent, adminAccount] = await Promise.all([
-    findZeniMainAgent(),
-    findZeniAdminAccount(),
-  ]);
-  const createdIds = new Set<string>();
+  const mainAgent = await findZeniMainAgent();
   if (mainAgent && mainAgent.role === 'agent') {
     const id = String(mainAgent._id);
-    await getOrCreateConversation(null, adminUserId, id);
-    createdIds.add(id);
-  }
-  if (adminAccount) {
-    const id = adminAccount.id;
-    if (!createdIds.has(id)) {
+    if (id !== adminUserId) {
       await getOrCreateConversation(null, adminUserId, id);
     }
   }
