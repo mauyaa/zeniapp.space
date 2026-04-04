@@ -93,13 +93,13 @@ User                    Agent                     Admin
 
 1. **Environment**  
    - Backend: `server/.env` with at least `MONGO_URI`, `JWT_SECRET`, `CORS_ORIGIN`.  
-   - For Kenya/Zeni: `ADMIN_EMAIL=zeniapp.ke@gmail.com`, `ZENI_AGENT_EMAIL=zeniagent.ke@gmail.com`; `ZENI_SUPPORT_EMAIL` as needed.
+   - For Kenya/Zeni: `ADMIN_EMAIL=admin@zeni.test`, `ZENI_AGENT_EMAIL=agent@zeni.test`; `ZENI_SUPPORT_EMAIL` as needed.
 
 2. **Seed**  
    From `server/`:  
    `npm run seed`  
    This creates:
-   - Admin (zeniapp.ke@gmail.com), Zeni Support, Zeni Agent (zeniagent.ke@gmail.com), pending agent, basic user.
+   - Admin (admin@zeni.test), Zeni Support, Zeni Agent (agent@zeni.test), pending agent, basic user.
    - Sample live + pending listings (Nairobi; listings = properties). No support/help “listing” — those chats have no listing.
    - Sample conversation (user ↔ Zeni Agent for a listing).
 
@@ -117,7 +117,7 @@ User                    Agent                     Admin
 
 ## 7. Kenya-specific notes
 
-- **Zeni Agent** is the main in-app agent (`zeniagent.ke@gmail.com`); users can message them from Messages or from a listing. **Admin** is `zeniapp.ke@gmail.com` for now.
+- **Zeni Agent** is the main in-app agent (`agent@zeni.test`); users can message them from Messages or from a listing. **Admin** is `admin@zeni.test` for now.
 - **Zeni Support** is for account/help; both Support and Agent appear in user Messages by default.
 - **Currency** in seed is **KES**; listings use Nairobi locations.
 - **M-Pesa** and **Pay** are configured via env (see `server/src/config/env.ts` and pay docs) for payments when you enable them.

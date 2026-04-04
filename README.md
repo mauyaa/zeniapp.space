@@ -265,7 +265,7 @@ Detailed flows: **`docs/PROTOTYPE_FLOWS.md`** and **`docs/HOW_IT_WORKS.md`**.
 | `VITE_SENTRY_DSN` | Sentry DSN (production) | - |
 | `VITE_ANALYTICS_ENDPOINT` | Analytics POST URL | - |
 | `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key | - |
-| `VITE_CONTACT_EMAIL` | Contact email (footer/landing) | `zeniapp.ke@gmail.com` |
+| `VITE_CONTACT_EMAIL` | Contact email (footer/landing) | `admin@zeni.test` |
 | `VITE_CONTACT_PHONE` | Contact phone (optional) | - |
 | `VITE_SOCIAL_*` | Instagram, LinkedIn, Twitter URLs | - |
 
@@ -574,7 +574,7 @@ Detailed flows: **`docs/PROTOTYPE_FLOWS.md`** and **`docs/HOW_IT_WORKS.md`**.
 | `VITE_SENTRY_DSN` | Sentry DSN (production) | - |
 | `VITE_ANALYTICS_ENDPOINT` | Analytics POST URL | - |
 | `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key | - |
-| `VITE_CONTACT_EMAIL` | Contact email (footer/landing) | `zeniapp.ke@gmail.com` |
+| `VITE_CONTACT_EMAIL` | Contact email (footer/landing) | `admin@zeni.test` |
 | `VITE_CONTACT_PHONE` | Contact phone (optional) | - |
 | `VITE_SOCIAL_*` | Instagram, LinkedIn, Twitter URLs | - |
 

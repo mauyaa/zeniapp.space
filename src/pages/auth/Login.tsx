@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthProvider';
 import { AuthPage } from './AuthPage';
 
-const CONTACT_OPS_URL = 'mailto:zeniapp.ke@gmail.com?subject=Operations%20Support';
+const CONTACT_OPS_URL = 'mailto:admin@zeni.test?subject=Operations%20Support';
 import { Eye, EyeOff } from 'lucide-react';
 import { prefetchRoute } from '../../lib/prefetch';
 import { ApiError } from '../../types/api';

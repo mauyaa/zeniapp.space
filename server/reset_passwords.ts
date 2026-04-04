@@ -17,7 +17,7 @@ async function reset() {
         console.log(`Admin ${adminEmail} not found`);
     }
 
-    const agentEmail = process.env.AGENT_EMAIL || process.env.ZENI_AGENT_EMAIL || 'zeniagent.ke@gmail.com';
+    const agentEmail = process.env.AGENT_EMAIL || process.env.ZENI_AGENT_EMAIL || 'agent@zeni.test';
     const agent = await UserModel.findOne({ emailOrPhone: agentEmail });
     if (agent) {
         agent.password = password;

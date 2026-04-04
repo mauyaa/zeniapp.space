@@ -48,7 +48,7 @@ export function Footer() {
             <Link to="/agentlogin" className="hover:text-[rgb(var(--accent))]">
               Agent portal
             </Link>
-            <a href="mailto:zeniapp.ke@gmail.com" className="hover:text-[rgb(var(--accent))]">
+            <a href="mailto:admin@zeni.test" className="hover:text-[rgb(var(--accent))]">
               Contact
             </a>
           </div>

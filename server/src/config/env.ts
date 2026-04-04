@@ -71,7 +71,7 @@ export const env = {
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
   /** Emails for welcome chats: Zeni Support, Zeni Agent, Zeni Admin. Must exist in DB (e.g. via seed). */
   zeniSupportEmail: process.env.ZENI_SUPPORT_EMAIL || 'support@zeni.test',
-  zeniAgentEmail: process.env.ZENI_AGENT_EMAIL || 'zeniagent.ke@gmail.com',
+  zeniAgentEmail: process.env.ZENI_AGENT_EMAIL || 'agent@zeni.test',
   zeniAdminEmail: process.env.ZENI_ADMIN_EMAIL || 'admin@zeni.test',
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME || '',

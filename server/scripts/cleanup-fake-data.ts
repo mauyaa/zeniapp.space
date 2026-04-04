@@ -26,8 +26,8 @@ async function run() {
         'user-basic@zeni.test',
         'user-suspended@zeni.test',
         'support@zeni.test',
-        'zeniapp.ke@gmail.com',
-        'zeniagent.ke@gmail.com',
+        'admin@zeni.test',
+        'agent@zeni.test',
         'zeni-admin-system-1771410274268@zeni.test',
         'user@zeni.test'
     ];

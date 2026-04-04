@@ -21,8 +21,8 @@ npm run seed
 
 ## Demo Logins (From Seed)
 
-- Admin: `ADMIN_EMAIL` in `server/.env` (default `zeniapp.ke@gmail.com`)
-- Agent (verified): `AGENT_EMAIL` in `server/.env` (default `zeniagent.ke@gmail.com`)
+- Admin: `ADMIN_EMAIL` in `server/.env` (default `admin@zeni.test`)
+- Agent (verified): `AGENT_EMAIL` in `server/.env` (default `agent@zeni.test`)
 - User: `user-basic@zeni.test`
 - Password (all seeded users): `SEED_PASSWORD` in `server/.env` (default `ChangeMe123!`)
 

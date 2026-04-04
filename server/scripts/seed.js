@@ -10,8 +10,8 @@ async function run() {
     await Promise.all([User_1.UserModel.deleteMany({}), Listing_1.ListingModel.deleteMany({}), Invoice_1.InvoiceModel.deleteMany({}), Insight_1.InsightModel.deleteMany({})]);
     const admin = await User_1.UserModel.create({
         name: 'Admin',
-        emailOrPhone: 'zeniapp.ke@gmail.com',
-        password: 'mauya179',
+        emailOrPhone: 'admin@zeni.test',
+        password: 'ChangeMe123!',
         role: 'admin'
     });
     const zeniSupport = await User_1.UserModel.create({

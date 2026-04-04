@@ -787,7 +787,7 @@ export async function ensureWelcomeAgentsInDb(): Promise<void> {
 }
 
 async function findZeniMainAgent(): Promise<{ _id: any; role: string } | null> {
-  const agentEmail = env.zeniAgentEmail || 'zeniagent.ke@gmail.com';
+  const agentEmail = env.zeniAgentEmail || 'agent@zeni.test';
   let u = await UserModel.findOne({
     role: 'agent',
     $or: [{ emailOrPhone: agentEmail }, { email: agentEmail }, { emailOrPhone: 'agent@zeni.test' }],

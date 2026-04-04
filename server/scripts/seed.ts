@@ -41,7 +41,7 @@ async function upsertUser(seed: {
 
 async function seedUsers() {
   const admin = await upsertUser({
-    email: process.env.ADMIN_EMAIL || 'zeniapp.ke@gmail.com',
+    email: process.env.ADMIN_EMAIL || 'admin@zeni.test',
     name: process.env.ADMIN_NAME || 'Zeni Admin',
     role: 'admin',
     status: 'active',
@@ -67,7 +67,7 @@ async function seedUsers() {
     agentVerification: 'verified'
   });
   const verifiedAgent = await upsertUser({
-    email: process.env.AGENT_EMAIL || process.env.ZENI_AGENT_EMAIL || 'zeniagent.ke@gmail.com',
+    email: process.env.AGENT_EMAIL || process.env.ZENI_AGENT_EMAIL || 'agent@zeni.test',
     name: process.env.AGENT_NAME || 'Zeni Agent',
     role: 'agent',
     status: 'active',

@@ -123,7 +123,7 @@ type GsapApi = {
 
 const meta = import.meta as unknown as { env?: Record<string, string | undefined> };
 const env = meta?.env || {};
-const CONTACT_EMAIL = (env.VITE_CONTACT_EMAIL as string)?.trim() || 'zeniapp.ke@gmail.com';
+const CONTACT_EMAIL = (env.VITE_CONTACT_EMAIL as string)?.trim() || 'admin@zeni.test';
 const CONTACT_PHONE = (env.VITE_CONTACT_PHONE as string)?.trim() || '';
 
 function formatKesPrice(price: number, isRental = false): string {

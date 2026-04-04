@@ -45,3 +45,9 @@ server/.env.local
 server/.env.development
 server/.env.production
 server/.mongoms/
+
+# Security-sensitive and generated artifacts (never commit)
+server/db_dump.json
+server/users_list.json
+playwright-report/
+.prod_index.js

@@ -4,13 +4,13 @@ import { UserModel } from './src/models/User';
 async function run() {
     await connectDB();
 
-    let admin = await UserModel.findOne({ emailOrPhone: 'zeniapp.ke@gmail.com' });
+    let admin = await UserModel.findOne({ emailOrPhone: 'admin@zeni.test' });
     if (!admin) {
         console.log("Admin not found normally. Let's create it properly.");
         admin = new UserModel({
             name: 'Zeni Admin',
-            emailOrPhone: 'zeniapp.ke@gmail.com',
-            email: 'zeniapp.ke@gmail.com',
+            emailOrPhone: 'admin@zeni.test',
+            email: 'admin@zeni.test',
             role: 'admin',
             status: 'active',
             password: 'ChangeMe123!' // will be hashed by pre-save

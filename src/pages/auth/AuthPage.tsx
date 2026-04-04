@@ -509,7 +509,7 @@ export function AuthPage({ initialMode = 'login', onModeChange }: AuthPageProps)
           )}
 
           <div className="text-center text-[9px] uppercase tracking-[0.3em] text-zinc-400 font-bold">
-            Concierge <span className="text-green-600 ml-1">zeniapp.ke@gmail.com</span>
+            Concierge <span className="text-green-600 ml-1">admin@zeni.test</span>
           </div>
         </div>
       </div>

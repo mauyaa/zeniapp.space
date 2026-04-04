@@ -23,7 +23,7 @@ async function restore() {
         console.log(`Admin ${adminEmail} already exists`);
     }
 
-    const agentEmail = process.env.AGENT_EMAIL || process.env.ZENI_AGENT_EMAIL || 'zeniagent.ke@gmail.com';
+    const agentEmail = process.env.AGENT_EMAIL || process.env.ZENI_AGENT_EMAIL || 'agent@zeni.test';
     let agent = await UserModel.findOne({ emailOrPhone: agentEmail });
     if (!agent) {
         agent = await UserModel.create({
