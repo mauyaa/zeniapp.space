@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { UserModel, UserDocument } from '../models/User';
@@ -17,7 +16,7 @@ interface CreateUserInput {
 
 type IdentityKind = 'email' | 'phone';
 
-const ACCESS_TTL = '7d';
+const ACCESS_TTL = '15m';
 const REFRESH_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 const RESET_TTL_MS = 60 * 60 * 1000; // 1 hour
 
@@ -80,7 +79,6 @@ export async function createUser(input: CreateUserInput): Promise<UserDocument> 
     // Do not block signup on pay provisioning issues
     console.error('[pay] failed to provision account', err);
   }
-  // Welcome chats: Zeni Agent + Zeni Admin for users; support channels for agents/admins
   try {
     const chatService = await import('./chat.service');
     await chatService.ensureWelcomeAgentsInDb();
@@ -199,7 +197,6 @@ export async function findOrCreateUserFromGoogle(
   } catch (err) {
     // Do not block signup
   }
-  // Welcome chats for Google-created users
   try {
     const chatService = await import('./chat.service');
     await chatService.ensureWelcomeAgentsInDb();

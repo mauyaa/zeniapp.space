@@ -4,6 +4,7 @@
 
 import { request, buildQuery, getToken } from './client';
 import { apiUrl, resolveApiAssetUrl } from '../runtime';
+import { ApiError } from '../../types/api';
 
 // ---------- Types ----------
 
@@ -63,6 +64,7 @@ export type ListingCard = {
   imageUrl?: string;
   agent?: { id?: string; name?: string; image?: string };
   availabilityStatus?: string;
+  boosted?: boolean;
   saved?: boolean;
   images?: { url?: string; isPrimary?: boolean }[];
 };
@@ -86,8 +88,13 @@ export type AgentListing = {
   /** available | under_offer | sold | let — sold/let are hidden from public but visible to agent/admin */
   availabilityStatus?: 'available' | 'under_offer' | 'sold' | 'let';
   verified?: boolean;
+  qualityScore?: number;
+  qualityBand?: 'low' | 'medium' | 'high';
+  qualityFlags?: string[];
+  qualityActions?: string[];
   createdAt?: string;
   updatedAt?: string;
+  boostedAt?: string | null;
 };
 
 export type Insight = {
@@ -144,7 +151,7 @@ function normalizeAgentListing(listing: AgentListing): AgentListing {
 
 export function searchListings(
   params: ListingSearchParams,
-  options?: { signal?: AbortSignal }
+  options?: { signal?: AbortSignal; timeoutMs?: number }
 ): Promise<{ items: ListingCard[]; total: number }> {
   return request<{ items: ListingCard[]; total: number }>(
     `/listings/search${buildQuery(params as Record<string, unknown>)}`,
@@ -155,7 +162,10 @@ export function searchListings(
   }));
 }
 
-export function fetchListing(id: string, options?: { signal?: AbortSignal }): Promise<ListingCard> {
+export function fetchListing(
+  id: string,
+  options?: { signal?: AbortSignal; timeoutMs?: number }
+): Promise<ListingCard> {
   return request<ListingCard>(`/listings/${id}`, options).then(normalizeListingCard);
 }
 
@@ -199,7 +209,16 @@ export async function uploadImage(file: File): Promise<{ url: string }> {
       Authorization: `Bearer ${getToken() || ''}`,
     },
   });
-  if (!res.ok) throw new Error('Upload failed');
+  if (!res.ok) {
+    let msg = 'Upload failed';
+    try {
+      const err = (await res.json()) as { message?: string; code?: string };
+      if (err.message) msg = err.message;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(msg);
+  }
   const payload = (await res.json()) as { url: string };
   return { url: resolveApiAssetUrl(payload.url) ?? payload.url };
 }
@@ -246,6 +265,26 @@ export function updateAgentListing(id: string, body: Record<string, unknown>) {
 
 export function submitAgentListing(id: string) {
   return request(`/agent/listings/${id}/submit`, { method: 'POST' });
+}
+
+export function boostAgentListing(id: string): Promise<AgentListing> {
+  return request<AgentListing>(`/agent/listings/${id}/boost`, { method: 'POST' }).then(
+    normalizeAgentListing
+  );
+}
+
+export type AgentGeocodeResult = { lat: number; lng: number; label?: string };
+
+/** Server-backed Kenya geocode (OpenStreetMap Nominatim). Returns null when there is no match. */
+export async function agentGeocodeAddress(query: string): Promise<AgentGeocodeResult | null> {
+  const q = query.trim();
+  if (q.length < 3) return null;
+  try {
+    return await request<AgentGeocodeResult>(`/agent/geocode${buildQuery({ q })}`);
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return null;
+    throw e;
+  }
 }
 
 export function deleteAgentListing(id: string) {

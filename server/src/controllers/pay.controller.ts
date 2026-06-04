@@ -12,6 +12,7 @@ import {
 } from '../services/pay.service';
 import { handlePortalCallback } from '../services/payPortal.service';
 import { isMpesaCallbackSecretConfigured, verifyCallbackSignature } from '../services/mpesa.service';
+import { ensurePaymentInitiationAllowed } from '../services/paymentReadiness.service';
 
 export async function invoices(req: AuthRequest, res: Response) {
   const userId = req.user?.id;
@@ -40,6 +41,13 @@ export async function stkInitiate(req: AuthRequest, res: Response) {
   const { invoiceId, phone } = schema.parse(req.body);
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
+  if (!['admin', 'finance'].includes(req.user?.role || '') && req.user?.kycStatus !== 'verified') {
+    return res.status(403).json({
+      code: 'KYC_REQUIRED',
+      message: 'Identity verification is required before making payments',
+    });
+  }
+  ensurePaymentInitiationAllowed('mpesa_stk');
   const tx = await initiatePayment(invoiceId, userId, phone);
   res.status(201).json(tx);
 }

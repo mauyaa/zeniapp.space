@@ -13,7 +13,13 @@ let invoiceId: string;
 describe('pay', () => {
   beforeEach(async () => {
     if (shouldSkipDbTests()) return;
-    const user = await UserModel.create({ name: 'User', emailOrPhone: 'user@test.com', password: 'secret123', role: 'user' });
+    const user = await UserModel.create({
+      name: 'User',
+      emailOrPhone: 'user@test.com',
+      password: 'secret123',
+      role: 'user',
+      kycStatus: 'verified',
+    });
     token = sign({ sub: user.id, role: user.role }, env.jwtSecret);
     const inv = await InvoiceModel.create({
       userId: user.id,
@@ -21,7 +27,7 @@ describe('pay', () => {
       purpose: 'booking_fee',
       amount: 1000,
       status: 'unpaid',
-      dueDate: new Date()
+      dueDate: new Date(),
     });
     invoiceId = inv.id;
   });
@@ -54,7 +60,12 @@ describe('mpesa callback security', () => {
 
   it('accepts callbacks signed with the configured secret', async () => {
     if (shouldSkipDbTests()) return;
-    const user = await UserModel.create({ name: 'CallbackUser', emailOrPhone: 'callback@test.com', password: 'secret123', role: 'user' });
+    const user = await UserModel.create({
+      name: 'CallbackUser',
+      emailOrPhone: 'callback@test.com',
+      password: 'secret123',
+      role: 'user',
+    });
     const invoice = await InvoiceModel.create({
       userId: user.id,
       roleScope: 'user',
@@ -62,7 +73,7 @@ describe('mpesa callback security', () => {
       amount: 2000,
       status: 'unpaid',
       dueDate: new Date(),
-      lineItems: []
+      lineItems: [],
     });
 
     const tx = await PaymentTransactionModel.create({
@@ -74,7 +85,7 @@ describe('mpesa callback security', () => {
       provider: 'mpesa',
       providerRef: 'CALLBACK-REF',
       phone: '0712345678',
-      idempotencyKey: 'callback-test'
+      idempotencyKey: 'callback-test',
     });
 
     await request(app)
@@ -92,7 +103,12 @@ describe('mpesa callback security', () => {
 
   it('accepts Daraja STK callback payload shape', async () => {
     if (shouldSkipDbTests()) return;
-    const user = await UserModel.create({ name: 'CallbackUserDaraja', emailOrPhone: 'callback-daraja@test.com', password: 'secret123', role: 'user' });
+    const user = await UserModel.create({
+      name: 'CallbackUserDaraja',
+      emailOrPhone: 'callback-daraja@test.com',
+      password: 'secret123',
+      role: 'user',
+    });
     const invoice = await InvoiceModel.create({
       userId: user.id,
       roleScope: 'user',
@@ -100,7 +116,7 @@ describe('mpesa callback security', () => {
       amount: 2500,
       status: 'unpaid',
       dueDate: new Date(),
-      lineItems: []
+      lineItems: [],
     });
 
     const tx = await PaymentTransactionModel.create({
@@ -112,7 +128,7 @@ describe('mpesa callback security', () => {
       provider: 'mpesa',
       providerRef: 'DARAJA-REF',
       phone: '0712345678',
-      idempotencyKey: 'callback-test-daraja'
+      idempotencyKey: 'callback-test-daraja',
     });
 
     await request(app)
@@ -129,11 +145,11 @@ describe('mpesa callback security', () => {
                 { Name: 'Amount', Value: 2500 },
                 { Name: 'MpesaReceiptNumber', Value: 'DARAJA-RCPT-001' },
                 { Name: 'Balance' },
-                { Name: 'PhoneNumber', Value: 254712345678 }
-              ]
-            }
-          }
-        }
+                { Name: 'PhoneNumber', Value: 254712345678 },
+              ],
+            },
+          },
+        },
       })
       .expect(200);
 
@@ -144,7 +160,12 @@ describe('mpesa callback security', () => {
 
   it('marks a failure callback as failed and leaves the invoice unpaid', async () => {
     if (shouldSkipDbTests()) return;
-    const user = await UserModel.create({ name: 'CallbackUser2', emailOrPhone: 'callback2@test.com', password: 'secret123', role: 'user' });
+    const user = await UserModel.create({
+      name: 'CallbackUser2',
+      emailOrPhone: 'callback2@test.com',
+      password: 'secret123',
+      role: 'user',
+    });
     const invoice = await InvoiceModel.create({
       userId: user.id,
       roleScope: 'user',
@@ -152,7 +173,7 @@ describe('mpesa callback security', () => {
       amount: 1500,
       status: 'unpaid',
       dueDate: new Date(),
-      lineItems: []
+      lineItems: [],
     });
 
     const tx = await PaymentTransactionModel.create({
@@ -164,7 +185,7 @@ describe('mpesa callback security', () => {
       provider: 'mpesa',
       providerRef: 'CALLBACK-FAIL',
       phone: '0712345678',
-      idempotencyKey: 'callback-test-failure'
+      idempotencyKey: 'callback-test-failure',
     });
 
     await request(app)
@@ -182,7 +203,12 @@ describe('mpesa callback security', () => {
 
   it('ignores invalid transition callbacks after a transaction is already paid', async () => {
     if (shouldSkipDbTests()) return;
-    const user = await UserModel.create({ name: 'CallbackUser3', emailOrPhone: 'callback3@test.com', password: 'secret123', role: 'user' });
+    const user = await UserModel.create({
+      name: 'CallbackUser3',
+      emailOrPhone: 'callback3@test.com',
+      password: 'secret123',
+      role: 'user',
+    });
     const invoice = await InvoiceModel.create({
       userId: user.id,
       roleScope: 'user',
@@ -190,7 +216,7 @@ describe('mpesa callback security', () => {
       amount: 1800,
       status: 'unpaid',
       dueDate: new Date(),
-      lineItems: []
+      lineItems: [],
     });
 
     const tx = await PaymentTransactionModel.create({
@@ -202,7 +228,7 @@ describe('mpesa callback security', () => {
       provider: 'mpesa',
       providerRef: 'CALLBACK-TRANSITION',
       phone: '0712345678',
-      idempotencyKey: 'callback-transition'
+      idempotencyKey: 'callback-transition',
     });
 
     await request(app)

@@ -40,12 +40,17 @@ export const apiUrl = (path: string) => `${API_BASE}${normalizePath(path)}`;
 export const payApiUrl = (path: string) => `${API_BASE}/pay${normalizePath(path)}`;
 
 function apiOrigin(): string | null {
-  if (!ABSOLUTE_HTTP_URL_RE.test(API_BASE)) return null;
-  try {
-    return new URL(API_BASE).origin;
-  } catch {
-    return null;
+  if (ABSOLUTE_HTTP_URL_RE.test(API_BASE)) {
+    try {
+      return new URL(API_BASE).origin;
+    } catch {
+      return null;
+    }
   }
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin;
+  }
+  return null;
 }
 
 /**

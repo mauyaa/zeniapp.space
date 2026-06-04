@@ -1,11 +1,10 @@
 import React, { useEffect } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { MapPin, BedDouble, ShieldCheck, ChevronRight, ArrowLeft } from 'lucide-react';
 import { searchListings, type ListingCard } from '../lib/api/listings';
 import { getPublicSocket, disconnectPublicSocket } from '../lib/publicSocket';
 import { listingThumbUrl } from '../lib/cloudinary';
 import { resolveApiAssetUrl } from '../lib/runtime';
-import { properties as mockProperties } from '../utils/mockData';
 
 const PUBLIC_FEED_KEY =
   (import.meta.env.VITE_PUBLIC_FEED_KEY as string | undefined) || 'public-demo-key';
@@ -121,69 +120,22 @@ function formatCompact(price: number, currency: string, purpose?: string) {
 }
 
 export function NeighborhoodPage() {
-  const { neighborhood, purpose } = useParams<{ neighborhood: string; purpose: 'rent' | 'buy' }>();
+  const { neighborhood } = useParams<{ neighborhood: string }>();
+  const location = useLocation();
   const navigate = useNavigate();
-  const [listings, setListings] = React.useState<ListingCard[]>(() => {
-    return (mockProperties as Array<(typeof mockProperties)[number]>)
-      .filter((p) => {
-        const matchProp =
-          p.location.neighborhood.toLowerCase() === (neighborhood || '').toLowerCase();
-        const matchPurpose = p.purpose === (purpose || 'rent');
-        return matchProp && matchPurpose;
-      })
-      .map((p) => ({
-        id: p.id,
-        title: p.title,
-        price: p.price,
-        currency: p.currency,
-        purpose: p.purpose,
-        type: p.type,
-        beds: p.features?.bedrooms,
-        baths: p.features?.bathrooms,
-        location: {
-          neighborhood: p.location.neighborhood,
-          city: p.location.city,
-          lat: p.location.lat,
-          lng: p.location.lng,
-        },
-        verified: p.isVerified,
-        imageUrl: p.imageUrl,
-      }));
-  });
-  const [loading, setLoading] = React.useState(false);
+  const purpose: 'rent' | 'buy' = location.pathname.startsWith('/buy/') ? 'buy' : 'rent';
+  const [listings, setListings] = React.useState<ListingCard[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState(false);
+  const [refreshTrigger, setRefreshTrigger] = React.useState(0);
 
   const key = (neighborhood || '').toLowerCase();
   const data = NEIGHBORHOODS[key];
   const purposeLabel = purpose === 'buy' ? 'Buy' : 'Rent';
 
-  const fallbackFromMock = React.useCallback((): ListingCard[] => {
-    const keyLower = (neighborhood || '').toLowerCase();
-    return mockProperties
-      .filter((p) => p.location.neighborhood.toLowerCase().includes(keyLower))
-      .filter((p) => !purpose || p.purpose === purpose)
-      .map((p) => ({
-        id: p.id,
-        title: p.title,
-        price: p.price,
-        currency: p.currency,
-        purpose: p.purpose,
-        type: p.type,
-        beds: p.features?.bedrooms,
-        baths: p.features?.bathrooms,
-        location: {
-          neighborhood: p.location.neighborhood,
-          city: p.location.city,
-          lat: p.location.lat,
-          lng: p.location.lng,
-        },
-        verified: p.isVerified,
-        imageUrl: p.imageUrl,
-      }));
-  }, [neighborhood, purpose]);
-
   useEffect(() => {
     document.title = `${purposeLabel} in ${data?.title || neighborhood} - Zeni`;
-    const desc = `Browse ${purpose === 'buy' ? 'properties for sale' : 'rentals'} in ${data?.title || neighborhood}, Kenya.Verified listings updated daily.`;
+    const desc = `Browse ${purpose === 'buy' ? 'properties for sale' : 'rentals'} in ${data?.title || neighborhood}, Kenya. Verified listings updated daily.`;
     let el = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
     if (!el) {
       el = document.createElement('meta');
@@ -199,24 +151,25 @@ export function NeighborhoodPage() {
   useEffect(() => {
     let cancelled = false;
     const controller = new AbortController();
+    setLoading(true);
+    setLoadError(false);
 
     const searchPromise = searchListings(
       { q: neighborhood, purpose, limit: 12 },
-      { signal: controller.signal }
+      { signal: controller.signal, timeoutMs: 8_000 }
     );
 
     searchPromise
       .then((res) => {
         if (cancelled) return;
-        if (res?.items && res.items.length > 0) {
-          setListings(res.items);
-        } else {
-          setListings(fallbackFromMock());
-        }
+        setListings(res?.items || []);
       })
       .catch((err) => {
         if ((err as { name?: string })?.name === 'AbortError') return;
-        if (!cancelled) setListings(fallbackFromMock());
+        if (!cancelled) {
+          setListings([]);
+          setLoadError(true);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -225,19 +178,13 @@ export function NeighborhoodPage() {
       cancelled = true;
       controller.abort();
     };
-  }, [neighborhood, purpose, fallbackFromMock]);
+  }, [neighborhood, purpose, refreshTrigger]);
 
   // Real-time Updates
   useEffect(() => {
     const socket = getPublicSocket(PUBLIC_FEED_KEY);
     const handleUpdate = () => {
-      // Re-trigger the fetch effect in the background
-      const searchPromise = searchListings({ q: neighborhood, purpose, limit: 12 });
-      searchPromise.then((res) => {
-        if (res?.items && res.items.length > 0) {
-          setListings(res.items);
-        }
-      });
+      setRefreshTrigger((previous) => previous + 1);
     };
 
     socket.on('listing:changed', handleUpdate);
@@ -248,7 +195,7 @@ export function NeighborhoodPage() {
       socket.off('listing:deleted', handleUpdate);
       disconnectPublicSocket();
     };
-  }, [neighborhood, purpose]);
+  }, []);
 
   if (!data) {
     return (
@@ -281,7 +228,7 @@ export function NeighborhoodPage() {
       <header>
         <div className="flex items-center gap-2 mb-3">
           <span
-            className={`px - 2 py - 1 text - [10px] font - mono font - bold uppercase tracking - widest rounded - md ${purpose === 'buy' ? 'bg-zinc-900 text-white' : 'bg-emerald-600 text-white'} `}
+            className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-widest rounded-md ${purpose === 'buy' ? 'bg-zinc-900 text-white' : 'bg-emerald-600 text-white'}`}
           >
             For {purposeLabel}
           </span>
@@ -298,7 +245,11 @@ export function NeighborhoodPage() {
       {/* Listings grid */}
       <section>
         <h2 className="text-xs font-mono uppercase tracking-widest text-zinc-400 mb-4">
-          {loading ? 'Loading listings…' : `${listings.length} listings in ${data.title} `}
+          {loading
+            ? 'Loading listings…'
+            : loadError
+              ? 'Listings unavailable'
+              : `${listings.length} listings in ${data.title} `}
         </h2>
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -306,12 +257,23 @@ export function NeighborhoodPage() {
               <div key={i} className="rounded-xl bg-zinc-100 animate-pulse aspect-[4/3]" />
             ))}
           </div>
+        ) : loadError ? (
+          <div className="text-center py-16 text-zinc-500 text-sm font-mono">
+            Live listings are temporarily unavailable.{' '}
+            <button
+              type="button"
+              onClick={() => setRefreshTrigger((previous) => previous + 1)}
+              className="text-emerald-600 underline"
+            >
+              Retry
+            </button>
+          </div>
         ) : listings.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {listings.map((l) => (
               <Link
                 key={l.id}
-                to={`/ listing / ${l.id} `}
+                to={`/listing/${l.id}`}
                 className="group block rounded-xl overflow-hidden border border-zinc-200 bg-white hover:border-emerald-400 hover:shadow-md transition-all"
               >
                 <div className="aspect-[4/3] bg-zinc-100 overflow-hidden">
@@ -354,7 +316,9 @@ export function NeighborhoodPage() {
         {listings.length > 0 && (
           <div className="mt-6 text-center">
             <button
-              onClick={() => navigate(`/ explore ? q = ${neighborhood}& purpose=${purpose} `)}
+              onClick={() =>
+                navigate(`/explore?q=${encodeURIComponent(neighborhood || '')}&purpose=${purpose}`)
+              }
               className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-zinc-800 transition-colors"
             >
               See all listings in {data.title} <ChevronRight className="w-4 h-4" />

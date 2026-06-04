@@ -15,6 +15,7 @@ const fallbackImage =
 
 const PUBLIC_FEED_KEY =
   (import.meta.env.VITE_PUBLIC_FEED_KEY as string | undefined) || 'public-demo-key';
+const DEV_FALLBACK_PROPERTIES = import.meta.env.MODE === 'development' ? FALLBACK_PROPERTIES : [];
 
 type PropertyWithMeta = Property & {
   saved?: boolean;
@@ -75,8 +76,9 @@ export function PublicMapPage() {
   const { isAuthed, user } = useAuth();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapProps, setMapProps] = useState<PropertyWithMeta[]>(() =>
-    FALLBACK_PROPERTIES.slice(0, 50).map((p: Property) => ({ ...p, saved: false }))
+    DEV_FALLBACK_PROPERTIES.slice(0, 50).map((p: Property) => ({ ...p, saved: false }))
   );
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -87,19 +89,32 @@ export function PublicMapPage() {
       inflight?.abort();
       const controller = new AbortController();
       inflight = controller;
+      setLoadError(false);
+      const timeout = setTimeout(() => {
+        if (!cancelled) {
+          setLoadError(true);
+          controller.abort();
+        }
+      }, 6000);
 
       return searchListings({ limit: 50, verifiedOnly: true }, { signal: controller.signal })
         .then((res) => {
           if (cancelled) return;
           const raw = res?.items || [];
           const converted = raw.map(listingToProperty);
-          setMapProps((prev) => (converted.length ? converted : prev));
+          setMapProps(
+            converted.length
+              ? converted
+              : DEV_FALLBACK_PROPERTIES.map((p: Property) => ({ ...p, saved: false }))
+          );
         })
         .catch((err: unknown) => {
           if (cancelled) return;
           if ((err as { name?: string })?.name === 'AbortError') return;
           console.error('Failed to load map items', err);
-        });
+          setLoadError(true);
+        })
+        .finally(() => clearTimeout(timeout));
     };
 
     load();
@@ -177,6 +192,14 @@ export function PublicMapPage() {
           selectedId={selectedId}
           onSelect={(id) => setSelectedId(id)}
         />
+
+        {loadError && (
+          <div className="absolute inset-x-4 top-20 z-[400] mx-auto max-w-md rounded-xl border border-amber-200 bg-white/95 p-4 text-center text-sm text-amber-900 shadow-sm">
+            {mapProps.length > 0
+              ? 'Map refresh is unavailable. Displayed live markers may be out of date; please retry shortly.'
+              : 'Live map listings are temporarily unavailable. Please try again shortly.'}
+          </div>
+        )}
 
         {/* Floating card prompting auth when a marker is selected */}
         <div className="pointer-events-none absolute inset-0 flex items-end justify-center md:justify-start md:items-start p-4 z-[400]">

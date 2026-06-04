@@ -4,6 +4,7 @@ import { requireRole } from '../middlewares/rbac';
 import {
   getUsers,
   updateUserStatus,
+  updateUserRole,
   deleteUser,
   pendingAgents,
   pendingListings,
@@ -34,16 +35,23 @@ import {
   listAdmin as listRefundRequestsAdmin,
   resolve as resolveRefundRequest,
 } from '../controllers/refundRequest.controller';
+import { downloadVerificationDocument } from '../controllers/verificationDocument.controller';
 
 const router = Router();
 router.use(auth, requireRole(['admin']), adminLimiter, requirePrivilegedNetworkAccess('admin'));
 
 router.get('/users', getUsers);
 router.patch('/users/:id/status', requireAdminStepUp(), updateUserStatus);
+router.patch('/users/:id/role', requireAdminStepUp(), updateUserRole);
 router.delete('/users/:id', requireAdminStepUp(), deleteUser);
 router.get('/verification/agents', pendingAgents);
 router.get('/verification/listings', pendingListings);
 router.get('/moderation/queue', getModerationQueue);
+router.get(
+  '/verification-documents/:documentId/content',
+  requireAdminStepUp(),
+  downloadVerificationDocument
+);
 router.patch('/verification/agents/:id', requireAdminStepUp(), verifyAgentDecision);
 router.patch('/verification/agents/:id/earb-verified', requireAdminStepUp(), markAgentEarbVerified);
 router.patch('/verification/listings/:id', requireAdminStepUp(), verifyListing);

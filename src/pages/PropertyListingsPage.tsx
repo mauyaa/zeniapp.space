@@ -18,6 +18,7 @@ const fallbackImage =
 
 const PUBLIC_FEED_KEY =
   (import.meta.env.VITE_PUBLIC_FEED_KEY as string | undefined) || 'public-demo-key';
+const DEV_FALLBACK_PROPERTIES = import.meta.env.MODE === 'development' ? FALLBACK_PROPERTIES : [];
 
 function listingToProperty(listing: ListingCard): Property {
   const [lat, lng] = normalizeKenyaLatLng(
@@ -75,17 +76,24 @@ export function PropertyListingsPage() {
   const [isMapOpen, setIsMapOpen] = useState(false); // For mobile toggle
   const [searchTerm, setSearchTerm] = useState('');
   const [verifiedOnly, setVerifiedOnly] = useState(false);
-  const [listings, setListings] = useState<Property[]>(FALLBACK_PROPERTIES);
+  const [listings, setListings] = useState<Property[]>(DEV_FALLBACK_PROPERTIES);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     const controller = new AbortController();
     const softTimeout = setTimeout(() => {
-      if (!cancelled) setLoading(false);
+      if (!cancelled) {
+        controller.abort();
+        setLoading(false);
+        setLoadError(true);
+        setListings(DEV_FALLBACK_PROPERTIES.slice(0, isAuthed ? 50 : 6));
+      }
     }, 6000);
     setLoading(true);
+    setLoadError(false);
 
     searchListings(
       {
@@ -98,12 +106,12 @@ export function PropertyListingsPage() {
     )
       .then((res) => {
         if (cancelled) return;
+        setLoadError(false);
         const converted = (res?.items || []).map(listingToProperty);
         if (converted.length) {
           setListings(converted);
         } else if (!searchTerm && !verifiedOnly) {
-          // If search is empty and verification is not filtered, fall back to mock data
-          setListings(FALLBACK_PROPERTIES.slice(0, isAuthed ? 50 : 6));
+          setListings(DEV_FALLBACK_PROPERTIES.slice(0, isAuthed ? 50 : 6));
         } else {
           setListings([]);
         }
@@ -112,9 +120,11 @@ export function PropertyListingsPage() {
         if ((err as { name?: string })?.name === 'AbortError') return;
         console.error('Failed to load listings', err);
         if (cancelled) return;
-        // Fall back to mock data on total failure
+        setLoadError(true);
         if (!searchTerm && !verifiedOnly) {
-          setListings(FALLBACK_PROPERTIES.slice(0, isAuthed ? 50 : 6));
+          setListings(DEV_FALLBACK_PROPERTIES.slice(0, isAuthed ? 50 : 6));
+        } else {
+          setListings([]);
         }
       })
       .finally(() => {
@@ -273,6 +283,8 @@ export function PropertyListingsPage() {
                 <p className="text-gray-500 text-sm">
                   {loading ? (
                     'Searching...'
+                  ) : loadError ? (
+                    'Live listing data unavailable'
                   ) : (
                     <>
                       {listings.length} listings found {isAuthed ? '' : '(preview)'}
@@ -316,7 +328,20 @@ export function PropertyListingsPage() {
               ))}
             </div>
 
-            {!loading && listings.length === 0 && (
+            {!loading && loadError && listings.length === 0 && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-center text-sm text-amber-900">
+                <p>Live listings are temporarily unavailable.</p>
+                <button
+                  type="button"
+                  onClick={() => setRefreshTrigger((previous) => previous + 1)}
+                  className="mt-3 font-semibold underline"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {!loading && !loadError && listings.length === 0 && (
               <div className="text-center py-20">
                 <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                   <MapIcon className="w-8 h-8 text-gray-400" />

@@ -19,7 +19,9 @@ import { requestLogger } from './middlewares/requestLogger';
 import { metricsMiddleware } from './middlewares/metrics';
 import { initSentry, Sentry } from './config/sentry';
 import { env } from './config/env';
+import { buildContentSecurityPolicy } from './config/securityHeaders';
 import { stripeWebhook } from './controllers/stripeWebhook.controller';
+import { UserModel } from './models/User';
 
 export const app = express();
 app.set('trust proxy', env.trustProxy);
@@ -51,7 +53,11 @@ async function getSpaIndexHtml(): Promise<string | null> {
 
   try {
     const stat = await fs.promises.stat(htmlPath);
-    if (spaIndexCache && spaIndexCache.path === htmlPath && spaIndexCache.mtimeMs === stat.mtimeMs) {
+    if (
+      spaIndexCache &&
+      spaIndexCache.path === htmlPath &&
+      spaIndexCache.mtimeMs === stat.mtimeMs
+    ) {
       return spaIndexCache.html;
     }
     const html = await fs.promises.readFile(htmlPath, 'utf8');
@@ -72,24 +78,17 @@ if (sentryEnabled) {
 // Security headers
 app.use(
   helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'"],
-        styleSrc: ["'self'", 'https:', "'unsafe-inline'"],
-        imgSrc: ["'self'", 'data:', 'https:'],
-        fontSrc: ["'self'", 'https:', 'data:'],
-        connectSrc: ["'self'", 'capacitor:', ...corsOrigins, 'https:', 'wss:', 'ws:'],
-        objectSrc: ["'none'"],
-        frameAncestors: ["'none'"],
-        reportUri: '/csp-report',
-      },
-    },
+    contentSecurityPolicy: buildContentSecurityPolicy(),
     referrerPolicy: { policy: 'no-referrer' },
     hsts: env.nodeEnv === 'production',
     crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: false,
   })
 );
+app.use((_req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
 
 app.use(
   cors({
@@ -107,9 +106,25 @@ app.post('/api/pay/stripe/webhook', express.raw({ type: 'application/json' }), s
 // Body parsing
 app.use(express.json({ limit: '2mb' }));
 
-// Static uploads (dev/local)
+// Public media only. Any legacy verification asset found here is blocked pending migration.
 const uploadDir = path.join(process.cwd(), 'uploads');
 if (fs.existsSync(uploadDir)) {
+  app.get('/uploads/:filename', async (req: Request, res: Response, next: NextFunction) => {
+    const safeFilename = path.basename(req.params.filename);
+    const escapedFilename = safeFilename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const publicUrlPattern = new RegExp(`(?:^|/)${escapedFilename}(?:\\?.*)?$`, 'i');
+    const sensitive = await UserModel.exists({
+      $or: [
+        { 'verificationEvidence.url': publicUrlPattern },
+        { 'kycEvidence.url': publicUrlPattern },
+        { 'businessVerifyEvidence.url': publicUrlPattern },
+      ],
+    });
+    if (sensitive) {
+      return res.status(404).json({ code: 'NOT_FOUND', message: 'Asset not found' });
+    }
+    return next();
+  });
   app.use('/uploads', express.static(uploadDir));
 }
 
@@ -132,6 +147,7 @@ app.use(
     skip: (req) =>
       req.path === '/health' ||
       req.path === '/health/ready' ||
+      req.path === '/ready' ||
       req.path === '/api/auth' ||
       req.path.startsWith('/api/auth/') ||
       req.path === '/api/pay/auth' ||
@@ -182,18 +198,46 @@ app.post(
 );
 
 // Health check endpoint (cacheable)
-app.get('/health', (_req: Request, res: Response) => {
+function liveness(_req: Request, res: Response) {
   res.set('Cache-Control', 'public, max-age=10');
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+  res.type('application/json').json({
+    status: 'ok',
+    service: 'zeni-api',
+    timestamp: new Date().toISOString(),
+  });
+}
 
-app.get('/health/ready', (_req: Request, res: Response) => {
+function readiness(_req: Request, res: Response) {
   const dbReady = mongoose.connection.readyState === 1;
   const payload = {
     status: dbReady ? 'ready' : 'degraded',
+    service: 'zeni-api',
     dbState: mongoose.connection.readyState,
+    timestamp: new Date().toISOString(),
   };
-  res.status(dbReady ? 200 : 503).json(payload);
+  res
+    .status(dbReady ? 200 : 503)
+    .type('application/json')
+    .json(payload);
+}
+
+app.get('/health', liveness);
+app.get('/ready', readiness);
+// Backwards compatible until external monitors move to /ready.
+app.get('/health/ready', readiness);
+
+app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+  if (mongoose.connection.readyState === 1) {
+    next();
+    return;
+  }
+
+  res.set('Retry-After', '3');
+  res.status(503).json({
+    code: 'SERVICE_UNAVAILABLE',
+    message: 'Database reconnect in progress. Retry shortly.',
+    dbState: mongoose.connection.readyState,
+  });
 });
 
 app.use('/api', routes);

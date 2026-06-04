@@ -14,7 +14,7 @@ describe('authStorage', () => {
     sessionStorage.clear();
   });
 
-  it('stores remembered sessions in localStorage', () => {
+  it('stores remembered web sessions without exposing the refresh token', () => {
     persistAuthSession(
       {
         token: 'local-token',
@@ -25,13 +25,13 @@ describe('authStorage', () => {
     );
 
     expect(localStorage.getItem('token')).toBe('local-token');
-    expect(localStorage.getItem('refresh_token')).toBe('local-refresh');
+    expect(localStorage.getItem('refresh_token')).toBeNull();
     expect(sessionStorage.getItem('token')).toBeNull();
     expect(getStoredToken()).toBe('local-token');
     expect(isSessionBackedAuth()).toBe(false);
   });
 
-  it('stores non-remembered sessions in sessionStorage', () => {
+  it('stores non-remembered web sessions without exposing the refresh token', () => {
     persistAuthSession(
       {
         token: 'session-token',
@@ -42,10 +42,10 @@ describe('authStorage', () => {
     );
 
     expect(sessionStorage.getItem('token')).toBe('session-token');
-    expect(sessionStorage.getItem('refresh_token')).toBe('session-refresh');
+    expect(sessionStorage.getItem('refresh_token')).toBeNull();
     expect(localStorage.getItem('token')).toBeNull();
     expect(getStoredToken()).toBe('session-token');
-    expect(getStoredRefreshToken()).toBe('session-refresh');
+    expect(getStoredRefreshToken()).toBeNull();
     expect(isSessionBackedAuth()).toBe(true);
   });
 

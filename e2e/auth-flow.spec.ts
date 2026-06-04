@@ -6,7 +6,7 @@ test.describe('Auth flow shell', () => {
 
     await page.getByRole('button', { name: /request membership/i }).click();
     await expect(page).toHaveURL(/\/register$/);
-    await expect(page.getByRole('heading', { name: /create account/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /register membership/i })).toBeVisible();
 
     await page.getByRole('button', { name: /return to login/i }).click();
     await expect(page).toHaveURL(/\/login$/);
@@ -15,8 +15,9 @@ test.describe('Auth flow shell', () => {
 
   test('shows client-side validation errors on empty login submit', async ({ page }) => {
     await page.goto('/login');
+    const loginForm = page.locator('form').filter({ has: page.locator('#login-email') });
 
-    await page.getByRole('button', { name: /secure sign in/i }).click();
+    await loginForm.getByRole('button', { name: /secure sign in/i }).click();
 
     await expect(page.getByText('Email or phone is required')).toBeVisible();
     await expect(page.getByText('Password is required')).toBeVisible();

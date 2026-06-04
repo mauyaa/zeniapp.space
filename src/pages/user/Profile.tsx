@@ -20,10 +20,17 @@ import { SectionHeader } from '../../components/ui/SectionHeader';
 import { StatsBar } from '../../components/ui/StatsBar';
 import { useAuth } from '../../context/AuthProvider';
 import { useI18n } from '../../context/I18nContext';
-import { api, submitKyc, getKycStatus, uploadImage } from '../../lib/api';
+import {
+  api,
+  submitKyc,
+  getKycStatus,
+  uploadImage,
+  uploadVerificationDocument,
+} from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
 import { logger } from '../../lib/logger';
 import { cn } from '../../utils/cn';
+import type { UserKycStatus } from '../../types/api';
 import {
   KYC_POLICY,
   KYC_ACCEPTANCE_CRITERIA,
@@ -59,9 +66,7 @@ export function ProfilePage() {
   const [revokingAll, setRevokingAll] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>('overview');
   const [kycStatus, setKycStatus] = useState<'none' | 'pending' | 'verified' | 'rejected'>('none');
-  const [kycEvidence, setKycEvidence] = useState<
-    { url: string; note?: string; uploadedAt?: string }[]
-  >([]);
+  const [kycEvidence, setKycEvidence] = useState<UserKycStatus['evidence']>([]);
   const [kycFile, setKycFile] = useState<File | null>(null);
   const [kycNote, setKycNote] = useState('');
   const [kycSubmitting, setKycSubmitting] = useState(false);
@@ -407,18 +412,18 @@ export function ProfilePage() {
                     });
                     return;
                   }
-                  if (!/^image\/(jpeg|png|webp|gif)$/i.test(kycFile.type)) {
+                  if (!/^(image\/(jpeg|png)|application\/pdf)$/i.test(kycFile.type)) {
                     push({
                       title: 'Invalid file type',
-                      description: 'Use JPEG, PNG, WebP or GIF for ID documents.',
+                      description: 'Use PDF, JPEG or PNG for ID documents.',
                       tone: 'error',
                     });
                     return;
                   }
                   setKycSubmitting(true);
                   try {
-                    const { url } = await uploadImage(kycFile);
-                    await submitKyc(url, kycNote || undefined);
+                    const document = await uploadVerificationDocument(kycFile, 'kyc_identity');
+                    await submitKyc(document.id, kycNote || undefined);
                     push({
                       title: 'Submitted',
                       description: 'KYC documents sent for review',
@@ -446,7 +451,7 @@ export function ProfilePage() {
                   <span>{kycFile ? kycFile.name : 'Tap to select an ID image (max 5MB)'}</span>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,application/pdf"
                     className="hidden"
                     onChange={(e) => setKycFile(e.target.files?.[0] || null)}
                   />
@@ -474,17 +479,15 @@ export function ProfilePage() {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {kycEvidence.map((ev, idx) => (
-                    <a
-                      key={idx}
-                      href={ev.url}
-                      target="_blank"
-                      rel="noreferrer"
+                    <span
+                      key={ev._id || ev.documentId || idx}
                       className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-xs text-zinc-700 hover:border-amber-300"
                     >
                       <FileText className="h-3.5 w-3.5" />
-                      {ev.note || 'Document'}{' '}
+                      {ev.note || 'Document'} -{' '}
+                      {ev.migrationRequired ? 'migration pending' : 'secure review only'}{' '}
                       {ev.uploadedAt ? `— ${new Date(ev.uploadedAt).toLocaleDateString()}` : ''}
-                    </a>
+                    </span>
                   ))}
                 </div>
               </div>

@@ -14,6 +14,8 @@ import {
   submitVerificationEvidence,
   getVerificationHistory,
   updateEarb,
+  updateVerification,
+  deleteVerification,
   submitBusinessVerifyEvidence,
 } from '../controllers/verification.controller';
 
@@ -31,6 +33,8 @@ router.post('/payout/test', asyncHandler(payoutTest));
 router.post('/verification/evidence', asyncHandler(submitVerificationEvidence));
 router.get('/verification/evidence', asyncHandler(getVerificationHistory));
 router.patch('/verification/earb', asyncHandler(updateEarb));
+router.patch('/verification/evidence/:evidenceId', asyncHandler(updateVerification));
+router.delete('/verification/evidence/:evidenceId', asyncHandler(deleteVerification));
 router.post('/verification/business', asyncHandler(submitBusinessVerifyEvidence));
 
 export default router;

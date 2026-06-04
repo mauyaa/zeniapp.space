@@ -19,6 +19,7 @@ import {
   getSystemConversationLabel,
   shouldIncludeConversationForRole,
 } from '../pages/messages/contactLabels';
+import { inboxPreviewLine } from '../pages/messages/messagePreview';
 
 type Scope = 'all' | 'active' | 'scheduled' | 'closed';
 
@@ -56,7 +57,7 @@ interface ChatContextValue {
 const ChatContext = createContext<ChatContextValue | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { push } = useToast();
   const { push: pushNotification } = useNotifications();
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -71,7 +72,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [socketConnected, setSocketConnected] = useState(false);
   const [socketReconnecting, setSocketReconnecting] = useState(false);
   const conversationsRef = useRef<Conversation[]>([]);
+  const messagesRef = useRef<Record<string, Message[]>>({});
   const activeConversationIdRef = useRef<string | null>(null);
+  const refreshConversationsRef = useRef<() => Promise<void>>(() => Promise.resolve());
+  const socketHydrateTimerRef = useRef<number | null>(null);
   const selfSenderType: Message['senderType'] = user?.role === 'user' ? 'user' : 'agent';
   const senderTypeForConversation = (conversationId: string): Message['senderType'] => {
     const userId = user?.id;
@@ -110,6 +114,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       getSystemConversationLabel(conversation.agentSnapshot?.name) === 'Zeni Admin'
     );
 
+  /** Avoid false "read-only" when socket created a placeholder row before userId/agentId are known. */
+  const sameParticipantId = (a?: string | null, b?: string | null) =>
+    String(a ?? '').trim() === String(b ?? '').trim();
+
   // Defer initial conversation fetch so it doesn't block first paint.
   // The UI renders instantly with empty state, then fills in.
   useEffect(() => {
@@ -121,11 +129,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         window as unknown as {
           requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number;
         }
-      ).requestIdleCallback(() => refreshConversations(), { timeout: 2000 });
+      ).requestIdleCallback(() => refreshConversations(), { timeout: 600 });
       return () =>
         (window as unknown as { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(id);
     } else {
-      const t = setTimeout(() => refreshConversations(), 100);
+      const t = setTimeout(() => refreshConversations(), 0);
       return () => clearTimeout(t);
     }
   }, [user?.id]);
@@ -135,15 +143,19 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   }, [conversations]);
 
   useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
     activeConversationIdRef.current = activeConversationId;
   }, [activeConversationId]);
 
-  // Realtime sockets
+  // Realtime sockets — re-bind when JWT changes (refresh) so rooms stay authorized
   useEffect(() => {
     if (!user) return;
-    const token = getToken();
-    if (!token) return;
-    const s = getSocket(token);
+    const socketToken = token || getToken();
+    if (!socketToken) return;
+    const s = getSocket(socketToken);
 
     const onMessage = (msg: Message) => {
       const isSelfMessage = senderTypeForConversation(msg.conversationId) === msg.senderType;
@@ -173,6 +185,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
         return { ...prev, [msg.conversationId]: [...list, msg] };
       });
+      let addedSocketPlaceholder = false;
       setConversations((prev) => {
         const existing = prev.find((c) => c.id === msg.conversationId);
         const updated = existing
@@ -184,34 +197,54 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                   ? 0
                   : existing.unreadCount + 1,
             }
-          : {
-              id: msg.conversationId,
-              listingId: '',
-              agentId: '',
-              userId: '',
-              status: 'active' as const,
-              leadStage: 'new' as const,
-              lastMessageAt: msg.createdAt,
-              unreadCount:
-                activeConversationIdRef.current === msg.conversationId || isSelfMessage ? 0 : 1,
-              listingSnapshot: null,
-              agentSnapshot: { id: '', name: 'Agent' },
-              userSnapshot: { id: '', name: 'User', role: 'user' as const },
-            };
+          : (() => {
+              addedSocketPlaceholder = true;
+              return {
+                id: msg.conversationId,
+                listingId: '',
+                agentId: '',
+                userId: '',
+                status: 'active' as const,
+                leadStage: 'new' as const,
+                lastMessageAt: msg.createdAt,
+                unreadCount:
+                  activeConversationIdRef.current === msg.conversationId || isSelfMessage ? 0 : 1,
+                listingSnapshot: null,
+                agentSnapshot: { id: '', name: 'Agent' },
+                userSnapshot: { id: '', name: 'User', role: 'user' as const },
+              };
+            })();
         const rest = prev.filter((c) => c.id !== msg.conversationId);
         return dedupeConversations([updated, ...rest]);
       });
+      if (addedSocketPlaceholder) {
+        if (socketHydrateTimerRef.current != null) {
+          window.clearTimeout(socketHydrateTimerRef.current);
+        }
+        socketHydrateTimerRef.current = window.setTimeout(() => {
+          socketHydrateTimerRef.current = null;
+          void refreshConversationsRef.current();
+        }, 400);
+      }
       if (activeConversationIdRef.current === msg.conversationId) {
         markRead(msg.conversationId);
       } else if (!isSelfMessage) {
+        const preview =
+          msg.type === 'text' || msg.type === 'quickReply' || msg.type === 'summary'
+            ? inboxPreviewLine(msg).slice(0, 80)
+            : msg.type === 'attachment'
+              ? 'Sent an attachment'
+              : msg.type === 'schedule'
+                ? 'Viewing scheduled'
+                : 'New message';
         push({
           title: 'New message',
-          description: msg.type === 'text' ? String(msg.content).slice(0, 80) : msg.type,
+          description: preview,
           tone: 'info',
         });
         pushNotification({
           title: 'New message',
-          description: msg.type === 'text' ? String(msg.content).slice(0, 80) : msg.type,
+          description: preview,
           type: 'message',
         });
       }
@@ -288,6 +321,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     s.on('viewing:update', onViewingUpdate);
 
     return () => {
+      if (socketHydrateTimerRef.current != null) {
+        window.clearTimeout(socketHydrateTimerRef.current);
+        socketHydrateTimerRef.current = null;
+      }
       setSocketConnected(false);
       s.off('message:new', onMessage);
       s.off('conversation:update', onConversation);
@@ -297,7 +334,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       disconnectSocket();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, token]);
 
   const refreshConversations = async () => {
     if (!user || !getToken()) {
@@ -317,21 +354,54 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       setConversations(list);
       setMessages((prev) => {
         const allowedIds = new Set(list.map((conversation) => conversation.id));
+        const activeId = activeConversationIdRef.current;
+        if (activeId && !allowedIds.has(activeId) && isObjectId(activeId)) {
+          allowedIds.add(activeId);
+        }
         return Object.fromEntries(
           Object.entries(prev).filter(([conversationId]) => allowedIds.has(conversationId))
         ) as Record<string, Message[]>;
       });
-      if (
-        activeConversationIdRef.current &&
-        !list.some((item) => item.id === activeConversationIdRef.current)
-      ) {
-        setActiveConversationId(null);
+      const aid = activeConversationIdRef.current;
+      if (aid && !list.some((item) => item.id === aid)) {
+        const hasLocalThread = (messagesRef.current[aid] ?? []).length > 0;
+        if (!hasLocalThread) {
+          setActiveConversationId(null);
+        }
       }
     } catch {
       setConversationsLoadError(true);
     } finally {
       setLoadingConversations(false);
     }
+  };
+
+  refreshConversationsRef.current = refreshConversations;
+
+  const previewFromOutgoingBody = (body: { type: string; content: unknown }) =>
+    inboxPreviewLine({
+      type: body.type as Message['type'],
+      content: body.content as Message['content'],
+    }).slice(0, 80);
+
+  const bumpConversationAfterSend = (
+    conversationId: string,
+    createdAt: string,
+    preview: string
+  ) => {
+    setConversations((prev) => {
+      const idx = prev.findIndex((c) => c.id === conversationId);
+      if (idx < 0) {
+        return prev;
+      }
+      const updated = {
+        ...prev[idx],
+        lastMessageAt: createdAt,
+        lastMessagePreview: preview,
+      };
+      const rest = prev.filter((c) => c.id !== conversationId);
+      return [updated, ...rest];
+    });
   };
 
   const loadMessages = async (conversationId: string) => {
@@ -346,10 +416,22 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const sendMessage = async (conversationId: string, body: { type: string; content: unknown }) => {
     const conversation = conversationsRef.current.find((item) => item.id === conversationId);
-    const isParticipant = Boolean(
-      conversation && user && (conversation.userId === user.id || conversation.agentId === user.id)
+    const hasParticipantIds = Boolean(
+      String(conversation?.userId ?? '').trim() || String(conversation?.agentId ?? '').trim()
     );
-    if (user && conversation && !isParticipant && !canActAsSystemAdmin(conversation)) {
+    const isParticipant = Boolean(
+      conversation &&
+      user &&
+      (sameParticipantId(conversation.userId, user.id) ||
+        sameParticipantId(conversation.agentId, user.id))
+    );
+    if (
+      user &&
+      conversation &&
+      hasParticipantIds &&
+      !isParticipant &&
+      !canActAsSystemAdmin(conversation)
+    ) {
       push({
         title: 'Read-only thread',
         description: 'You can view this conversation but cannot send messages.',
@@ -374,6 +456,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       [conversationId]: [...(prev[conversationId] ?? []), optimistic],
     }));
+    const outgoingPreview = previewFromOutgoingBody(body);
+    bumpConversationAfterSend(conversationId, optimistic.createdAt, outgoingPreview);
 
     try {
       const real = await safePostMessage(conversationId, { ...body, clientTempId });
@@ -383,6 +467,14 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           m.id === optimistic.id ? real : m
         ),
       }));
+      bumpConversationAfterSend(
+        conversationId,
+        real.createdAt,
+        previewFromOutgoingBody({ type: real.type, content: real.content })
+      );
+      if (!conversationsRef.current.some((c) => c.id === conversationId)) {
+        void refreshConversations();
+      }
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : 'Unknown error';
       console.error('[chat] sendMessage failed:', errMsg, error);
@@ -446,12 +538,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         .filter((c) => {
           if (filter === 'all') return true;
           return c.status === filter;
-        })
-        .filter((c) => {
-          if (!searchTerm) return true;
-          const hay =
-            `${c.listingSnapshot?.title ?? ''} ${c.listingSnapshot?.locationText ?? ''} ${c.listingSnapshot?.price ?? ''} ${c.agentSnapshot?.name ?? ''} ${c.userSnapshot?.name ?? ''}`.toLowerCase();
-          return hay.includes(searchTerm.toLowerCase());
         }),
       messages,
       loadingConversations,

@@ -17,14 +17,25 @@ export interface UserDocument extends Document {
   earbRegistrationNumber?: string;
   /** Set when admin has verified EARB number against EARB portal. */
   earbVerifiedAt?: Date;
-  verificationEvidence?: { url: string; note?: string; uploadedAt: Date }[];
+  verificationEvidence?: {
+    documentId?: mongoose.Types.ObjectId;
+    url?: string;
+    note?: string;
+    idNumber?: string;
+    uploadedAt: Date;
+  }[];
   /** User KYC (any user): identity verification for compliance. */
   kycStatus?: 'none' | 'pending' | 'verified' | 'rejected';
-  kycEvidence?: { url: string; note?: string; uploadedAt: Date }[];
+  kycEvidence?: { documentId?: mongoose.Types.ObjectId; url?: string; note?: string; uploadedAt: Date }[];
   kycSubmittedAt?: Date;
   /** Agent business verification: company/entity documents. */
   businessVerifyStatus?: 'none' | 'pending' | 'verified' | 'rejected';
-  businessVerifyEvidence?: { url: string; note?: string; uploadedAt: Date }[];
+  businessVerifyEvidence?: {
+    documentId?: mongoose.Types.ObjectId;
+    url?: string;
+    note?: string;
+    uploadedAt: Date;
+  }[];
   businessVerifySubmittedAt?: Date;
   autoArchivedListings?: mongoose.Types.ObjectId[];
   notificationPrefs?: {
@@ -75,10 +86,23 @@ const UserSchema = new Schema<UserDocument>(
     mfaSecret: { type: String },
     mfaRecoveryCodes: [{ type: String }],
     verificationEvidence: [
-      { url: String, note: String, uploadedAt: { type: Date, default: Date.now } },
+      {
+        documentId: { type: Schema.Types.ObjectId, ref: 'VerificationDocument' },
+        url: String,
+        note: String,
+        idNumber: String,
+        uploadedAt: { type: Date, default: Date.now },
+      },
     ],
     kycStatus: { type: String, enum: ['none', 'pending', 'verified', 'rejected'], default: 'none' },
-    kycEvidence: [{ url: String, note: String, uploadedAt: { type: Date, default: Date.now } }],
+    kycEvidence: [
+      {
+        documentId: { type: Schema.Types.ObjectId, ref: 'VerificationDocument' },
+        url: String,
+        note: String,
+        uploadedAt: { type: Date, default: Date.now },
+      },
+    ],
     kycSubmittedAt: Date,
     businessVerifyStatus: {
       type: String,
@@ -86,7 +110,12 @@ const UserSchema = new Schema<UserDocument>(
       default: 'none',
     },
     businessVerifyEvidence: [
-      { url: String, note: String, uploadedAt: { type: Date, default: Date.now } },
+      {
+        documentId: { type: Schema.Types.ObjectId, ref: 'VerificationDocument' },
+        url: String,
+        note: String,
+        uploadedAt: { type: Date, default: Date.now },
+      },
     ],
     businessVerifySubmittedAt: Date,
     consentVersion: String,

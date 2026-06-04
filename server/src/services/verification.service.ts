@@ -4,18 +4,43 @@ import { getIO } from '../socket';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
 import { renderBrandEmail, sendMail } from './email.service';
+import {
+  deleteOwnVerificationDocument,
+  markDocumentPendingReview,
+} from './verificationDocument.service';
+
+function safeEvidenceList(evidence: unknown[] | undefined) {
+  return (evidence || []).map((entry) => {
+    const source =
+      entry && typeof (entry as { toObject?: () => Record<string, unknown> }).toObject === 'function'
+        ? (entry as { toObject: () => Record<string, unknown> }).toObject()
+        : (entry as Record<string, unknown>);
+    const documentId = source?.documentId ? String(source.documentId) : undefined;
+    return {
+      _id: source?._id ? String(source._id) : undefined,
+      documentId,
+      note: typeof source?.note === 'string' ? source.note : undefined,
+      idNumber: typeof source?.idNumber === 'string' ? source.idNumber : undefined,
+      uploadedAt: source?.uploadedAt,
+      migrationRequired: !documentId,
+    };
+  });
+}
 
 export async function addVerificationEvidence(
   userId: string,
-  payload: { url: string; note?: string }
+  payload: { documentId: string; note?: string; idNumber: string }
 ) {
+  await markDocumentPendingReview(payload.documentId, userId, 'agent_identity');
+
   const updated = await UserModel.findByIdAndUpdate(
     userId,
     {
       $push: {
         verificationEvidence: {
-          url: payload.url,
+          documentId: payload.documentId,
           note: payload.note,
+          idNumber: payload.idNumber,
           uploadedAt: new Date(),
         },
       },
@@ -31,7 +56,10 @@ export async function addVerificationEvidence(
       action: 'agent_verification_upload',
       entityType: 'user',
       entityId: userId,
-      after: updated.toObject(),
+      after: {
+        agentVerification: updated.agentVerification,
+        evidenceCount: updated.verificationEvidence?.length || 0,
+      },
     });
     const io = getIO();
     if (io) io.to('role:admin').emit('agent:verification', { agentId: userId });
@@ -42,11 +70,11 @@ export async function addVerificationEvidence(
       type: 'system',
     });
     if (updated.emailOrPhone?.includes('@')) {
-      await sendMail(
+      sendMail(
         updated.emailOrPhone,
         'Verification evidence received',
         `<p>Hi ${updated.name || ''},</p><p>We've received your verification documents. Our team will review and update your status.</p>`
-      );
+      ).catch((err) => logger.warn('[agent-verification] user email failed', err));
     }
   }
 
@@ -64,11 +92,11 @@ export async function listVerificationEvidence(userId: string) {
   };
   return {
     status: user.agentVerification,
-    evidence: user.verificationEvidence || [],
+    evidence: safeEvidenceList(user.verificationEvidence as unknown[] | undefined),
     earbRegistrationNumber: user.earbRegistrationNumber,
     earbVerifiedAt: user.earbVerifiedAt,
     businessVerifyStatus: biz.businessVerifyStatus || 'none',
-    businessVerifyEvidence: biz.businessVerifyEvidence || [],
+    businessVerifyEvidence: safeEvidenceList(biz.businessVerifyEvidence),
   };
 }
 
@@ -87,20 +115,158 @@ export async function updateEarbNumber(userId: string, earbRegistrationNumber: s
   return updated;
 }
 
-/** User KYC: any user can submit identity documents for verification. */
-export async function submitUserKyc(userId: string, payload: { url: string; note?: string }) {
-  if (!payload.url || !payload.url.trim()) {
-    throw Object.assign(new Error('Document URL missing'), {
+export async function updateVerificationEvidence(
+  userId: string,
+  evidenceId: string,
+  payload: { documentId: string; note?: string; idNumber: string }
+) {
+  if (!payload.idNumber || !payload.idNumber.trim()) {
+    throw Object.assign(new Error('ID number required'), {
       status: 400,
-      code: 'INVALID_KYC_URL',
+      code: 'INVALID_VERIFICATION_ID_NUMBER',
     });
   }
+
+  const user = await UserModel.findById(userId).select(
+    'role agentVerification verificationEvidence'
+  );
+  if (!user) throw Object.assign(new Error('User not found'), { status: 404 });
+  if (user.agentVerification === 'verified') {
+    throw Object.assign(new Error('Verified agent evidence cannot be edited'), {
+      status: 409,
+      code: 'AGENT_VERIFICATION_LOCKED',
+    });
+  }
+  await markDocumentPendingReview(payload.documentId, userId, 'agent_identity');
+
+  const nextEvidence = [
+    ...((user.verificationEvidence || []) as Array<{
+      _id?: { toString(): string };
+      documentId?: { toString(): string };
+      url?: string;
+      note?: string;
+      idNumber?: string;
+      uploadedAt: Date;
+    }>),
+  ];
+  const evidenceIndex = nextEvidence.findIndex((item) => item?._id?.toString() === evidenceId);
+  if (evidenceIndex < 0) {
+    throw Object.assign(new Error('Verification evidence not found'), {
+      status: 404,
+      code: 'AGENT_EVIDENCE_NOT_FOUND',
+    });
+  }
+
+  const existingEvidence = nextEvidence[evidenceIndex] as
+    | ({ toObject?: () => Record<string, unknown> } & Record<string, unknown>)
+    | undefined;
+  const previousDocumentId = nextEvidence[evidenceIndex]?.documentId?.toString();
+  nextEvidence[evidenceIndex] = {
+    ...(typeof existingEvidence?.toObject === 'function'
+      ? existingEvidence.toObject()
+      : existingEvidence),
+    documentId: payload.documentId,
+    url: undefined,
+    note: payload.note,
+    idNumber: payload.idNumber.trim(),
+    uploadedAt: new Date(),
+  } as (typeof nextEvidence)[number];
+
+  user.verificationEvidence = nextEvidence as typeof user.verificationEvidence;
+  await user.save();
+  if (previousDocumentId && previousDocumentId !== payload.documentId) {
+    await deleteOwnVerificationDocument(previousDocumentId, userId);
+  }
+
+  await AuditLogModel.create({
+    actorId: userId,
+    actorRole: user.role === 'agent' ? 'agent' : 'user',
+    action: 'agent_verification_updated',
+    entityType: 'user',
+    entityId: userId,
+    after: {
+      agentVerification: user.agentVerification,
+      evidenceId,
+      evidenceCount: user.verificationEvidence?.length || 0,
+    },
+  });
+
+  const io = getIO();
+  if (io) io.to('role:admin').emit('agent:verification', { agentId: userId });
+
+  return user;
+}
+
+export async function deleteVerificationEvidence(userId: string, evidenceId: string) {
+  const user = await UserModel.findById(userId).select(
+    'role agentVerification verificationEvidence'
+  );
+  if (!user) throw Object.assign(new Error('User not found'), { status: 404 });
+  if (user.agentVerification === 'verified') {
+    throw Object.assign(new Error('Verified agent evidence cannot be deleted'), {
+      status: 409,
+      code: 'AGENT_VERIFICATION_LOCKED',
+    });
+  }
+
+  const nextEvidence = [
+    ...((user.verificationEvidence || []) as Array<{
+      _id?: { toString(): string };
+      documentId?: { toString(): string };
+      url?: string;
+      note?: string;
+      idNumber?: string;
+      uploadedAt: Date;
+    }>),
+  ];
+  const evidenceIndex = nextEvidence.findIndex((item) => item?._id?.toString() === evidenceId);
+  if (evidenceIndex < 0) {
+    throw Object.assign(new Error('Verification evidence not found'), {
+      status: 404,
+      code: 'AGENT_EVIDENCE_NOT_FOUND',
+    });
+  }
+  const documentId = nextEvidence[evidenceIndex]?.documentId?.toString();
+
+  user.verificationEvidence = nextEvidence.filter(
+    (_, index) => index !== evidenceIndex
+  ) as typeof user.verificationEvidence;
+  if ((user.verificationEvidence?.length || 0) === 0 && user.agentVerification === 'pending') {
+    user.agentVerification = 'unverified';
+  }
+  await user.save();
+  if (documentId) {
+    await deleteOwnVerificationDocument(documentId, userId);
+  }
+
+  await AuditLogModel.create({
+    actorId: userId,
+    actorRole: user.role === 'agent' ? 'agent' : 'user',
+    action: 'agent_verification_deleted',
+    entityType: 'user',
+    entityId: userId,
+    after: {
+      agentVerification: user.agentVerification,
+      evidenceId,
+      remainingEvidence: user.verificationEvidence?.length || 0,
+    },
+  });
+
+  const io = getIO();
+  if (io) io.to('role:admin').emit('agent:verification', { agentId: userId });
+
+  return user;
+}
+
+/** User KYC: any user can submit identity documents for verification. */
+export async function submitUserKyc(userId: string, payload: { documentId: string; note?: string }) {
+  await markDocumentPendingReview(payload.documentId, userId, 'kyc_identity');
   const updated = await UserModel.findByIdAndUpdate(
     userId,
     {
       $push: {
         kycEvidence: {
-          url: payload.url,
+          documentId: payload.documentId,
           note: payload.note,
           uploadedAt: new Date(),
         },
@@ -117,7 +283,11 @@ export async function submitUserKyc(userId: string, payload: { url: string; note
       action: 'user_kyc_submitted',
       entityType: 'user',
       entityId: userId,
-      after: updated.toObject(),
+      after: {
+        kycStatus: updated.kycStatus,
+        kycSubmittedAt: updated.kycSubmittedAt,
+        evidenceCount: updated.kycEvidence?.length || 0,
+      },
     });
     const io = getIO();
     if (io) io.to('role:admin').emit('moderation:queue');
@@ -147,13 +317,148 @@ export async function submitUserKyc(userId: string, payload: { url: string; note
   return updated;
 }
 
+export async function updateUserKycEvidence(
+  userId: string,
+  evidenceId: string,
+  payload: { documentId: string; note?: string }
+) {
+  const user = await UserModel.findById(userId).select(
+    'name emailOrPhone kycStatus kycEvidence kycSubmittedAt'
+  );
+  if (!user) throw Object.assign(new Error('User not found'), { status: 404 });
+  if (user.kycStatus === 'verified') {
+    throw Object.assign(new Error('Verified KYC cannot be edited'), {
+      status: 409,
+      code: 'KYC_LOCKED',
+    });
+  }
+  await markDocumentPendingReview(payload.documentId, userId, 'kyc_identity');
+
+  const nextEvidence = [
+    ...((user.kycEvidence || []) as Array<{
+      _id?: { toString(): string };
+      documentId?: { toString(): string };
+      url?: string;
+      note?: string;
+      uploadedAt: Date;
+    }>),
+  ];
+  const evidenceIndex = nextEvidence.findIndex((item) => item?._id?.toString() === evidenceId);
+  if (evidenceIndex < 0) {
+    throw Object.assign(new Error('KYC evidence not found'), {
+      status: 404,
+      code: 'KYC_EVIDENCE_NOT_FOUND',
+    });
+  }
+
+  const existingEvidence = nextEvidence[evidenceIndex] as
+    | ({ toObject?: () => Record<string, unknown> } & Record<string, unknown>)
+    | undefined;
+  const previousDocumentId = nextEvidence[evidenceIndex]?.documentId?.toString();
+  nextEvidence[evidenceIndex] = {
+    ...(typeof existingEvidence?.toObject === 'function'
+      ? existingEvidence.toObject()
+      : existingEvidence),
+    documentId: payload.documentId,
+    url: undefined,
+    note: payload.note,
+    uploadedAt: new Date(),
+  } as (typeof nextEvidence)[number];
+  user.kycEvidence = nextEvidence as typeof user.kycEvidence;
+  user.kycStatus = 'pending';
+  user.kycSubmittedAt = new Date();
+  await user.save();
+  if (previousDocumentId && previousDocumentId !== payload.documentId) {
+    await deleteOwnVerificationDocument(previousDocumentId, userId);
+  }
+
+  await AuditLogModel.create({
+    actorId: userId,
+    actorRole: 'user',
+    action: 'user_kyc_updated',
+    entityType: 'user',
+    entityId: userId,
+    after: {
+      kycStatus: user.kycStatus,
+      kycSubmittedAt: user.kycSubmittedAt,
+      evidenceId,
+    },
+  });
+
+  const io = getIO();
+  if (io) io.to('role:admin').emit('moderation:queue');
+  return user;
+}
+
+export async function deleteUserKycEvidence(userId: string, evidenceId: string) {
+  const user = await UserModel.findById(userId).select(
+    'name emailOrPhone kycStatus kycEvidence kycSubmittedAt'
+  );
+  if (!user) throw Object.assign(new Error('User not found'), { status: 404 });
+  if (user.kycStatus === 'verified') {
+    throw Object.assign(new Error('Verified KYC cannot be deleted'), {
+      status: 409,
+      code: 'KYC_LOCKED',
+    });
+  }
+
+  const nextEvidence = [
+    ...((user.kycEvidence || []) as Array<{
+      _id?: { toString(): string };
+      documentId?: { toString(): string };
+      url?: string;
+      note?: string;
+      uploadedAt: Date;
+    }>),
+  ];
+  const evidenceIndex = nextEvidence.findIndex((item) => item?._id?.toString() === evidenceId);
+  if (evidenceIndex < 0) {
+    throw Object.assign(new Error('KYC evidence not found'), {
+      status: 404,
+      code: 'KYC_EVIDENCE_NOT_FOUND',
+    });
+  }
+  const documentId = nextEvidence[evidenceIndex]?.documentId?.toString();
+
+  user.kycEvidence = nextEvidence.filter((_, index) => index !== evidenceIndex) as typeof user.kycEvidence;
+  if ((user.kycEvidence?.length || 0) === 0) {
+    user.kycStatus = 'none';
+    user.kycSubmittedAt = undefined;
+  } else {
+    user.kycStatus = 'pending';
+    user.kycSubmittedAt = new Date();
+  }
+  await user.save();
+  if (documentId) {
+    await deleteOwnVerificationDocument(documentId, userId);
+  }
+
+  await AuditLogModel.create({
+    actorId: userId,
+    actorRole: 'user',
+    action: 'user_kyc_deleted',
+    entityType: 'user',
+    entityId: userId,
+    after: {
+      kycStatus: user.kycStatus,
+      kycSubmittedAt: user.kycSubmittedAt,
+      evidenceId,
+      remainingEvidence: user.kycEvidence?.length || 0,
+    },
+  });
+
+  const io = getIO();
+  if (io) io.to('role:admin').emit('moderation:queue');
+  return user;
+}
+
 /** Get current user's KYC status and evidence (for profile/settings). */
 export async function listUserKyc(userId: string) {
   const user = await UserModel.findById(userId).select('kycStatus kycEvidence kycSubmittedAt');
   if (!user) throw Object.assign(new Error('User not found'), { status: 404 });
   return {
     status: user.kycStatus || 'none',
-    evidence: user.kycEvidence || [],
+    evidence: safeEvidenceList(user.kycEvidence as unknown[] | undefined),
     submittedAt: user.kycSubmittedAt,
   };
 }
@@ -161,18 +466,19 @@ export async function listUserKyc(userId: string) {
 /** Agent business verification: submit company/entity documents. */
 export async function submitBusinessVerify(
   agentId: string,
-  payload: { url: string; note?: string }
+  payload: { documentId: string; note?: string }
 ) {
   const user = await UserModel.findById(agentId);
   if (!user || user.role !== 'agent')
     throw Object.assign(new Error('Agent not found'), { status: 404 });
+  await markDocumentPendingReview(payload.documentId, agentId, 'business_verification');
 
   const updated = await UserModel.findByIdAndUpdate(
     agentId,
     {
       $push: {
         businessVerifyEvidence: {
-          url: payload.url,
+          documentId: payload.documentId,
           note: payload.note,
           uploadedAt: new Date(),
         },
@@ -191,7 +497,17 @@ export async function submitBusinessVerify(
       action: 'business_verify_submitted',
       entityType: 'user',
       entityId: agentId,
-      after: updated.toObject(),
+      after: {
+        businessVerifyStatus: (
+          updated as unknown as { businessVerifyStatus?: string }
+        ).businessVerifyStatus,
+        businessVerifySubmittedAt: (
+          updated as unknown as { businessVerifySubmittedAt?: Date }
+        ).businessVerifySubmittedAt,
+        evidenceCount:
+          (updated as unknown as { businessVerifyEvidence?: unknown[] }).businessVerifyEvidence
+            ?.length || 0,
+      },
     });
     const io = getIO();
     if (io) io.to('role:admin').emit('moderation:queue');

@@ -11,7 +11,12 @@ import {
   deleteMyAccount,
   updateAvatar,
 } from '../controllers/user.controller';
-import { submitKyc, getKycStatus } from '../controllers/verification.controller';
+import {
+  submitKyc,
+  getKycStatus,
+  updateKyc,
+  deleteKyc,
+} from '../controllers/verification.controller';
 
 const router = Router();
 router.get('/me', auth, current);
@@ -23,5 +28,7 @@ router.get('/export', auth, asyncHandler(exportData));
 router.delete('/account', auth, asyncHandler(deleteMyAccount));
 router.post('/kyc', auth, asyncHandler(submitKyc));
 router.get('/kyc', auth, asyncHandler(getKycStatus));
+router.patch('/kyc/:evidenceId', auth, asyncHandler(updateKyc));
+router.delete('/kyc/:evidenceId', auth, asyncHandler(deleteKyc));
 router.patch('/avatar', auth, asyncHandler(updateAvatar));
 export default router;

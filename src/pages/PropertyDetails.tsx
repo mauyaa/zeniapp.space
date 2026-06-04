@@ -112,6 +112,7 @@ export function PropertyDetailsPage() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [reportOpen, setReportOpen] = useState(false);
   const { push } = useToast();
   const { startConversation, setActiveConversation } = useChat();
@@ -127,7 +128,7 @@ export function PropertyDetailsPage() {
     const ac = new AbortController();
     setLoading(true);
     setError(false);
-    fetchListing(id, { signal: ac.signal })
+    fetchListing(id, { signal: ac.signal, timeoutMs: 8_000 })
       .then((data) => {
         const detail = data as ListingDetail;
         setListing(detail);
@@ -147,7 +148,10 @@ export function PropertyDetailsPage() {
       })
       .catch((err) => {
         if (err?.name === 'AbortError') return;
-        const fallback = mockProperties.find((p) => p.id === id);
+        const fallback =
+          import.meta.env.MODE === 'development'
+            ? mockProperties.find((p) => p.id === id)
+            : undefined;
         if (fallback) {
           const detail = mapPropertyToListingDetail(fallback);
           setListing(detail);
@@ -168,11 +172,15 @@ export function PropertyDetailsPage() {
         }
         setListing(null);
         setError(true);
-        push({ title: 'Not found', description: 'Listing unavailable', tone: 'error' });
+        push({
+          title: 'Listing unavailable',
+          description: 'Live listing details could not be loaded. Please retry shortly.',
+          tone: 'error',
+        });
       })
       .finally(() => setLoading(false));
     return () => ac.abort();
-  }, [id, push, addViewed]);
+  }, [id, push, addViewed, refreshTrigger]);
 
   const onSave = useCallback(async () => {
     if (!id) return;
@@ -348,16 +356,26 @@ export function PropertyDetailsPage() {
   if (error || !listing) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4 text-center px-4">
-        <p className="text-lg font-serif font-semibold text-zinc-900">Listing not found</p>
-        <p className="text-sm text-zinc-500">
-          This listing may have been removed or the link is invalid.
+        <p className="text-lg font-serif font-semibold text-zinc-900">Listing unavailable</p>
+        <p className="max-w-md text-sm text-zinc-500">
+          Live listing details are temporarily unavailable. Please retry shortly or return to
+          search.
         </p>
-        <Link
-          to="/explore"
-          className="inline-flex items-center justify-center h-11 px-6 text-xs font-mono font-semibold uppercase tracking-widest rounded-xl border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 transition-colors"
-        >
-          Back to search
-        </Link>
+        <div className="flex flex-wrap justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => setRefreshTrigger((previous) => previous + 1)}
+            className="inline-flex items-center justify-center h-11 px-6 text-xs font-mono font-semibold uppercase tracking-widest rounded-xl bg-zinc-900 text-white hover:bg-zinc-800 transition-colors"
+          >
+            Retry
+          </button>
+          <Link
+            to="/explore"
+            className="inline-flex items-center justify-center h-11 px-6 text-xs font-mono font-semibold uppercase tracking-widest rounded-xl border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 transition-colors"
+          >
+            Back to search
+          </Link>
+        </div>
       </div>
     );
   }

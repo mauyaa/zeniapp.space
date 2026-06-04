@@ -26,10 +26,7 @@
     <link rel="preconnect" href="https://c.basemaps.cartocdn.com" crossorigin />
     <link rel="dns-prefetch" href="https://unpkg.com" />
     <link rel="dns-prefetch" href="https://zeniapp-space.onrender.com" />
-    <!-- NON-BLOCKING FONT LOADING
-         The media="print" + onload trick loads fonts asynchronously:
-         browser skips them during initial render, then swaps them in once downloaded.
-         The <noscript> fallback ensures fonts load if JS is disabled. -->
+    <!-- Production CSP loads font stylesheets without inline event handlers. -->
     <!-- Primary body font — preloaded for fastest swap -->
     <link
       rel="preload"
@@ -39,15 +36,11 @@
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-      media="print"
-      onload="this.media = 'all'"
     />
     <!-- Secondary fonts — loaded async, swap in when ready -->
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap"
-      media="print"
-      onload="this.media = 'all'"
     />
     <noscript>
       <link

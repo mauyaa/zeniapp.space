@@ -5,8 +5,7 @@ import { useToast } from './ToastContext';
 
 type PendingAction = {
   attempt: () => void;
-  resolve?: (value: unknown) => void;
-  reject?: (reason?: unknown) => void;
+  reject: (reason?: unknown) => void;
 };
 
 type AdminStepUpContextValue = {
@@ -32,8 +31,18 @@ const getErrorMessage = (err: unknown, fallback: string) => {
   return typeof message === 'string' && message ? message : fallback;
 };
 
+type StepUpErrorCode = 'STEP_UP_CANCELLED';
+
+function createStepUpError(code: StepUpErrorCode, message: string) {
+  return Object.assign(new Error(message), { code });
+}
+
+export function isAdminStepUpCancelled(err: unknown) {
+  return getErrorCode(err) === 'STEP_UP_CANCELLED';
+}
+
 export function AdminStepUpProvider({ children }: { children: React.ReactNode }) {
-  const { error: toastError, success } = useToast();
+  const { success } = useToast();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -48,9 +57,9 @@ export function AdminStepUpProvider({ children }: { children: React.ReactNode })
             .catch((err: unknown) => {
               const code = getErrorCode(err);
               if (code === 'STEP_UP_REQUIRED' || code === 'STEP_UP_EXPIRED') {
-                setPending({ attempt });
+                setPending({ attempt, reject });
                 setOpen(true);
-                setError('');
+                setError(code === 'STEP_UP_EXPIRED' ? 'Code expired.' : '');
                 return;
               }
               reject(err);
@@ -63,32 +72,33 @@ export function AdminStepUpProvider({ children }: { children: React.ReactNode })
 
   const submit = useCallback(
     async (code: string) => {
-      if (!pending) return;
+      if (!pending || loading) return;
       setLoading(true);
       setError('');
       try {
         await adminStepUp(code);
-        success('Step-up verified');
-        setOpen(false);
+        success('Verified');
         const next = pending.attempt;
+        setOpen(false);
         setPending(null);
         next();
       } catch (e: unknown) {
-        const msg = getErrorMessage(e, 'Verification failed');
-        setError(msg);
-        toastError(msg);
+        setError(getErrorMessage(e, 'Verification failed'));
       } finally {
         setLoading(false);
       }
     },
-    [pending, success, toastError]
+    [loading, pending, success]
   );
 
   const close = useCallback(() => {
+    const rejectPending = pending?.reject;
     setOpen(false);
     setPending(null);
+    setLoading(false);
     setError('');
-  }, []);
+    rejectPending?.(createStepUpError('STEP_UP_CANCELLED', 'Cancelled'));
+  }, [pending]);
 
   return (
     <AdminStepUpContext.Provider value={{ runWithStepUp, open, loading, error, submit, close }}>

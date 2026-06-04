@@ -28,12 +28,6 @@ export async function fetchConversations(): Promise<Conversation[]> {
   return parseConversationList(data);
 }
 
-/** Force-create Zeni Support + Zeni Agent users (if missing) and welcome conversations; returns the new list. */
-export async function bootstrapConversations(): Promise<Conversation[]> {
-  const data = await request<unknown>('/conversations/bootstrap', { method: 'POST' });
-  return parseConversationList(data);
-}
-
 export function createConversation(listingId: string, agentId: string): Promise<Conversation> {
   return request('/conversations', {
     method: 'POST',
@@ -56,16 +50,27 @@ export function updateConversation(
   });
 }
 
+function parseMessageList(data: unknown): Message[] {
+  const raw = Array.isArray(data) ? data : [];
+  const valid = raw
+    .map((item) => messageSchema.safeParse(item))
+    .filter(
+      (result): result is { success: true; data: z.infer<typeof messageSchema> } => result.success
+    )
+    .map((result) => result.data as Message);
+  return valid;
+}
+
 export async function fetchMessages(conversationId: string): Promise<Message[]> {
   const data = await request<unknown>(`/conversations/${conversationId}/messages`);
   const parsed = z.array(messageSchema).safeParse(data);
-  if (!parsed.success) throw new Error('Invalid messages payload');
-  return parsed.data as Message[];
+  if (parsed.success) return parsed.data as Message[];
+  return parseMessageList(data);
 }
 
 export function postMessage(
   conversationId: string,
-  body: { type: string; content: unknown }
+  body: { type: string; content: unknown; clientTempId?: string }
 ): Promise<Message> {
   return request(`/conversations/${conversationId}/messages`, {
     method: 'POST',

@@ -44,7 +44,7 @@ export const env = {
   nodeEnv,
   enableCrons: parseBoolean(process.env.ENABLE_CRONS, nodeEnv === 'production'),
   trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
-  // Allow any domain for admins in development unless explicitly locked down via ADMIN_DOMAIN
+  // Deprecated: admin authorization is role-based; retained only to detect unsafe deployment config.
   adminDomains: parseCsv(process.env.ADMIN_DOMAIN || '*'),
   adminDomain: parseCsv(process.env.ADMIN_DOMAIN || '*')[0] || '*',
   allowPrivilegedSignup: process.env.ALLOW_PRIVILEGED_SIGNUP === 'true',
@@ -78,6 +78,15 @@ export const env = {
     apiKey: process.env.CLOUDINARY_API_KEY || '',
     apiSecret: process.env.CLOUDINARY_API_SECRET || '',
   },
+  cspConnectSrc: process.env.CSP_CONNECT_SRC || '',
+  cspImgSrc: process.env.CSP_IMG_SRC || '',
+  cspReportOnly: parseBoolean(process.env.CSP_REPORT_ONLY, nodeEnv !== 'production'),
+  verificationDocumentEncryptionKey: process.env.VERIFICATION_DOCUMENT_ENCRYPTION_KEY || '',
+  verificationDocumentRetentionDays: parseNumber(
+    process.env.VERIFICATION_DOCUMENT_RETENTION_DAYS,
+    365
+  ),
+  paymentsEnabled: parseBoolean(process.env.PAYMENTS_ENABLED, nodeEnv !== 'production'),
   mpesa: {
     consumerKey: process.env.MPESA_CONSUMER_KEY || 'dev',
     consumerSecret: process.env.MPESA_CONSUMER_SECRET || 'dev',
@@ -85,6 +94,12 @@ export const env = {
     passkey: process.env.MPESA_PASSKEY || 'dev',
     callbackUrl: process.env.MPESA_CALLBACK_URL || 'http://localhost:4000/api/pay/mpesa/callback',
     callbackSecret: process.env.MPESA_CALLBACK_SECRET || '',
+  },
+  paystack: {
+    publicKey: process.env.PAYSTACK_PUBLIC_KEY || '',
+    secretKey: process.env.PAYSTACK_SECRET_KEY || '',
+    callbackUrl: process.env.PAYSTACK_CALLBACK_URL || '',
+    preferred: parseBoolean(process.env.PAYSTACK_PREFERRED, true),
   },
   stripe: {
     secretKey: process.env.STRIPE_SECRET_KEY || '',
@@ -106,6 +121,14 @@ const isPositiveNumber = (value: number) => Number.isFinite(value) && value > 0;
 
 export function validateRuntimeEnv() {
   const errors: string[] = [];
+  const consumerAdminDomains = new Set([
+    'gmail.com',
+    'googlemail.com',
+    'yahoo.com',
+    'outlook.com',
+    'hotmail.com',
+    'live.com',
+  ]);
 
   if (!Number.isInteger(env.port) || env.port < 1 || env.port > 65535) {
     errors.push('PORT must be an integer between 1 and 65535.');
@@ -124,6 +147,9 @@ export function validateRuntimeEnv() {
   }
   if (!isPositiveNumber(env.payStaleMinutes)) {
     errors.push('PAY_STALE_MINUTES must be a positive number.');
+  }
+  if (!isPositiveNumber(env.verificationDocumentRetentionDays)) {
+    errors.push('VERIFICATION_DOCUMENT_RETENTION_DAYS must be a positive number.');
   }
   if ((env.adminRequireTailnet || env.payAdminRequireTailnet) && !env.tailnetExpectedCidrs.length) {
     errors.push(
@@ -144,14 +170,43 @@ export function validateRuntimeEnv() {
     if (!process.env.JWT_SECRET || env.jwtSecret === 'dev-secret' || env.jwtSecret.length < 24) {
       errors.push('JWT_SECRET must be set to a strong value (24+ chars) in production.');
     }
+    if (!env.verificationDocumentEncryptionKey || env.verificationDocumentEncryptionKey.length < 32) {
+      errors.push('VERIFICATION_DOCUMENT_ENCRYPTION_KEY must be set to a strong value (32+ chars) in production.');
+    }
     if (!env.adminStepUpCode || env.adminStepUpCode === '000000') {
       console.warn('[env] WARNING: ADMIN_STEP_UP_CODE is not configured to a secure non-default value. Using insecure fallback.');
     }
     if (!env.payStepUpCode || env.payStepUpCode === '000000') {
       console.warn('[env] WARNING: PAY_STEP_UP_CODE is not configured to a secure non-default value. Using insecure fallback.');
     }
-    if (env.adminDomains.includes('*')) {
-      console.warn('[env] WARNING: ADMIN_DOMAIN is set to "*" in production. This allows any email domain for admin access.');
+    if (env.allowPrivilegedSignup) {
+      errors.push('ALLOW_PRIVILEGED_SIGNUP must be false in production; provision privileged roles through audited admin operations.');
+    }
+    const unsafeAdminDomains = env.adminDomains.filter(
+      (domain) => domain === '*' || consumerAdminDomains.has(domain.toLowerCase())
+    );
+    if (unsafeAdminDomains.length) {
+      errors.push(`ADMIN_DOMAIN must not include consumer email providers: ${unsafeAdminDomains.join(', ')}.`);
+    }
+    const unsafeCspConnections = parseCsv(env.cspConnectSrc).filter(
+      (source) =>
+        source.includes('*') ||
+        !/^(?:https|wss):\/\/[a-z0-9.-]+(?::\d+)?(?:\/[^\s]*)?$/i.test(source)
+    );
+    if (unsafeCspConnections.length) {
+      errors.push(
+        `CSP_CONNECT_SRC must contain explicit secure origins only: ${unsafeCspConnections.join(', ')}.`
+      );
+    }
+    const unsafeCspImages = parseCsv(env.cspImgSrc).filter(
+      (source) =>
+        source.includes('*') ||
+        !/^https:\/\/[a-z0-9.-]+(?::\d+)?(?:\/[^\s]*)?$/i.test(source)
+    );
+    if (unsafeCspImages.length) {
+      errors.push(
+        `CSP_IMG_SRC must contain explicit HTTPS image origins only: ${unsafeCspImages.join(', ')}.`
+      );
     }
   }
 

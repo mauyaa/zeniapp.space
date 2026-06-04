@@ -32,13 +32,14 @@ test.describe('Auth session storage', () => {
   test('stores auth in localStorage when remember me is enabled', async ({ page }) => {
     await mockLogin(page);
     await page.goto('/login');
+    const loginForm = page.locator('form').filter({ has: page.locator('#login-email') });
 
     const rememberMe = page.getByRole('checkbox', { name: /keep me logged in/i });
     await expect(rememberMe).toBeChecked();
 
     await page.locator('#login-email').fill('e2e-user@example.com');
     await page.locator('#login-pass').fill('Secret123!');
-    await page.getByRole('button', { name: /secure sign in/i }).click();
+    await loginForm.getByRole('button', { name: /secure sign in/i }).click();
 
     await expect(page).toHaveURL(/\/app\/home/);
 
@@ -58,6 +59,7 @@ test.describe('Auth session storage', () => {
   test('stores auth in sessionStorage when remember me is disabled', async ({ page }) => {
     await mockLogin(page);
     await page.goto('/login');
+    const loginForm = page.locator('form').filter({ has: page.locator('#login-email') });
 
     const rememberMe = page.getByRole('checkbox', { name: /keep me logged in/i });
     await rememberMe.uncheck();
@@ -65,7 +67,7 @@ test.describe('Auth session storage', () => {
 
     await page.locator('#login-email').fill('e2e-user@example.com');
     await page.locator('#login-pass').fill('Secret123!');
-    await page.getByRole('button', { name: /secure sign in/i }).click();
+    await loginForm.getByRole('button', { name: /secure sign in/i }).click();
 
     await expect(page).toHaveURL(/\/app\/home/);
 

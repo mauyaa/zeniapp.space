@@ -1,16 +1,36 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { api } from '../lib/api';
+import { api, refreshAuthSession } from '../lib/api';
 import {
   clearStoredAuthSession,
   getStoredAuthUser,
   getStoredRefreshToken,
   getStoredToken,
   persistAuthSession,
+  usesCookieRefreshTransport,
 } from '../lib/authStorage';
 import { disconnectSocket } from '../lib/socket';
 
-export type Role = 'user' | 'agent' | 'admin';
+function isAccessTokenExpired(jwt: string): boolean {
+  try {
+    const payload = JSON.parse(atob(jwt.split('.')[1])) as { exp?: number };
+    if (!payload.exp) return false;
+    return payload.exp * 1000 < Date.now() + 60_000;
+  } catch {
+    return true;
+  }
+}
+
+function needsSessionBootstrap(): boolean {
+  const refresh = getStoredRefreshToken();
+  const user = getStoredAuthUser();
+  const tok = getStoredToken();
+  if (!user) return false;
+  if (!tok) return usesCookieRefreshTransport() || Boolean(refresh);
+  return isAccessTokenExpired(tok) && (usesCookieRefreshTransport() || Boolean(refresh));
+}
+
+export type Role = 'user' | 'agent' | 'admin' | 'finance';
 
 export interface AuthUser {
   id: string;
@@ -51,29 +71,30 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const isTokenExpired = (jwt: string): boolean => {
-    try {
-      const payload = JSON.parse(atob(jwt.split('.')[1])) as { exp?: number };
-      if (!payload.exp) return false;
-      return payload.exp * 1000 < Date.now() + 60_000;
-    } catch {
-      return true;
-    }
-  };
-
   const initAuth = (): { user: AuthUser | null; token: string | null; refresh: string | null } => {
     const storedToken = getStoredToken();
     const storedRefresh = getStoredRefreshToken();
     const storedUser = getStoredAuthUser();
 
-    if (!storedToken || !storedUser) {
+    if (!storedUser) {
       if (storedToken || storedRefresh) clearStoredAuthSession();
       return { user: null, token: null, refresh: null };
     }
 
-    if (isTokenExpired(storedToken)) {
-      clearStoredAuthSession();
-      return { user: null, token: null, refresh: null };
+    if (!storedToken) {
+      if (!storedRefresh && !usesCookieRefreshTransport()) {
+        clearStoredAuthSession();
+        return { user: null, token: null, refresh: null };
+      }
+      return { user: storedUser, token: null, refresh: storedRefresh };
+    }
+
+    if (isAccessTokenExpired(storedToken)) {
+      if (!storedRefresh && !usesCookieRefreshTransport()) {
+        clearStoredAuthSession();
+        return { user: null, token: null, refresh: null };
+      }
+      return { user: storedUser, token: storedToken, refresh: storedRefresh };
     }
 
     return { user: storedUser, token: storedToken, refresh: storedRefresh };
@@ -84,7 +105,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(initial.token);
   const [refreshToken, setRefreshToken] = useState<string | null>(initial.refresh);
   const [loading, setLoading] = useState(false);
+  const [sessionHydrating, setSessionHydrating] = useState(() => needsSessionBootstrap());
   const [sessionExpiresIn, setSessionExpiresIn] = useState<number | null>(null);
+
+  useEffect(() => {
+    const syncFromStorage = () => {
+      setToken(getStoredToken());
+      setRefreshToken(getStoredRefreshToken());
+      const u = getStoredAuthUser();
+      if (u) setUser(u);
+    };
+    const onRefreshed = () => syncFromStorage();
+    window.addEventListener('zeni-auth-refreshed', onRefreshed);
+    return () => window.removeEventListener('zeni-auth-refreshed', onRefreshed);
+  }, []);
+
+  useEffect(() => {
+    if (!sessionHydrating) return;
+    let cancelled = false;
+    void refreshAuthSession().then((ok) => {
+      if (cancelled) return;
+      if (ok) {
+        setToken(getStoredToken());
+        setRefreshToken(getStoredRefreshToken());
+        const u = getStoredAuthUser();
+        if (u) setUser(u);
+      } else {
+        clearStoredAuthSession();
+        setUser(null);
+        setToken(null);
+        setRefreshToken(null);
+      }
+      setSessionHydrating(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionHydrating]);
 
   useEffect(() => {
     if (!token) {
@@ -132,6 +189,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
         options.rememberMe ?? true
       );
+      setSessionHydrating(false);
       return res.user;
     } finally {
       setLoading(false);
@@ -154,6 +212,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
         options.rememberMe ?? true
       );
+      setSessionHydrating(false);
       return res.user;
     } finally {
       setLoading(false);
@@ -176,6 +235,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
         options.rememberMe ?? true
       );
+      setSessionHydrating(false);
       return res.user;
     } finally {
       setLoading(false);
@@ -217,7 +277,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       token,
       refreshToken,
       role: user?.role ?? null,
-      loading,
+      loading: loading || sessionHydrating,
       isAuthed: Boolean(user && token),
       sessionExpiresIn,
       login,
@@ -228,7 +288,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserState: setUser,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- auth methods are stable refs
-    [user, token, refreshToken, loading, sessionExpiresIn]
+    [user, token, refreshToken, loading, sessionHydrating, sessionExpiresIn]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

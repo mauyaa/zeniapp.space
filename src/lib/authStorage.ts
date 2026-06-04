@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core';
+
 const TOKEN_KEY = 'token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 const AUTH_USER_KEY = 'auth_user';
@@ -48,12 +50,20 @@ const getFromAnyStorage = (key: string): string | null =>
 export type StoredAuthUser = {
   id: string;
   name: string;
-  role: 'user' | 'agent' | 'admin';
+  role: 'user' | 'agent' | 'admin' | 'finance';
   availability?: 'active' | 'paused';
   agentVerification?: string;
   mfaEnabled?: boolean;
   avatarUrl?: string;
 };
+
+/**
+ * The web app refreshes with an HTTP-only cookie. Native clients retain the
+ * explicit refresh token because cookie handling is platform-dependent there.
+ */
+export function usesCookieRefreshTransport(): boolean {
+  return !Capacitor.isNativePlatform();
+}
 
 export function getStoredToken(): string | null {
   return getFromAnyStorage(TOKEN_KEY);
@@ -83,8 +93,9 @@ export function persistAuthSession(
   safeSet(target, TOKEN_KEY, payload.token);
   safeRemove(other, TOKEN_KEY);
 
-  if (payload.refreshToken) {
-    safeSet(target, REFRESH_TOKEN_KEY, payload.refreshToken);
+  const refreshToken = usesCookieRefreshTransport() ? undefined : payload.refreshToken;
+  if (refreshToken) {
+    safeSet(target, REFRESH_TOKEN_KEY, refreshToken);
     safeRemove(other, REFRESH_TOKEN_KEY);
   } else {
     safeRemove(target, REFRESH_TOKEN_KEY);

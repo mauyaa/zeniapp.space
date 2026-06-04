@@ -9,7 +9,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import {
-  uploadImage,
+  uploadVerificationDocument,
   submitVerificationEvidence,
   submitBusinessVerify,
   fetchVerificationHistory,
@@ -23,17 +23,31 @@ import { AGENT_ONBOARDING_PROTOCOL, AGENT_ACCEPTANCE_CRITERIA } from '../../cons
 
 export function AgentVerificationPage() {
   const [file, setFile] = useState<File | null>(null);
+  const [idNumber, setIdNumber] = useState('');
   const [note, setNote] = useState('');
   const [uploading, setUploading] = useState(false);
   const [earbNumber, setEarbNumber] = useState('');
   const [earbSaving, setEarbSaving] = useState(false);
   const [history, setHistory] = useState<{
     status: string;
-    evidence: { url: string; note?: string; uploadedAt: string }[];
+    evidence: {
+      _id?: string;
+      documentId?: string;
+      note?: string;
+      idNumber?: string;
+      uploadedAt: string;
+      migrationRequired?: boolean;
+    }[];
     earbRegistrationNumber?: string;
     earbVerifiedAt?: string;
     businessVerifyStatus?: string;
-    businessVerifyEvidence?: { url: string; note?: string; uploadedAt?: string }[];
+    businessVerifyEvidence?: {
+      _id?: string;
+      documentId?: string;
+      note?: string;
+      uploadedAt?: string;
+      migrationRequired?: boolean;
+    }[];
   } | null>(null);
   const [businessFile, setBusinessFile] = useState<File | null>(null);
   const [businessNote, setBusinessNote] = useState('');
@@ -56,6 +70,14 @@ export function AgentVerificationPage() {
       push({ title: 'Select a file', description: 'Upload an ID or license image', tone: 'error' });
       return;
     }
+    if (!idNumber.trim()) {
+      push({
+        title: 'ID number required',
+        description: 'Enter the ID number that matches the document.',
+        tone: 'error',
+      });
+      return;
+    }
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
       push({
@@ -65,20 +87,21 @@ export function AgentVerificationPage() {
       });
       return;
     }
-    if (!/^image\/(jpeg|png|webp|gif)$/i.test(file.type)) {
+    if (!/^(image\/(jpeg|png)|application\/pdf)$/i.test(file.type)) {
       push({
         title: 'Invalid file type',
-        description: 'Use JPEG, PNG, WebP or GIF.',
+        description: 'Use PDF, JPEG or PNG.',
         tone: 'error',
       });
       return;
     }
     setUploading(true);
     try {
-      const { url } = await uploadImage(file);
-      await submitVerificationEvidence(url, note);
+      const document = await uploadVerificationDocument(file, 'agent_identity');
+      await submitVerificationEvidence(document.id, idNumber.trim(), note);
       push({ title: 'Uploaded', description: 'Evidence submitted for review', tone: 'success' });
       setFile(null);
+      setIdNumber('');
       setNote('');
       const latest = await fetchVerificationHistory();
       setHistory(latest);
@@ -254,9 +277,20 @@ export function AgentVerificationPage() {
             <span>{file ? file.name : 'Click to select an image (max 5MB)'}</span>
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,application/pdf"
               className="hidden"
               onChange={(e) => setFile(e.target.files?.[0] || null)}
+            />
+          </label>
+
+          <label className="block text-sm text-zinc-700">
+            ID number
+            <Input
+              type="text"
+              value={idNumber}
+              onChange={(e) => setIdNumber(e.target.value)}
+              placeholder="Enter the ID number on the document"
+              className="mt-1 w-full"
             />
           </label>
 
@@ -288,7 +322,7 @@ export function AgentVerificationPage() {
               .reverse()
               .map((ev, idx) => (
                 <div
-                  key={`${ev.url}-${idx}`}
+                  key={ev._id || ev.documentId || `agent-document-${idx}`}
                   className="flex items-start gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm"
                 >
                   <div className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-200 text-zinc-600">
@@ -298,14 +332,10 @@ export function AgentVerificationPage() {
                     <div className="text-xs text-zinc-500">
                       {new Date(ev.uploadedAt).toLocaleString()}
                     </div>
-                    <a
-                      href={ev.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-sm text-zinc-900 underline truncate block"
-                    >
-                      View document
-                    </a>
+                    <span className="text-sm text-zinc-900 block">
+                      {ev.migrationRequired ? 'Migration pending' : 'Secure review only'}
+                    </span>
+                    {ev.idNumber && <div className="text-xs text-zinc-600">ID: {ev.idNumber}</div>}
                     {ev.note && <div className="text-xs text-zinc-600">Note: {ev.note}</div>}
                   </div>
                 </div>
@@ -356,18 +386,22 @@ export function AgentVerificationPage() {
                 });
                 return;
               }
-              if (!/^image\/(jpeg|png|webp|gif)$/i.test(businessFile.type)) {
+              if (!/^(image\/(jpeg|png)|application\/pdf)$/i.test(businessFile.type)) {
                 push({
                   title: 'Invalid file type',
-                  description: 'Use JPEG, PNG, WebP or GIF.',
+                  description: 'Use PDF, JPEG or PNG.',
                   tone: 'error',
                 });
                 return;
               }
               setBusinessUploading(true);
               try {
-                const { url } = await uploadImage(businessFile);
-                await submitBusinessVerify(url, businessNote || undefined);
+                const document = await uploadVerificationDocument(
+                  businessFile,
+                  'business_verification',
+                  'business_registration'
+                );
+                await submitBusinessVerify(document.id, businessNote || undefined);
                 push({
                   title: 'Submitted',
                   description: 'Business documents sent for review',
@@ -396,7 +430,7 @@ export function AgentVerificationPage() {
               </span>
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,application/pdf"
                 className="hidden"
                 onChange={(e) => setBusinessFile(e.target.files?.[0] || null)}
               />
@@ -424,17 +458,15 @@ export function AgentVerificationPage() {
             </p>
             <div className="flex flex-wrap gap-2">
               {history.businessVerifyEvidence.map((ev, idx) => (
-                <a
-                  key={idx}
-                  href={ev.url}
-                  target="_blank"
-                  rel="noreferrer"
+                <span
+                  key={ev._id || ev.documentId || idx}
                   className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-xs text-zinc-700 hover:border-emerald-500 hover:bg-emerald-50/30 transition-colors"
                 >
                   <FileText className="h-3.5 w-3.5" />
-                  {ev.note || 'Document'}{' '}
+                  {ev.note || 'Document'} -{' '}
+                  {ev.migrationRequired ? 'migration pending' : 'secure review only'}{' '}
                   {ev.uploadedAt ? `— ${new Date(ev.uploadedAt).toLocaleDateString()}` : ''}
-                </a>
+                </span>
               ))}
             </div>
           </div>

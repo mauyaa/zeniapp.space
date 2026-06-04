@@ -89,7 +89,7 @@ async function seedUsers() {
   });
   const userBasic = await upsertUser({
     email: 'user-basic@zeni.test',
-    name: 'Basic User',
+    name: 'Maya Wanjiru',
     role: 'user',
     status: 'active'
   });
@@ -199,7 +199,7 @@ async function seedMessaging(userId: mongoose.Types.ObjectId, agentId: mongoose.
   return convo;
 }
 
-async function run() {
+export async function runSeed() {
   await connectDB();
   const { admin, financeInitiator, financeApprover, zeniSupport, verifiedAgent, pendingAgent, userBasic, userSuspended } = await seedUsers();
   const { live } = await ensureListings(verifiedAgent._id, pendingAgent._id);
@@ -223,10 +223,16 @@ async function run() {
     ].join('\n')
   );
   await disconnectDB();
+}
+
+async function run() {
+  await runSeed();
   process.exit(0);
 }
 
-run().catch((err) => {
-  console.error('[seed] failed', err);
-  disconnectDB().finally(() => process.exit(1));
-});
+if (require.main === module) {
+  run().catch((err) => {
+    console.error('[seed] failed', err);
+    disconnectDB().finally(() => process.exit(1));
+  });
+}

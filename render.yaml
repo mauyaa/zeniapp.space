@@ -13,11 +13,23 @@ services:
       - key: MONGO_URI
         sync: false
       - key: CORS_ORIGIN
-        value: https://zeniapp.space,https://www.zeniapp.space,http://localhost:5173,capacitor://localhost
+        value: https://zeniapp.space,https://www.zeniapp.space
+      - key: CSP_CONNECT_SRC
+        value: https://zeniapp-space.onrender.com,wss://zeniapp-space.onrender.com
+      - key: CSP_IMG_SRC
+        value: https://res.cloudinary.com
       - key: JWT_SECRET
         generateValue: true
       - key: ADMIN_DOMAIN
-        value: zeniapp.space,gmail.com
+        value: zeniapp.space
+      - key: ALLOW_PRIVILEGED_SIGNUP
+        value: false
+      - key: PAYMENTS_ENABLED
+        value: false
+      - key: VERIFICATION_DOCUMENT_ENCRYPTION_KEY
+        generateValue: true
+      - key: VERIFICATION_DOCUMENT_RETENTION_DAYS
+        value: 365
       - key: ADMIN_STEP_UP_CODE
         generateValue: true
       - key: PAY_STEP_UP_CODE

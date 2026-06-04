@@ -21,6 +21,7 @@ import {
   exportListingsCsv,
   listAllUsers,
   updateUserStatusService,
+  updateUserRoleService,
   deleteUserService,
   deleteListingService,
   listNetworkAccessDecisions,
@@ -43,6 +44,20 @@ export async function updateUserStatus(req: AuthRequest, res: Response) {
     res.json(updated);
   } catch (error) {
     res.status(400).json({ code: 'BAD_REQUEST', message: (error as Error).message });
+  }
+}
+
+export async function updateUserRole(req: AuthRequest, res: Response) {
+  const schema = z.object({ role: z.enum(['user', 'agent', 'admin', 'finance']) });
+  const { role } = schema.parse(req.body);
+  const actorId = req.user?.id;
+  if (!actorId) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
+  try {
+    const updated = await updateUserRoleService(actorId, req.params.id, role);
+    if (!updated) return res.status(404).json({ code: 'NOT_FOUND', message: 'User not found' });
+    return res.json(updated);
+  } catch (error) {
+    return res.status(400).json({ code: 'BAD_REQUEST', message: (error as Error).message });
   }
 }
 

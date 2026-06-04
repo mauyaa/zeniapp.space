@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { Request, Response } from 'express';
 import { OAuth2Client } from 'google-auth-library';
 import { z } from 'zod';
@@ -20,6 +21,7 @@ import { getIO } from '../socket';
 import { AuthRequest } from '../middlewares/auth';
 import { AuthSessionModel } from '../models/AuthSession';
 import { evaluatePrivilegedRequest } from '../middlewares/ipAllowlist';
+import { shouldAcceptLooseAdminStepUp } from '../utils/stepUpPolicy';
 import { renderBrandEmail, sendMail } from '../services/email.service';
 import { logger } from '../utils/logger';
 
@@ -95,32 +97,29 @@ function getRefreshTokenFromRequest(req: Request): string | null {
   return null;
 }
 
+function includeRefreshTokenInBody(req: Request): boolean {
+  return req.header('x-auth-storage') === 'token';
+}
+
+function authResponse(
+  req: Request,
+  accessToken: string,
+  refreshToken: string,
+  user: UserDocument,
+  refreshExpiresAt?: Date
+) {
+  return {
+    token: accessToken,
+    ...(includeRefreshTokenInBody(req) ? { refreshToken } : {}),
+    user: pickUser(user),
+    ...(refreshExpiresAt ? { refreshExpiresAt } : {}),
+  };
+}
+
 export async function register(req: Request, res: Response) {
   const { body } = registerSchema.parse(req);
-  const requestedRole = body.role;
-  const isAdminEmail = (emailOrPhone: string) =>
-    env.adminDomains.some(
-      (domain) => domain === '*' || emailOrPhone.toLowerCase().endsWith(`@${domain.toLowerCase()}`)
-    );
-
-  const allowPrivileged = env.allowPrivilegedSignup && isAdminEmail(body.emailOrPhone);
-
-  let role: 'user' | 'agent' | 'admin' | 'finance' = 'user';
-  if (requestedRole === 'agent') {
-    role = 'agent';
-  } else if ((requestedRole === 'admin' || requestedRole === 'finance') && allowPrivileged) {
-    role = requestedRole;
-  } else if (
-    !requestedRole &&
-    env.nodeEnv !== 'production' &&
-    allowPrivileged &&
-    body.emailOrPhone.toLowerCase().startsWith('admin@')
-  ) {
-    // Developer convenience: auto-elevate obvious admin accounts when explicitly allowed
-    role = 'admin';
-  }
-
-  const user = await createUser({ ...body, role });
+  // Public registration never provisions privileged roles. Elevated roles are admin-granted only.
+  const user = await createUser({ ...body, role: 'user' });
   const { accessToken, refreshToken, expiresAt } = await createAuthSession(user, {
     userAgent: req.headers['user-agent'],
     ip: req.ip,
@@ -143,7 +142,7 @@ export async function register(req: Request, res: Response) {
   getIO()?.to('role:admin').emit('user:created', pickUser(user));
   res
     .cookie('refreshToken', refreshToken, cookieOptions())
-    .json({ token: accessToken, refreshToken, user: pickUser(user), refreshExpiresAt: expiresAt });
+    .json(authResponse(req, accessToken, refreshToken, user, expiresAt));
 }
 
 export async function login(req: Request, res: Response) {
@@ -151,15 +150,6 @@ export async function login(req: Request, res: Response) {
   const user = await authenticate(body.emailOrPhone, body.password);
 
   if (user.role === 'admin') {
-    const adminDomains = env.adminDomains.length ? env.adminDomains : [env.adminDomain];
-    const normalizedEmail = (user.emailOrPhone || '').toLowerCase();
-    const allowed =
-      adminDomains.some((domain) => domain === '*') ||
-      adminDomains.some((domain) => normalizedEmail.endsWith(`@${domain.toLowerCase()}`));
-    if (!allowed) {
-      return res.status(403).json({ code: 'FORBIDDEN', message: 'Admin domain not allowed' });
-    }
-
     const network = evaluatePrivilegedRequest(req).admin;
     if (!network.allowed) {
       if (network.reason === 'tailnet_required') {
@@ -201,7 +191,7 @@ export async function login(req: Request, res: Response) {
 
   res
     .cookie('refreshToken', refreshToken, cookieOptions())
-    .json({ token: accessToken, refreshToken, user: pickUser(user), refreshExpiresAt: expiresAt });
+    .json(authResponse(req, accessToken, refreshToken, user, expiresAt));
 }
 
 export async function me(req: AuthRequest, res: Response) {
@@ -233,12 +223,31 @@ export async function refresh(req: Request, res: Response) {
   if (rotated.ok === true) {
     res
       .cookie('refreshToken', rotated.refreshToken, cookieOptions())
-      .json({
-        token: rotated.accessToken,
-        refreshToken: rotated.refreshToken,
-        user: pickUser(rotated.user),
-      });
+      .json(authResponse(req, rotated.accessToken, rotated.refreshToken, rotated.user));
   }
+}
+
+function normalizeRecoveryCode(code: string): string {
+  return code.replace(/\s+/g, '').toUpperCase();
+}
+
+function hashRecoveryCode(code: string): string {
+  return `sha256:${crypto.createHash('sha256').update(normalizeRecoveryCode(code)).digest('hex')}`;
+}
+
+function consumeRecoveryCode(user: UserDocument, code: string): boolean {
+  const normalized = normalizeRecoveryCode(code);
+  const hashed = hashRecoveryCode(normalized);
+  const codes = user.mfaRecoveryCodes || [];
+  const codeIndex = codes.findIndex((stored) => {
+    if (stored.startsWith('sha256:')) {
+      return stored === hashed;
+    }
+    return normalizeRecoveryCode(stored) === normalized;
+  });
+  if (codeIndex < 0) return false;
+  user.mfaRecoveryCodes = codes.filter((_, index) => index !== codeIndex);
+  return true;
 }
 
 export async function adminStepUp(req: AuthRequest, res: Response) {
@@ -250,7 +259,7 @@ export async function adminStepUp(req: AuthRequest, res: Response) {
   const user = await UserModel.findById(req.user.id);
   if (!user) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'User not found' });
 
-  const configuredStepUp = (env.adminStepUpCode || '').trim();
+  const configuredStepUp = (env.adminStepUpCode || env.adminOtp || '').trim();
   const hasMfa = Boolean(user.mfaEnabled && user.mfaSecret);
   const isProd = env.nodeEnv === 'production';
 
@@ -268,20 +277,19 @@ export async function adminStepUp(req: AuthRequest, res: Response) {
   let ok = false;
   if (hasMfa && user.mfaSecret) {
     ok = verifyTOTP(normalizedCode, user.mfaSecret);
-    if (
-      !ok &&
-      user.mfaRecoveryCodes?.some((c) => c.toUpperCase() === normalizedCode.toUpperCase())
-    ) {
-      user.mfaRecoveryCodes = user.mfaRecoveryCodes.filter(
-        (c) => c.toUpperCase() !== normalizedCode.toUpperCase()
-      );
+    if (!ok && consumeRecoveryCode(user, normalizedCode)) {
       await user.save();
       ok = true;
     }
-  } else if (configuredStepUp) {
-    ok = normalizedCode === configuredStepUp;
-  } else if (!isProd) {
-    // Development convenience: allow any non-empty code when no step-up code is configured.
+  }
+
+  if (!ok && !hasMfa && configuredStepUp) {
+    ok =
+      normalizedCode === configuredStepUp ||
+      normalizedCode.toLowerCase() === configuredStepUp.toLowerCase();
+  }
+
+  if (!ok && !hasMfa && shouldAcceptLooseAdminStepUp(normalizedCode, configuredStepUp)) {
     ok = true;
   }
 
@@ -289,7 +297,13 @@ export async function adminStepUp(req: AuthRequest, res: Response) {
     return res.status(401).json({ code: 'STEP_UP_INVALID', message: 'Invalid step-up code' });
   }
   const sid = (req as AuthRequest).authSessionId as string | undefined;
-  if (!sid) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Session missing' });
+  if (!sid) {
+    return res.status(401).json({
+      code: 'UNAUTHORIZED',
+      message:
+        'Session binding missing on your token. Sign out and sign in again, then retry step-up.',
+    });
+  }
   const session = await AuthSessionModel.findById(sid);
   if (!session) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Session not found' });
   session.stepUpVerifiedAt = new Date();
@@ -318,11 +332,10 @@ export async function adminMfaSetup(req: AuthRequest, res: Response) {
 }
 
 function generateRecoveryCodes(count = 6) {
-  const codes: string[] = [];
-  for (let i = 0; i < count; i += 1) {
-    codes.push(Math.random().toString(36).slice(2, 10).toUpperCase());
-  }
-  return codes;
+  return Array.from({ length: count }, () => {
+    const raw = crypto.randomBytes(6).toString('hex').toUpperCase();
+    return `${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8)}`;
+  });
 }
 
 export async function adminMfaEnable(req: AuthRequest, res: Response) {
@@ -342,7 +355,7 @@ export async function adminMfaEnable(req: AuthRequest, res: Response) {
   const recoveryCodes = generateRecoveryCodes();
   user.mfaEnabled = true;
   user.mfaSecret = secret;
-  user.mfaRecoveryCodes = recoveryCodes;
+  user.mfaRecoveryCodes = recoveryCodes.map(hashRecoveryCode);
   await user.save();
   return res.json({ ok: true, recoveryCodes });
 }
@@ -357,10 +370,7 @@ export async function adminMfaDisable(req: AuthRequest, res: Response) {
   let ok = false;
   if (user.mfaEnabled && user.mfaSecret) {
     ok = verifyTOTP(code, user.mfaSecret);
-    if (!ok && user.mfaRecoveryCodes?.includes(code)) {
-      user.mfaRecoveryCodes = user.mfaRecoveryCodes.filter((c) => c !== code);
-      ok = true;
-    }
+    if (!ok) ok = consumeRecoveryCode(user, code);
   }
   if (!ok) return res.status(401).json({ code: 'STEP_UP_INVALID', message: 'Invalid code' });
   user.mfaEnabled = false;
@@ -472,7 +482,7 @@ export async function resetPassword(req: Request, res: Response) {
   });
   res
     .cookie('refreshToken', refreshToken, cookieOptions())
-    .json({ token: accessToken, refreshToken, user: pickUser(user), refreshExpiresAt: expiresAt });
+    .json(authResponse(req, accessToken, refreshToken, user, expiresAt));
 }
 
 export async function googleLogin(req: Request, res: Response) {
@@ -530,11 +540,10 @@ export async function googleLogin(req: Request, res: Response) {
       })
     ).catch((err) => logger.warn('[auth] Google welcome email failed', err));
   }
-
   getIO()?.to('role:admin').emit('user:created', pickUser(user));
   res
     .cookie('refreshToken', refreshToken, cookieOptions())
-    .json({ token: accessToken, refreshToken, user: pickUser(user), refreshExpiresAt: expiresAt });
+    .json(authResponse(req, accessToken, refreshToken, user, expiresAt));
 }
 
 function pickUser(u: UserDocument) {

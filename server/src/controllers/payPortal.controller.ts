@@ -9,6 +9,7 @@ import { getPayInsightsMeta } from '../services/payInsights.service';
 import { recordAudit } from '../utils/audit';
 import { assertTransition, PayStatus } from '../utils/payStateMachine';
 import { publishDomainEvent } from '../services/domainEvents';
+import { ensurePaymentInitiationAllowed } from '../services/paymentReadiness.service';
 
 const initiateSchema = z.object({
   amount: z.number().positive(),
@@ -34,6 +35,12 @@ const initiateSchema = z.object({
 
 export async function initiateTransaction(req: PayAuthRequest, res: Response) {
   if (!req.user) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Missing user' });
+  if (!['admin', 'finance'].includes(req.user.role) && req.user.kycStatus !== 'verified') {
+    return res.status(403).json({
+      code: 'KYC_REQUIRED',
+      message: 'Identity verification is required before making payments',
+    });
+  }
   const actorId = req.user.id;
   const idempotencyKey = req.header('Idempotency-Key');
   if (!idempotencyKey) {
@@ -42,6 +49,7 @@ export async function initiateTransaction(req: PayAuthRequest, res: Response) {
       .json({ code: 'IDEMPOTENCY_REQUIRED', message: 'Idempotency-Key header required' });
   }
   const body = initiateSchema.parse(req.body);
+  ensurePaymentInitiationAllowed(body.method);
 
   // Velocity controls: per-user tx count/hour and amount/day
   const now = new Date();
@@ -245,6 +253,22 @@ export async function refundAdmin(req: PayAuthRequest, res: Response) {
   if (!tx) return res.status(404).json({ code: 'NOT_FOUND', message: 'Transaction not found' });
   const before = tx.toObject();
   const actionKey = 'refund';
+
+  if (tx.status === 'reversed') {
+    await recordAudit(
+      {
+        actorId,
+        actorRole: req.user.role,
+        action: 'pay_refund_replay',
+        entityType: 'PayTransaction',
+        entityId: tx.id,
+        before,
+        after: tx.toObject(),
+      },
+      req
+    );
+    return res.json(tx);
+  }
 
   if (tx.status !== 'paid') {
     return res

@@ -3,6 +3,11 @@
  */
 
 import { request, clearTokens } from './client';
+import { usesCookieRefreshTransport } from '../authStorage';
+
+const authTransportHeaders = () => ({
+  'X-Auth-Storage': usesCookieRefreshTransport() ? 'cookie' : 'token',
+});
 
 export type AuthResponse = {
   token: string;
@@ -10,7 +15,7 @@ export type AuthResponse = {
   user: {
     id: string;
     name: string;
-    role: 'user' | 'agent' | 'admin';
+    role: 'user' | 'agent' | 'admin' | 'finance';
     availability?: 'active' | 'paused';
     agentVerification?: string;
   };
@@ -19,6 +24,7 @@ export type AuthResponse = {
 export function login(emailOrPhone: string, password: string, otp?: string) {
   return request<AuthResponse>('/auth/login', {
     method: 'POST',
+    headers: authTransportHeaders(),
     body: JSON.stringify({ emailOrPhone, password, otp }),
   });
 }
@@ -26,6 +32,7 @@ export function login(emailOrPhone: string, password: string, otp?: string) {
 export function loginWithGoogle(credential: string) {
   return request<AuthResponse>('/auth/google', {
     method: 'POST',
+    headers: authTransportHeaders(),
     body: JSON.stringify({ credential }),
   });
 }
@@ -33,6 +40,7 @@ export function loginWithGoogle(credential: string) {
 export function register(body: Record<string, unknown>) {
   return request<AuthResponse>('/auth/register', {
     method: 'POST',
+    headers: authTransportHeaders(),
     body: JSON.stringify(body),
   });
 }
@@ -81,10 +89,11 @@ export function resetPassword(token: string, password: string) {
   return request<{
     token: string;
     refreshToken?: string;
-    user: { id: string; name: string; role: 'user' | 'agent' | 'admin' };
+    user: { id: string; name: string; role: 'user' | 'agent' | 'admin' | 'finance' };
     refreshExpiresAt?: string;
   }>('/auth/password/reset', {
     method: 'POST',
+    headers: authTransportHeaders(),
     body: JSON.stringify({ token, password }),
   });
 }

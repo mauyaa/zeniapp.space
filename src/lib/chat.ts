@@ -11,26 +11,16 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 
 export async function safeFetchConversations(): Promise<Conversation[]> {
   try {
-    return await withTimeout(api.fetchConversations(), 8000, []);
+    return await withTimeout(api.fetchConversations(), 15_000, []);
   } catch (error) {
     logger.warn('Failed to load conversations', { error: error as Error });
     return [];
   }
 }
 
-/** Force bootstrap (create agents + welcome convos), then return the list. Use when Messages is empty. */
-export async function safeBootstrapConversations(): Promise<Conversation[]> {
-  try {
-    return await withTimeout(api.bootstrapConversations(), 10000, []);
-  } catch (error) {
-    logger.warn('Bootstrap conversations failed', { error: error as Error });
-    return [];
-  }
-}
-
 export async function safeFetchMessages(conversationId: string): Promise<Message[]> {
   try {
-    return await withTimeout(api.fetchMessages(conversationId), 6000, []);
+    return await withTimeout(api.fetchMessages(conversationId), 12_000, []);
   } catch (error) {
     logger.warn('Failed to load messages', { error: error as Error });
     return [];
@@ -46,7 +36,7 @@ export async function safeCreateConversation(
 
 export async function safePostMessage(
   conversationId: string,
-  body: { type: string; content: unknown }
+  body: { type: string; content: unknown; clientTempId?: string }
 ): Promise<Message> {
   return api.postMessage(conversationId, body);
 }

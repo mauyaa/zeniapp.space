@@ -17,6 +17,7 @@ import {
   revokeAllSessions,
 } from '../controllers/auth.controller';
 import { auth } from '../middlewares/auth';
+import { requireAdminStepUp } from '../middlewares/adminStepUp';
 import { loginLimiter, refreshLimiter } from '../middlewares/rateLimit';
 
 const router = Router();
@@ -32,7 +33,7 @@ router.post('/password/forgot', loginLimiter, forgotPassword);
 router.post('/password/reset', loginLimiter, resetPassword);
 router.post('/google', loginLimiter, googleLogin);
 router.post('/step-up', auth, adminStepUp);
-router.get('/mfa/setup', auth, adminMfaSetup);
-router.post('/mfa/enable', auth, adminMfaEnable);
+router.get('/mfa/setup', auth, requireAdminStepUp(), adminMfaSetup);
+router.post('/mfa/enable', auth, requireAdminStepUp(), adminMfaEnable);
 router.post('/mfa/disable', auth, adminMfaDisable);
 export default router;

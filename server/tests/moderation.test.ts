@@ -15,6 +15,22 @@ describe('moderation queue and KYC / business verify', () => {
   let admin: any;
   let user: any;
   let agent: any;
+  const pngBytes = Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), Buffer.from('doc')]);
+
+  async function privateDocument(
+    token: string,
+    purpose: 'kyc_identity' | 'agent_identity' | 'business_verification',
+    documentType: 'national_id' | 'agent_license' | 'business_registration'
+  ) {
+    const response = await request(app)
+      .post('/api/verification-documents')
+      .set('Authorization', `Bearer ${token}`)
+      .field('purpose', purpose)
+      .field('documentType', documentType)
+      .attach('file', pngBytes, { filename: 'verification.png', contentType: 'image/png' })
+      .expect(201);
+    return response.body.document.id as string;
+  }
 
   beforeEach(async () => {
     if (shouldSkipDbTests()) return;
@@ -22,20 +38,20 @@ describe('moderation queue and KYC / business verify', () => {
       name: 'Admin',
       emailOrPhone: 'admin-mq@test.com',
       password: 'secret123',
-      role: 'admin'
+      role: 'admin',
     });
     user = await UserModel.create({
       name: 'User',
       emailOrPhone: 'user-mq@test.com',
       password: 'secret123',
-      role: 'user'
+      role: 'user',
     });
     agent = await UserModel.create({
       name: 'Agent',
       emailOrPhone: 'agent-mq@test.com',
       password: 'secret123',
       role: 'agent',
-      agentVerification: 'pending'
+      agentVerification: 'pending',
     });
     adminToken = sign({ sub: admin._id.toString(), role: admin.role }, env.jwtSecret);
     userToken = sign({ sub: user._id.toString(), role: user.role }, env.jwtSecret);
@@ -49,7 +65,9 @@ describe('moderation queue and KYC / business verify', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
     expect(Array.isArray(res.body)).toBe(true);
-    const agentItem = res.body.find((i: any) => i.type === 'agent_verify' && i.id === agent._id.toString());
+    const agentItem = res.body.find(
+      (i: any) => i.type === 'agent_verify' && i.id === agent._id.toString()
+    );
     expect(agentItem).toBeTruthy();
     expect(agentItem.requestType).toBe('Agent Verify');
     expect(agentItem.userEntity.name).toBe('Agent');
@@ -65,10 +83,11 @@ describe('moderation queue and KYC / business verify', () => {
 
   it('user can submit KYC and admin can resolve', async () => {
     if (shouldSkipDbTests()) return;
+    const documentId = await privateDocument(userToken, 'kyc_identity', 'national_id');
     await request(app)
       .post('/api/user/kyc')
       .set('Authorization', `Bearer ${userToken}`)
-      .send({ url: 'https://example.com/id.jpg', note: 'ID front' })
+      .send({ documentId, note: 'ID front' })
       .expect(201);
 
     const u = await UserModel.findById(user._id).select('kycStatus kycEvidence').lean();
@@ -89,15 +108,85 @@ describe('moderation queue and KYC / business verify', () => {
     expect(note?.description).toContain('verified');
   });
 
+  it('agent submits private evidence without exposing a public document URL', async () => {
+    if (shouldSkipDbTests()) return;
+    const documentId = await privateDocument(agentToken, 'agent_identity', 'agent_license');
+
+    await request(app)
+      .post('/api/agent/verification/evidence')
+      .set('Authorization', `Bearer ${agentToken}`)
+      .send({ documentId, idNumber: 'EARB-12345', note: 'License' })
+      .expect(201);
+
+    const history = await request(app)
+      .get('/api/agent/verification/evidence')
+      .set('Authorization', `Bearer ${agentToken}`)
+      .expect(200);
+    expect(history.body.evidence[0].documentId).toBe(documentId);
+    expect(history.body.evidence[0]).not.toHaveProperty('url');
+
+    const queue = await request(app)
+      .get('/api/admin/moderation/queue')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+    const item = queue.body.find(
+      (entry: any) => entry.type === 'agent_verify' && entry.id === agent._id.toString()
+    );
+    expect(item.payload.verificationEvidence[0].documentId).toBe(documentId);
+    expect(item.payload.verificationEvidence[0]).not.toHaveProperty('url');
+  });
+
+  it('user can update and delete submitted KYC evidence before approval', async () => {
+    if (shouldSkipDbTests()) return;
+    const documentId = await privateDocument(userToken, 'kyc_identity', 'national_id');
+    await request(app)
+      .post('/api/user/kyc')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({ documentId, note: 'Front' })
+      .expect(201);
+
+    const before = await UserModel.findById(user._id).select('kycStatus kycEvidence').lean();
+    const evidenceId = (before as any)?.kycEvidence?.[0]?._id?.toString();
+    expect(evidenceId).toBeTruthy();
+    const replacementId = await privateDocument(userToken, 'kyc_identity', 'national_id');
+
+    await request(app)
+      .patch(`/api/user/kyc/${evidenceId}`)
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({ documentId: replacementId, note: 'Front updated' })
+      .expect(200);
+
+    const updated = await UserModel.findById(user._id).select('kycStatus kycEvidence').lean();
+    expect(updated?.kycStatus).toBe('pending');
+    expect(String((updated as any)?.kycEvidence?.[0]?.documentId)).toBe(replacementId);
+    expect((updated as any)?.kycEvidence?.[0]?.note).toBe('Front updated');
+
+    await request(app)
+      .delete(`/api/user/kyc/${evidenceId}`)
+      .set('Authorization', `Bearer ${userToken}`)
+      .expect(200);
+
+    const afterDelete = await UserModel.findById(user._id).select('kycStatus kycEvidence').lean();
+    expect(afterDelete?.kycStatus).toBe('none');
+    expect((afterDelete as any)?.kycEvidence || []).toHaveLength(0);
+  });
+
   it('agent can submit business verify and admin can resolve', async () => {
     if (shouldSkipDbTests()) return;
+    const documentId = await privateDocument(
+      agentToken,
+      'business_verification',
+      'business_registration'
+    );
     await request(app)
       .post('/api/agent/verification/business')
       .set('Authorization', `Bearer ${agentToken}`)
-      .send({ url: 'https://example.com/biz.pdf', note: 'Registration' })
+      .send({ documentId, note: 'Registration' })
       .expect(201);
 
-    const a = await UserModel.findById(agent._id).select('businessVerifyStatus businessVerifyEvidence').lean();
+    const a = await UserModel.findById(agent._id)
+      .select('businessVerifyStatus businessVerifyEvidence')
+      .lean();
     expect((a as any)?.businessVerifyStatus).toBe('pending');
     expect((a as any)?.businessVerifyEvidence?.length).toBeGreaterThanOrEqual(1);
 
@@ -121,14 +210,16 @@ describe('moderation queue and KYC / business verify', () => {
       status: 'pending_review',
       agentId: agent._id,
       location: { type: 'Point', coordinates: [36.8, -1.29] },
-      images: []
+      images: [],
     });
 
     const res = await request(app)
       .get('/api/admin/moderation/queue')
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
-    const listingItem = res.body.find((i: any) => i.type === 'new_listing' && i.id === listing._id.toString());
+    const listingItem = res.body.find(
+      (i: any) => i.type === 'new_listing' && i.id === listing._id.toString()
+    );
     expect(listingItem).toBeTruthy();
     expect(listingItem.requestType).toBe('New Listing');
 
@@ -142,7 +233,9 @@ describe('moderation queue and KYC / business verify', () => {
       .get('/api/admin/moderation/queue')
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
-    const stillInQueue = res2.body.find((i: any) => i.type === 'new_listing' && i.id === listing._id.toString());
+    const stillInQueue = res2.body.find(
+      (i: any) => i.type === 'new_listing' && i.id === listing._id.toString()
+    );
     expect(stillInQueue).toBeFalsy();
 
     const updated = await ListingModel.findById(listing._id).lean();

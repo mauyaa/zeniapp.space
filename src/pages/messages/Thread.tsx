@@ -16,6 +16,7 @@ import {
   getAgentOtherPartyLabel,
   getAdminOtherPartyLabel,
 } from './contactLabels';
+import { getMessageBodyText } from './messagePreview';
 
 const userSuggestions = [
   'Hi, I am interested in this property.',
@@ -101,6 +102,12 @@ export function ThreadPage() {
     if (role === 'admin' && conversation) return getAdminOtherPartyLabel(conversation);
     return 'Chat';
   })();
+  const staffEndUserBubbleLabel =
+    role === 'agent' && conversation
+      ? getAgentOtherPartyLabel(conversation)
+      : role === 'admin' && conversation
+        ? getAdminOtherPartyLabel(conversation)
+        : 'User';
   const headerInitials = headerName
     .split(/\s+/)
     .map((word) => word.replace(/[^a-zA-Z]/g, '')[0])
@@ -296,8 +303,9 @@ export function ThreadPage() {
         </a>
       );
     }
-    if (typeof message.content === 'string') {
-      return <p className="text-sm leading-relaxed text-current break-words">{message.content}</p>;
+    const bodyText = getMessageBodyText(message);
+    if (bodyText !== null) {
+      return <p className="text-sm leading-relaxed text-current break-words">{bodyText}</p>;
     }
     return (
       <pre className="whitespace-pre-wrap break-words text-xs">
@@ -473,7 +481,16 @@ export function ThreadPage() {
                         </span>
                       </div>
                     )}
-                    <div className={cn('flex w-full', isMine ? 'justify-end' : 'justify-start')}>
+                    <div
+                      className={cn('flex w-full flex-col', isMine ? 'items-end' : 'items-start')}
+                    >
+                      {(role === 'agent' || role === 'admin') &&
+                        message.senderType === 'user' &&
+                        isFirstInGroup && (
+                          <div className="mb-1 max-w-[80%] pl-1 text-[11px] font-semibold tracking-wide text-[var(--zeni-muted)] md:max-w-md">
+                            {staffEndUserBubbleLabel}
+                          </div>
+                        )}
                       <div
                         className={cn(
                           'max-w-[80%] px-3.5 py-2 md:max-w-md',

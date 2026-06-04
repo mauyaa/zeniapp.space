@@ -259,9 +259,13 @@ export async function emitAdminDashboard() {
 function safeEmit(handlerName: string, emitter: () => Promise<any>) {
   if (mongoose.connection.readyState !== 1) return;
   emitter().catch((err) => {
+    const name = err?.name || err?.constructor?.name;
+    const message = String(err?.message || '');
     if (
-      err &&
-      (err.name === 'MongoClientClosedError' || err.constructor?.name === 'MongoClientClosedError')
+      name === 'MongoClientClosedError' ||
+      name === 'MongoTopologyClosedError' ||
+      message.includes('Topology is closed') ||
+      message.includes('client was closed')
     ) {
       return;
     }

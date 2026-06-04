@@ -16,6 +16,7 @@ import {
   verifyListing,
   resolveUserKyc,
   resolveBusinessVerify,
+  openVerificationDocumentForReview,
 } from '../../lib/api';
 import type { ModerationQueueItem } from '../../types/api';
 import { Button } from '../../components/ui/Button';
@@ -23,7 +24,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { useToast } from '../../context/ToastContext';
 import { getSocket } from '../../lib/socket';
 import { useAuth } from '../../context/AuthProvider';
-import { useAdminStepUp } from '../../context/AdminStepUpContext';
+import { isAdminStepUpCancelled, useAdminStepUp } from '../../context/AdminStepUpContext';
 import { logger } from '../../lib/logger';
 import { errors } from '../../constants/messages';
 import { KYC_ACCEPTANCE_CRITERIA, AGENT_ACCEPTANCE_CRITERIA } from '../../constants/verification';
@@ -41,6 +42,14 @@ function formatTimestamp(dateStr?: string): string {
     minute: '2-digit',
   });
 }
+
+type ReviewEvidence = {
+  documentId?: string;
+  note?: string;
+  idNumber?: string;
+  uploadedAt?: string;
+  migrationRequired?: boolean;
+};
 
 export function AdminVerificationPage() {
   const [items, setItems] = useState<ModerationQueueItem[]>([]);
@@ -70,9 +79,11 @@ export function AdminVerificationPage() {
     const socket = getSocket(token);
     socket.on('user:created', load);
     socket.on('moderation:queue', load);
+    socket.on('agent:verification', load);
     return () => {
       socket.off('user:created', load);
       socket.off('moderation:queue', load);
+      socket.off('agent:verification', load);
     };
   }, [token, load]);
 
@@ -81,7 +92,8 @@ export function AdminVerificationPage() {
       await runWithStepUp(() => verifyAgent(id, decision));
       success(`Agent ${decision === 'approve' ? 'approved' : 'rejected'} successfully`);
       load();
-    } catch {
+    } catch (err) {
+      if (isAdminStepUpCancelled(err)) return;
       errorToast('Action failed');
     }
   };
@@ -91,7 +103,8 @@ export function AdminVerificationPage() {
       await runWithStepUp(() => markAgentEarbVerified(id));
       success('EARB license marked as verified');
       load();
-    } catch {
+    } catch (err) {
+      if (isAdminStepUpCancelled(err)) return;
       errorToast('Action failed');
     }
   };
@@ -101,7 +114,8 @@ export function AdminVerificationPage() {
       await runWithStepUp(() => verifyListing(id, action));
       success(`Listing ${action}d`);
       load();
-    } catch {
+    } catch (err) {
+      if (isAdminStepUpCancelled(err)) return;
       errorToast('Action failed');
     }
   };
@@ -111,7 +125,8 @@ export function AdminVerificationPage() {
       await runWithStepUp(() => resolveUserKyc(userId, decision));
       success(`KYC ${decision === 'approve' ? 'approved' : 'rejected'}`);
       load();
-    } catch {
+    } catch (err) {
+      if (isAdminStepUpCancelled(err)) return;
       errorToast('Action failed');
     }
   };
@@ -121,8 +136,22 @@ export function AdminVerificationPage() {
       await runWithStepUp(() => resolveBusinessVerify(agentId, decision));
       success(`Business verification ${decision === 'approve' ? 'approved' : 'rejected'}`);
       load();
-    } catch {
+    } catch (err) {
+      if (isAdminStepUpCancelled(err)) return;
       errorToast('Action failed');
+    }
+  };
+
+  const handleDocumentOpen = async (documentId?: string) => {
+    if (!documentId) {
+      errorToast('Legacy public document requires secure migration before review');
+      return;
+    }
+    try {
+      await runWithStepUp(() => openVerificationDocumentForReview(documentId));
+    } catch (err) {
+      if (isAdminStepUpCancelled(err)) return;
+      errorToast('Secure document could not be opened');
     }
   };
 
@@ -307,7 +336,7 @@ export function AdminVerificationPage() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleKycResolve(item.refId, 'reject');
+                              handleKycResolve(item.id, 'reject');
                             }}
                             className="p-1.5 hover:bg-red-50 text-red-600 rounded transition-colors"
                             aria-label="Reject"
@@ -318,7 +347,7 @@ export function AdminVerificationPage() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleKycResolve(item.refId, 'approve');
+                              handleKycResolve(item.id, 'approve');
                             }}
                             className="p-1.5 hover:bg-green-50 text-green-600 rounded transition-colors"
                             aria-label="Approve"
@@ -333,7 +362,7 @@ export function AdminVerificationPage() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleBusinessResolve(item.refId, 'reject');
+                              handleBusinessResolve(item.id, 'reject');
                             }}
                             className="p-1.5 hover:bg-red-50 text-red-600 rounded transition-colors"
                             aria-label="Reject"
@@ -344,7 +373,7 @@ export function AdminVerificationPage() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleBusinessResolve(item.refId, 'approve');
+                              handleBusinessResolve(item.id, 'approve');
                             }}
                             className="p-1.5 hover:bg-green-50 text-green-600 rounded transition-colors"
                             aria-label="Approve"
@@ -423,35 +452,24 @@ export function AdminVerificationPage() {
                           <div className="text-xs font-mono font-semibold uppercase tracking-widest text-zinc-500">
                             Evidence
                           </div>
-                          {(
-                            item.payload.verificationEvidence as {
-                              url: string;
-                              note?: string;
-                              uploadedAt?: string;
-                            }[]
-                          )?.length ? (
+                          {(item.payload.verificationEvidence as ReviewEvidence[])?.length ? (
                             <div className="flex gap-2 flex-wrap">
-                              {(
-                                (item.payload.verificationEvidence as {
-                                  url: string;
-                                  note?: string;
-                                  uploadedAt?: string;
-                                }[]) || []
-                              ).map((ev, idx) => (
-                                <a
-                                  key={`ev-${idx}`}
-                                  href={ev.url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex items-center gap-2 rounded border border-gray-200 px-3 py-2 text-xs text-gray-700 hover:border-black hover:bg-gray-50"
-                                >
-                                  <span className="h-2 w-2 rounded-full bg-green-500" />
-                                  {ev.note || 'Document'} —{' '}
-                                  {ev.uploadedAt
-                                    ? new Date(ev.uploadedAt).toLocaleDateString()
-                                    : ''}
-                                </a>
-                              ))}
+                              {((item.payload.verificationEvidence as ReviewEvidence[]) || []).map(
+                                (ev, idx) => (
+                                  <button
+                                    type="button"
+                                    key={`ev-${idx}`}
+                                    onClick={() => void handleDocumentOpen(ev.documentId)}
+                                    className="inline-flex items-center gap-2 rounded border border-gray-200 px-3 py-2 text-xs text-gray-700 hover:border-black hover:bg-gray-50"
+                                  >
+                                    <span className="h-2 w-2 rounded-full bg-green-500" />
+                                    {ev.note || 'Document'} —{' '}
+                                    {ev.uploadedAt
+                                      ? new Date(ev.uploadedAt).toLocaleDateString()
+                                      : ''}
+                                  </button>
+                                )
+                              )}
                             </div>
                           ) : (
                             <p className="text-xs text-gray-500">No evidence uploaded yet.</p>
@@ -479,33 +497,24 @@ export function AdminVerificationPage() {
                         <div className="text-xs font-mono font-semibold uppercase tracking-widest text-zinc-500">
                           KYC evidence
                         </div>
-                        {(
-                          item.payload.kycEvidence as {
-                            url: string;
-                            note?: string;
-                            uploadedAt?: string;
-                          }[]
-                        )?.length ? (
+                        {(item.payload.kycEvidence as ReviewEvidence[])?.length ? (
                           <div className="flex gap-2 flex-wrap">
-                            {(
-                              (item.payload.kycEvidence as {
-                                url: string;
-                                note?: string;
-                                uploadedAt?: string;
-                              }[]) || []
-                            ).map((ev, idx) => (
-                              <a
-                                key={`kyc-${idx}`}
-                                href={ev.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-2 rounded border border-gray-200 px-3 py-2 text-xs text-gray-700 hover:border-black hover:bg-gray-50"
-                              >
-                                <span className="h-2 w-2 rounded-full bg-green-500" />
-                                {ev.note || 'Document'} —{' '}
-                                {ev.uploadedAt ? new Date(ev.uploadedAt).toLocaleDateString() : ''}
-                              </a>
-                            ))}
+                            {((item.payload.kycEvidence as ReviewEvidence[]) || []).map(
+                              (ev, idx) => (
+                                <button
+                                  type="button"
+                                  key={`kyc-${idx}`}
+                                  onClick={() => void handleDocumentOpen(ev.documentId)}
+                                  className="inline-flex items-center gap-2 rounded border border-gray-200 px-3 py-2 text-xs text-gray-700 hover:border-black hover:bg-gray-50"
+                                >
+                                  <span className="h-2 w-2 rounded-full bg-green-500" />
+                                  {ev.note || 'Document'} —{' '}
+                                  {ev.uploadedAt
+                                    ? new Date(ev.uploadedAt).toLocaleDateString()
+                                    : ''}
+                                </button>
+                              )
+                            )}
                           </div>
                         ) : (
                           <p className="text-xs text-gray-500">No evidence uploaded yet.</p>
@@ -517,33 +526,24 @@ export function AdminVerificationPage() {
                         <div className="text-xs font-semibold uppercase tracking-widest text-gray-500">
                           Business Evidence
                         </div>
-                        {(
-                          item.payload.businessVerifyEvidence as {
-                            url: string;
-                            note?: string;
-                            uploadedAt?: string;
-                          }[]
-                        )?.length ? (
+                        {(item.payload.businessVerifyEvidence as ReviewEvidence[])?.length ? (
                           <div className="flex gap-2 flex-wrap">
-                            {(
-                              (item.payload.businessVerifyEvidence as {
-                                url: string;
-                                note?: string;
-                                uploadedAt?: string;
-                              }[]) || []
-                            ).map((ev, idx) => (
-                              <a
-                                key={`biz-${idx}`}
-                                href={ev.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-2 rounded border border-gray-200 px-3 py-2 text-xs text-gray-700 hover:border-black hover:bg-gray-50"
-                              >
-                                <span className="h-2 w-2 rounded-full bg-green-500" />
-                                {ev.note || 'Document'} —{' '}
-                                {ev.uploadedAt ? new Date(ev.uploadedAt).toLocaleDateString() : ''}
-                              </a>
-                            ))}
+                            {((item.payload.businessVerifyEvidence as ReviewEvidence[]) || []).map(
+                              (ev, idx) => (
+                                <button
+                                  type="button"
+                                  key={`biz-${idx}`}
+                                  onClick={() => void handleDocumentOpen(ev.documentId)}
+                                  className="inline-flex items-center gap-2 rounded border border-gray-200 px-3 py-2 text-xs text-gray-700 hover:border-black hover:bg-gray-50"
+                                >
+                                  <span className="h-2 w-2 rounded-full bg-green-500" />
+                                  {ev.note || 'Document'} —{' '}
+                                  {ev.uploadedAt
+                                    ? new Date(ev.uploadedAt).toLocaleDateString()
+                                    : ''}
+                                </button>
+                              )
+                            )}
                           </div>
                         ) : (
                           <p className="text-xs text-gray-500">No evidence uploaded yet.</p>

@@ -6,6 +6,10 @@ import { Router } from 'express';
 import { auth } from '../middlewares/auth';
 import { requireRole } from '../middlewares/rbac';
 import { isCloudinaryConfigured, uploadImage } from '../services/cloudinary.service';
+import {
+  verificationDocumentPurposes,
+  verificationDocumentTypes,
+} from '../models/VerificationDocument';
 
 const uploadDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) {
@@ -25,6 +29,17 @@ try {
 const router = Router();
 
 async function handleUploadedFile(req: any, res: any) {
+  const declaredPurpose = String(req.body?.purpose || req.body?.documentPurpose || '').trim();
+  const declaredDocumentType = String(req.body?.documentType || '').trim();
+  if (
+    (verificationDocumentPurposes as readonly string[]).includes(declaredPurpose) ||
+    (verificationDocumentTypes as readonly string[]).includes(declaredDocumentType)
+  ) {
+    return res.status(400).json({
+      code: 'PRIVATE_DOCUMENT_REQUIRED',
+      message: 'Verification documents must be submitted through the private document endpoint',
+    });
+  }
   const file = req.file as { filename?: string; buffer?: Buffer; mimetype?: string } | undefined;
   if (!file) return res.status(400).json({ code: 'NO_FILE', message: 'No file uploaded' });
 
@@ -47,16 +62,8 @@ async function handleUploadedFile(req: any, res: any) {
 }
 
 if (multer) {
-  const useMemory = isCloudinaryConfigured();
-  const storage = useMemory
-    ? multer.memoryStorage()
-    : multer.diskStorage({
-        destination: (_req: any, _file: any, cb: any) => cb(null, uploadDir),
-        filename: (_req: any, file: any, cb: any) => {
-          const ext = path.extname(file.originalname);
-          cb(null, `${crypto.randomBytes(16).toString('hex')}${ext}`);
-        },
-      });
+  // Buffer first so rejected verification-purpose uploads are never written to public storage.
+  const storage = multer.memoryStorage();
 
   const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
   const upload = multer({
@@ -88,20 +95,16 @@ if (multer) {
   );
 } else {
   router.post('/upload/image', (_req, res) => {
-    res
-      .status(503)
-      .json({
-        code: 'UPLOADS_DISABLED',
-        message: 'File uploads unavailable (multer not installed)',
-      });
+    res.status(503).json({
+      code: 'UPLOADS_DISABLED',
+      message: 'File uploads unavailable (multer not installed)',
+    });
   });
   router.post('/upload/chat-image', (_req, res) => {
-    res
-      .status(503)
-      .json({
-        code: 'UPLOADS_DISABLED',
-        message: 'File uploads unavailable (multer not installed)',
-      });
+    res.status(503).json({
+      code: 'UPLOADS_DISABLED',
+      message: 'File uploads unavailable (multer not installed)',
+    });
   });
 }
 

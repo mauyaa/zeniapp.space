@@ -14,6 +14,7 @@
         "lint": "eslint . --ext .ts",
         "test": "jest --runInBand",
         "seed": "node -r ts-node/register scripts/seed.ts",
+        "reset-db": "node -r ts-node/register scripts/reset-db.ts",
         "clear-chat": "node -r ts-node/register scripts/clear-chat.ts",
         "ensure-welcome-agents": "node -r ts-node/register scripts/ensureWelcomeAgents.ts",
         "backup": "node -r ts-node/register scripts/backup.ts"

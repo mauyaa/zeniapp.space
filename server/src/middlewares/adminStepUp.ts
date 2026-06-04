@@ -5,9 +5,11 @@ import { AuthRequest } from './auth';
 
 export const adminStepUpProtected = [
   'PATCH /api/admin/users/:id/status',
+  'PATCH /api/admin/users/:id/role',
   'DELETE /api/admin/users/:id',
   'PATCH /api/admin/verification/agents/:id',
   'PATCH /api/admin/verification/listings/:id',
+  'GET /api/admin/verification-documents/:documentId/content',
   'GET /api/admin/reports/export',
   'GET /api/admin/agents/export',
   'GET /api/admin/listings/export',

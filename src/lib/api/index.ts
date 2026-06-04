@@ -16,9 +16,10 @@ export * from './admin';
 export * from './user';
 export * from './refundRequests';
 export * from './notifications';
+export * from './verificationDocuments';
 
 // Re-export client utilities for advanced use
-export { request, getToken, clearTokens, buildQuery } from './client';
+export { request, getToken, clearTokens, buildQuery, refreshAuthSession } from './client';
 
 // Re-export error class for typed catch blocks
 export { ApiError } from '../../types/api';
@@ -78,6 +79,7 @@ export const api = {
   createAgentListing: listings.createAgentListing,
   updateAgentListing: listings.updateAgentListing,
   submitAgentListing: listings.submitAgentListing,
+  boostAgentListing: listings.boostAgentListing,
   deleteAgentListing: listings.deleteAgentListing,
   reportListing: listings.reportListing,
   fetchInsights: listings.fetchInsights,
@@ -89,7 +91,6 @@ export const api = {
 
   // Chat
   fetchConversations: chat.fetchConversations,
-  bootstrapConversations: chat.bootstrapConversations,
   createConversation: chat.createConversation,
   updateConversation: chat.updateConversation,
   fetchMessages: chat.fetchMessages,

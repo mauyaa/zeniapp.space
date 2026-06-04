@@ -108,18 +108,33 @@ export function runTestPayout() {
 
 // ---------- Agent verification ----------
 
-export function submitVerificationEvidence(url: string, note?: string) {
+export function submitVerificationEvidence(documentId: string, idNumber: string, note?: string) {
   return request('/agent/verification/evidence', {
     method: 'POST',
-    body: JSON.stringify({ url, note }),
+    body: JSON.stringify({ documentId, note, idNumber }),
   });
 }
 
 export function fetchVerificationHistory(): Promise<{
   status: string;
-  evidence: { url: string; note?: string; uploadedAt: string }[];
+  evidence: {
+    _id?: string;
+    documentId?: string;
+    note?: string;
+    idNumber?: string;
+    uploadedAt: string;
+    migrationRequired?: boolean;
+  }[];
   earbRegistrationNumber?: string;
   earbVerifiedAt?: string;
+  businessVerifyStatus?: string;
+  businessVerifyEvidence?: {
+    _id?: string;
+    documentId?: string;
+    note?: string;
+    uploadedAt?: string;
+    migrationRequired?: boolean;
+  }[];
 }> {
   return request('/agent/verification/evidence');
 }
@@ -133,10 +148,28 @@ export function updateEarbNumber(
   });
 }
 
+export function updateVerificationEvidence(
+  evidenceId: string,
+  documentId: string,
+  idNumber: string,
+  note?: string
+) {
+  return request(`/agent/verification/evidence/${evidenceId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ documentId, note, idNumber }),
+  });
+}
+
+export function deleteVerificationEvidence(evidenceId: string) {
+  return request(`/agent/verification/evidence/${evidenceId}`, {
+    method: 'DELETE',
+  });
+}
+
 /** Agent: submit business verification documents (company/entity). */
-export function submitBusinessVerify(url: string, note?: string) {
+export function submitBusinessVerify(documentId: string, note?: string) {
   return request('/agent/verification/business', {
     method: 'POST',
-    body: JSON.stringify({ url, note }),
+    body: JSON.stringify({ documentId, note }),
   });
 }

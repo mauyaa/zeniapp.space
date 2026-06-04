@@ -5,15 +5,32 @@
 import { request } from './client';
 import type { UserKycStatus } from '../../types/api';
 
-export function submitKyc(url: string, note?: string): Promise<unknown> {
+export function submitKyc(documentId: string, note?: string): Promise<unknown> {
   return request('/user/kyc', {
     method: 'POST',
-    body: JSON.stringify({ url, note }),
+    body: JSON.stringify({ documentId, note }),
   });
 }
 
 export function getKycStatus(): Promise<UserKycStatus> {
   return request('/user/kyc');
+}
+
+export function updateKycEvidence(
+  evidenceId: string,
+  documentId: string,
+  note?: string
+): Promise<unknown> {
+  return request(`/user/kyc/${evidenceId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ documentId, note }),
+  });
+}
+
+export function deleteKycEvidence(evidenceId: string): Promise<unknown> {
+  return request(`/user/kyc/${evidenceId}`, {
+    method: 'DELETE',
+  });
 }
 
 export function updateAvatar(avatarUrl: string): Promise<{ avatarUrl: string }> {

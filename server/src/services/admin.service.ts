@@ -5,14 +5,34 @@ import { ListingModel } from '../models/Listing';
 import { AuditLogModel } from '../models/AuditLog';
 import { ReportModel } from '../models/Report';
 import { invalidatePrefix } from '../utils/listingCache';
+import { logger } from '../utils/logger';
 import { getIO } from '../socket';
 import { triggerAdminDashboard, triggerAgentDashboard } from './dashboard.service';
 import { revokeAllSessionsForUser } from './auth.service';
+import { reviewDocumentsForOwnerPurpose } from './verificationDocument.service';
+
+const ANALYTICS_CACHE_TTL_MS = 10000;
+let analyticsCache:
+  | {
+      data: {
+        users: number;
+        pendingAgents: number;
+        reportsToday: number;
+        listings: number;
+      };
+      expiresAt: number;
+    }
+  | null = null;
+
+export function invalidateAdminAnalyticsCache() {
+  analyticsCache = null;
+}
 
 export function listAllUsers() {
   return UserModel.find()
     .select('name role status emailOrPhone agentVerification createdAt')
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
 }
 
 export async function updateUserStatusService(
@@ -61,6 +81,40 @@ export async function updateUserStatusService(
       type: 'system',
     });
   }
+  invalidateAdminAnalyticsCache();
+  triggerAdminDashboard();
+  return after;
+}
+
+export async function updateUserRoleService(
+  actorId: string,
+  targetUserId: string,
+  role: 'user' | 'agent' | 'admin' | 'finance'
+) {
+  const before = await UserModel.findById(targetUserId);
+  if (!before) return null;
+  if (before.role === 'admin' && role !== 'admin') {
+    const otherAdmins = await UserModel.countDocuments({
+      role: 'admin',
+      _id: { $ne: targetUserId },
+    });
+    if (otherAdmins === 0) {
+      throw new Error('Cannot revoke the last admin account');
+    }
+  }
+  const previousRole = before.role;
+  const after = await UserModel.findByIdAndUpdate(targetUserId, { role }, { new: true });
+  await revokeAllSessionsForUser(targetUserId);
+  await AuditLogModel.create({
+    actorId,
+    actorRole: 'admin',
+    action: role === 'admin' || role === 'finance' ? 'privileged_role_grant' : 'privileged_role_revoke',
+    entityType: 'user',
+    entityId: targetUserId,
+    before: { role: previousRole },
+    after: { role },
+  });
+  invalidateAdminAnalyticsCache();
   triggerAdminDashboard();
   return after;
 }
@@ -92,19 +146,37 @@ export async function deleteUserService(actorId: string, targetUserId: string) {
   if (io) {
     io.to(`user:${targetUserId}`).emit('user:deleted', { userId: targetUserId });
   }
+  invalidateAdminAnalyticsCache();
   triggerAdminDashboard();
 }
 
-export function listPendingAgents() {
-  return UserModel.find({ role: 'agent', agentVerification: 'pending' })
+function safeReviewEvidence(items: any[] | undefined) {
+  return (items || []).map((item) => ({
+    _id: item?._id?.toString?.() || String(item?._id || ''),
+    documentId: item?.documentId ? String(item.documentId) : undefined,
+    note: item?.note,
+    idNumber: item?.idNumber,
+    uploadedAt: item?.uploadedAt,
+    migrationRequired: !item?.documentId,
+  }));
+}
+
+export async function listPendingAgents() {
+  const agents = await UserModel.find({ role: 'agent', agentVerification: 'pending' })
     .select(
       'name email emailOrPhone role agentVerification verificationEvidence earbRegistrationNumber earbVerifiedAt createdAt'
     )
     .lean();
+  return agents.map((agent: any) => ({
+    ...agent,
+    verificationEvidence: safeReviewEvidence(agent.verificationEvidence),
+  }));
 }
 
 export function listPendingListings() {
-  return ListingModel.find({ status: 'pending_review' });
+  return ListingModel.find({ status: 'pending_review' })
+    .sort({ createdAt: -1 })
+    .lean();
 }
 
 /** Unified moderation queue: agent verify, new listing, user KYC, business verify. */
@@ -155,7 +227,7 @@ export async function listModerationQueue(): Promise<ModerationQueueItem[]> {
       requestType: 'Agent Verify',
       timestamp: a.createdAt ? new Date(a.createdAt).toISOString() : '',
       status: 'Review',
-      payload: a,
+      payload: { ...a, verificationEvidence: safeReviewEvidence(a.verificationEvidence) },
     });
   });
 
@@ -187,7 +259,7 @@ export async function listModerationQueue(): Promise<ModerationQueueItem[]> {
           ? new Date(u.kycSubmittedAt || u.createdAt).toISOString()
           : '',
       status: 'Review',
-      payload: u,
+      payload: { ...u, kycEvidence: safeReviewEvidence(u.kycEvidence) },
     });
   });
 
@@ -203,7 +275,10 @@ export async function listModerationQueue(): Promise<ModerationQueueItem[]> {
           ? new Date(a.businessVerifySubmittedAt || a.createdAt).toISOString()
           : '',
       status: 'Review',
-      payload: a,
+      payload: {
+        ...a,
+        businessVerifyEvidence: safeReviewEvidence(a.businessVerifyEvidence),
+      },
     });
   });
 
@@ -219,6 +294,7 @@ export async function resolveUserKyc(
   const status = decision === 'approve' ? 'verified' : 'rejected';
   const after = await UserModel.findByIdAndUpdate(userId, { kycStatus: status }, { new: true });
   if (!after) throw Object.assign(new Error('User not found'), { status: 404 });
+  await reviewDocumentsForOwnerPurpose(userId, 'kyc_identity', actorId, decision);
   await AuditLogModel.create({
     actorId,
     actorRole: 'admin',
@@ -237,6 +313,7 @@ export async function resolveUserKyc(
         ? 'Your identity has been verified.'
         : 'Verification was not approved. You can resubmit documents.',
   });
+  invalidateAdminAnalyticsCache();
   triggerAdminDashboard();
   return after;
 }
@@ -246,6 +323,9 @@ export async function resolveBusinessVerify(
   agentId: string,
   decision: 'approve' | 'reject'
 ) {
+  const user = await UserModel.findById(agentId);
+  if (!user || user.role !== 'agent')
+    throw Object.assign(new Error('Agent not found'), { status: 404 });
   const status = decision === 'approve' ? 'verified' : 'rejected';
   const after = await UserModel.findByIdAndUpdate(
     agentId,
@@ -254,6 +334,7 @@ export async function resolveBusinessVerify(
   );
   if (!after || after.role !== 'agent')
     throw Object.assign(new Error('Agent not found'), { status: 404 });
+  await reviewDocumentsForOwnerPurpose(agentId, 'business_verification', actorId, decision);
   await AuditLogModel.create({
     actorId,
     actorRole: 'admin',
@@ -272,6 +353,7 @@ export async function resolveBusinessVerify(
         ? 'Your business verification is complete.'
         : 'Business verification was not approved.',
   });
+  invalidateAdminAnalyticsCache();
   triggerAdminDashboard();
   return after;
 }
@@ -296,16 +378,22 @@ export async function markEarbVerified(actorId: string, agentId: string) {
   return after;
 }
 
+
 export async function verifyAgent(
   actorId: string,
   agentId: string,
   decision: 'approve' | 'reject'
 ) {
+  const existing = await UserModel.findById(agentId);
+  if (!existing || existing.role !== 'agent')
+    throw Object.assign(new Error('Agent not found'), { status: 404 });
+
   const after = await UserModel.findByIdAndUpdate(
     agentId,
     { agentVerification: decision === 'approve' ? 'verified' : 'rejected' },
     { new: true }
   );
+  await reviewDocumentsForOwnerPurpose(agentId, 'agent_identity', actorId, decision);
   await AuditLogModel.create({
     actorId,
     actorRole: 'admin',
@@ -320,24 +408,25 @@ export async function verifyAgent(
   }
   if (after) {
     const { createNotification } = await import('./notification.service');
-    await createNotification(agentId, {
+    createNotification(agentId, {
       title: decision === 'approve' ? 'Verification approved' : 'Verification rejected',
       description:
         decision === 'approve'
           ? 'Your agent profile is now verified. You can publish listings.'
           : 'Verification was rejected. Please resubmit documents.',
-    });
+    }).catch((error) => logger.warn('[admin] agent notification failed', error));
   }
   if (after?.emailOrPhone?.includes('@')) {
     const { sendMail } = await import('./email.service');
-    await sendMail(
+    sendMail(
       after.emailOrPhone,
       decision === 'approve' ? 'You are verified on ZENI' : 'Your verification was not approved',
       decision === 'approve'
         ? `<p>Hi ${after.name || ''},</p><p>Your agent account has been verified. You can now publish listings.</p>`
         : `<p>Hi ${after.name || ''},</p><p>Your verification was not approved. Please resubmit your documents or contact support.</p>`
-    );
+    ).catch((error) => logger.warn('[admin] agent approval email failed', error));
   }
+  invalidateAdminAnalyticsCache();
   triggerAgentDashboard(agentId);
   triggerAdminDashboard();
   return after;
@@ -382,6 +471,7 @@ export async function moderateListing(actorId: string, listingId: string, action
   }
   if (after) {
     triggerAgentDashboard(String(after.agentId));
+    invalidateAdminAnalyticsCache();
     triggerAdminDashboard();
     invalidatePrefix('listing:search');
   }
@@ -406,17 +496,24 @@ export async function deleteListingService(actorId: string, listingId: string) {
     io.to(`agent:${listing.agentId.toString()}`).emit('listing:deleted', { listingId });
     io.to('public:listings').emit('listing:deleted', { listingId });
   }
+  invalidateAdminAnalyticsCache();
   triggerAdminDashboard();
 }
 
 export async function analyticsCounts() {
+  if (analyticsCache && analyticsCache.expiresAt > Date.now()) {
+    return analyticsCache.data;
+  }
+
   const [users, pendingAgents, reportsToday, listings] = await Promise.all([
     UserModel.countDocuments(),
     UserModel.countDocuments({ role: 'agent', agentVerification: 'pending' }),
     ReportModel.countDocuments({ createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }),
     ListingModel.countDocuments(),
   ]);
-  return { users, pendingAgents, reportsToday, listings };
+  const data = { users, pendingAgents, reportsToday, listings };
+  analyticsCache = { data, expiresAt: Date.now() + ANALYTICS_CACHE_TTL_MS };
+  return data;
 }
 
 export function auditLogs(filter: any) {
@@ -427,7 +524,7 @@ export function auditLogs(filter: any) {
   if (filter.entityType) q.entityType = filter.entityType;
   if (filter.entityId) q.entityId = filter.entityId;
   const limit = Math.min(Number(filter.limit) || 200, 500);
-  return AuditLogModel.find(q).sort({ createdAt: -1 }).limit(limit);
+  return AuditLogModel.find(q).sort({ createdAt: -1 }).limit(limit).lean();
 }
 
 export async function listNetworkAccessDecisions(limit = 25) {

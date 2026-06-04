@@ -93,10 +93,12 @@ export interface PendingAgent {
   earbRegistrationNumber?: string;
   earbVerifiedAt?: string;
   verificationEvidence?: Array<{
-    url: string;
+    documentId?: string;
     note?: string;
+    idNumber?: string;
     uploadedAt?: string;
     createdAt?: string;
+    migrationRequired?: boolean;
   }>;
   createdAt?: string;
 }
@@ -129,7 +131,13 @@ export interface ModerationQueueItem {
 /** User KYC status from GET /user/kyc */
 export interface UserKycStatus {
   status: 'none' | 'pending' | 'verified' | 'rejected';
-  evidence: Array<{ url: string; note?: string; uploadedAt?: string }>;
+  evidence: Array<{
+    _id?: string;
+    documentId?: string;
+    note?: string;
+    uploadedAt?: string;
+    migrationRequired?: boolean;
+  }>;
   submittedAt?: string;
 }
 

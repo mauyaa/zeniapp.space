@@ -13,6 +13,14 @@ dist-ssr
 *.local
 backups
 server/backups
+playwright-report/
+test-results/
+coverage/
+server/coverage/
+server/uploads/
+server/db_status.json
+server/verify_restore.json
+*.tsbuildinfo
 
 # Editor directories and files
 .vscode/*

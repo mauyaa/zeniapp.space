@@ -11,6 +11,7 @@ import {
   getStoredToken,
   isSessionBackedAuth,
   persistAuthSession,
+  usesCookieRefreshTransport,
 } from '../authStorage';
 import { apiUrl } from '../runtime';
 
@@ -45,8 +46,8 @@ function dedupeKey(path: string, method: string): string | null {
 
 // ---------- Configuration ----------
 
-/** Default request timeout in milliseconds. Kept higher to tolerate cold starts in production. */
-const DEFAULT_TIMEOUT_MS = 60_000;
+/** Default timeout: outages must become actionable UI states rather than minute-long hangs. */
+const DEFAULT_TIMEOUT_MS = 12_000;
 const MAX_RETRY_AFTER_MS = 8_000;
 
 // ---------- Core request ----------
@@ -68,7 +69,10 @@ export async function request<T>(
 
   if (key) {
     inflightRequests.set(key, promise);
-    promise.finally(() => inflightRequests.delete(key));
+    void promise.then(
+      () => inflightRequests.delete(key),
+      () => inflightRequests.delete(key)
+    );
   }
 
   return promise;
@@ -79,18 +83,12 @@ async function _doRequest<T>(
   options: RequestInit & { signal?: AbortSignal } = {},
   timeoutMs: number = DEFAULT_TIMEOUT_MS
 ): Promise<T> {
-  const token = getToken();
   const requestMethod = (options.method || 'GET').toUpperCase();
+  const safeToRetry = ['GET', 'HEAD', 'OPTIONS'].includes(requestMethod);
   const requestId =
     typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
       ? crypto.randomUUID()
       : Math.random().toString(36).slice(2) + '-web';
-
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    'X-Request-Id': requestId,
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
 
   // Merge caller signal with timeout signal so both can abort
   const timeoutController = new AbortController();
@@ -100,6 +98,15 @@ async function _doRequest<T>(
     ? combineAbortSignals(options.signal, timeoutController.signal)
     : timeoutController.signal;
 
+  const buildBaseHeaders = (): HeadersInit => {
+    const token = getToken();
+    return {
+      'Content-Type': 'application/json',
+      'X-Request-Id': requestId,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+  };
+
   const doFetch = async (attempt: number): Promise<Response> => {
     try {
       const res = await fetch(apiUrl(path), {
@@ -107,7 +114,7 @@ async function _doRequest<T>(
         signal: combinedSignal,
         credentials: 'include',
         headers: {
-          ...headers,
+          ...buildBaseHeaders(),
           ...(options.headers || {}),
         },
       });
@@ -123,13 +130,13 @@ async function _doRequest<T>(
       }
 
       // Retry on gateway/timeouts
-      if (!res.ok && attempt < 2 && [502, 503, 504].includes(res.status)) {
+      if (!res.ok && safeToRetry && attempt < 2 && [502, 503, 504].includes(res.status)) {
         await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
         return doFetch(attempt + 1);
       }
       // Attempt refresh once on 401 (except auth endpoints to avoid loops)
       if (res.status === 401 && attempt === 0 && !path.startsWith('/auth/')) {
-        const refreshed = await refreshSession();
+        const refreshed = await refreshAuthSession();
         if (refreshed) {
           return doFetch(attempt + 1);
         }
@@ -147,7 +154,7 @@ async function _doRequest<T>(
         }
         throw e; // user-initiated abort — re-throw as-is
       }
-      if (attempt < 2) {
+      if (safeToRetry && attempt < 2) {
         await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
         return doFetch(attempt + 1);
       }
@@ -179,13 +186,20 @@ async function _doRequest<T>(
       try {
         const text = await res.text();
         if (text) {
-          try {
-            const data = JSON.parse(text) as { message?: string; code?: string };
-            message = data?.message ? String(data.message) : text;
-            code = data?.code;
-          } catch {
-            message = text;
-          }
+          if (/service\s+waking\s+up|service\s+starting/i.test(text)) {
+            message = 'The service is starting up. Please retry in a moment.';
+            code = 'SERVICE_STARTING';
+          } else if (/<!doctype\s+html|<html/i.test(text)) {
+            message = 'The service is temporarily unavailable. Please retry.';
+            code = 'UPSTREAM_INVALID_RESPONSE';
+          } else
+            try {
+              const data = JSON.parse(text) as { message?: string; code?: string };
+              message = data?.message ? String(data.message) : text;
+              code = data?.code;
+            } catch {
+              message = text;
+            }
         }
       } catch {
         // ignore
@@ -196,6 +210,19 @@ async function _doRequest<T>(
 
   if (res.status === 204) {
     return undefined as unknown as T;
+  }
+
+  const successContentType = res.headers.get('content-type') || '';
+  if (!successContentType.includes('application/json')) {
+    const text = await res.text().catch(() => '');
+    const serviceStarting = /service\s+waking\s+up|service\s+starting/i.test(text);
+    throw new ApiError(
+      serviceStarting
+        ? 'The service is starting up. Please retry in a moment.'
+        : 'The service returned an unexpected response. Please retry.',
+      serviceStarting ? 503 : 502,
+      serviceStarting ? 'SERVICE_STARTING' : 'INVALID_RESPONSE'
+    );
   }
 
   return res.json() as Promise<T>;
@@ -241,7 +268,8 @@ function combineAbortSignals(a: AbortSignal, b: AbortSignal): AbortSignal {
 
 // ---------- Session refresh ----------
 
-async function refreshSession(): Promise<boolean> {
+/** Refresh access token using stored refresh token + httpOnly cookie. Exported for AuthProvider bootstrap. */
+export async function refreshAuthSession(): Promise<boolean> {
   // If a logout was initiated in this tab (or another), do not auto-refresh
   try {
     if (sessionStorage.getItem('logout_marker') === '1') {
@@ -254,9 +282,13 @@ async function refreshSession(): Promise<boolean> {
 
   try {
     const refreshToken = getRefreshToken();
+    const cookieBacked = usesCookieRefreshTransport();
     const res = await fetch(apiUrl('/auth/refresh'), {
       method: 'POST',
-      headers: refreshToken ? { 'x-refresh-token': refreshToken } : {},
+      headers: {
+        ...(cookieBacked ? { 'X-Auth-Storage': 'cookie' } : {}),
+        ...(!cookieBacked && refreshToken ? { 'x-refresh-token': refreshToken } : {}),
+      },
       credentials: 'include',
     });
     if (!res.ok) {
@@ -278,6 +310,11 @@ async function refreshSession(): Promise<boolean> {
         },
         rememberMe
       );
+      try {
+        window.dispatchEvent(new CustomEvent('zeni-auth-refreshed'));
+      } catch {
+        /* non-browser */
+      }
     }
     return true;
   } catch {

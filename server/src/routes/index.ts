@@ -26,11 +26,13 @@ import uploadRoutes from './upload.routes';
 import notificationRoutes from './notification.routes';
 import healthRoutes from './health.routes';
 import canaryRoutes from './canary.routes';
+import verificationDocumentRoutes from './verificationDocument.routes';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
 router.use('/user', userRoutes);
+router.use('/verification-documents', verificationDocumentRoutes);
 router.use('/agent', agentListingRoutes);
 router.use('/agent', agentRoutes);
 router.use('/listings', listingRoutes);

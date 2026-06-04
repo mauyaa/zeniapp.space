@@ -2,7 +2,42 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://accounts.google.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://placehold.co https://api.qrserver.com https://external-content.duckduckgo.com https://a.basemaps.cartocdn.com https://b.basemaps.cartocdn.com https://c.basemaps.cartocdn.com https://d.basemaps.cartocdn.com; connect-src 'self' https://zeniapp-space.onrender.com wss://zeniapp-space.onrender.com https://accounts.google.com https://api.stripe.com https://r.stripe.com; frame-src https://accounts.google.com https://js.stripe.com https://hooks.stripe.com; worker-src 'self' blob:; manifest-src 'self'; report-uri /csp-report; upgrade-insecure-requests"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(self)"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=31536000; includeSubDomains"
+        }
+      ]
+    }
+  ],
   "rewrites": [
+    {
+      "source": "/csp-report",
+      "destination": "https://zeniapp-space.onrender.com/csp-report"
+    },
     {
       "source": "/api/(.*)",
       "destination": "https://zeniapp-space.onrender.com/api/$1"

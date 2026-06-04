@@ -76,12 +76,9 @@ async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Pro
 
 function listingToPropertyForMap(listing: ListingCard): Property | null {
   const fallbackImage = getFallbackHomeImage();
-  const lat = isValidCoord(listing.location?.lat, listing.location?.lng)
-    ? (listing.location?.lat as number)
-    : -1.2921;
-  const lng = isValidCoord(listing.location?.lat, listing.location?.lng)
-    ? (listing.location?.lng as number)
-    : 36.8219;
+  if (!isValidCoord(listing.location?.lat, listing.location?.lng)) return null;
+  const lat = listing.location?.lat as number;
+  const lng = listing.location?.lng as number;
 
   const rawImage = listing.imageUrl || listing.images?.[0]?.url || listing.agent?.image;
   const resolvedImage = resolveApiAssetUrl(rawImage);
@@ -188,6 +185,9 @@ const FALLBACK_PROJECTS: Project[] = FALLBACK_PROPERTIES.slice(0, 6).map((p, i) 
   image: p.imageUrl,
   alt: p.title,
 }));
+const DEV_FALLBACK_MAP_PROPERTIES =
+  import.meta.env.MODE === 'development' ? FALLBACK_MAP_PROPERTIES : [];
+const DEV_FALLBACK_PROJECTS = import.meta.env.MODE === 'development' ? FALLBACK_PROJECTS : [];
 
 interface Insight {
   tag: string;
@@ -368,12 +368,13 @@ export function ZeniLanding() {
   const [listingStats, setListingStats] = useState<{ total: number; verified: number } | null>(
     null
   );
-  const [featuredProjects, setFeaturedProjects] = useState<Project[]>(FALLBACK_PROJECTS);
+  const [featuredProjects, setFeaturedProjects] = useState<Project[]>(DEV_FALLBACK_PROJECTS);
   const [featuredListingsLoading, setFeaturedListingsLoading] = useState(false);
   const [featuredListingsError, setFeaturedListingsError] = useState(false);
   const [ringImages, setRingImages] = useState<string[]>(() => FALLBACK_RING_IMAGES);
-  const [mapListings, setMapListings] = useState<Property[]>(FALLBACK_MAP_PROPERTIES);
+  const [mapListings, setMapListings] = useState<Property[]>(DEV_FALLBACK_MAP_PROPERTIES);
   const [mapListingsLoading, setMapListingsLoading] = useState(false);
+  const [mapListingsError, setMapListingsError] = useState(false);
   const [activeNavSection, setActiveNavSection] = useState<string | null>(null);
 
   const navigate = useNavigate();
@@ -432,7 +433,10 @@ export function ZeniLanding() {
   }, []);
 
   const fetchMapListings = useCallback(async (opts?: { silent?: boolean }) => {
-    if (!opts?.silent) setMapListingsLoading(true);
+    if (!opts?.silent) {
+      setMapListingsLoading(true);
+      setMapListingsError(false);
+    }
     try {
       // Use timeout to prevent blank areas if production API is slow
       const verifiedRes = await withTimeout(
@@ -447,6 +451,7 @@ export function ZeniLanding() {
       ).catch(() => null);
 
       let items: ListingCard[] = [];
+      let requestSucceeded = Boolean(verifiedRes);
       if (verifiedRes?.items?.length) {
         items = verifiedRes.items;
       } else {
@@ -461,6 +466,7 @@ export function ZeniLanding() {
           null
         ).catch(() => null);
         items = allRes?.items ?? [];
+        requestSucceeded = Boolean(allRes);
       }
 
       const raw = items.filter((item) => !SUPPORT_TITLE_REGEX.test(item.title ?? ''));
@@ -471,15 +477,15 @@ export function ZeniLanding() {
         if (!byId.has(item.id)) byId.set(item.id, item);
       });
 
-      // Convert ALL listings to map properties — those without real coords get Nairobi CBD fallback
-      // so the map always shows something rather than being empty
       const properties = Array.from(byId.values())
         .map(listingToPropertyForMap)
         .filter((p): p is Property => p !== null);
 
-      setMapListings(properties.length ? properties : FALLBACK_MAP_PROPERTIES);
+      setMapListingsError(!requestSucceeded);
+      setMapListings(properties.length ? properties : DEV_FALLBACK_MAP_PROPERTIES);
     } catch {
-      setMapListings((prev) => (prev.length ? prev : FALLBACK_MAP_PROPERTIES));
+      setMapListingsError(true);
+      setMapListings((prev) => (prev.length ? prev : DEV_FALLBACK_MAP_PROPERTIES));
     } finally {
       if (!opts?.silent) setMapListingsLoading(false);
     }
@@ -639,16 +645,16 @@ export function ZeniLanding() {
           setFeaturedProjects(projects);
           setRingImages(buildRingImagesFromProjects(projects));
         } else if (!opts?.silent || !featuredProjects.length) {
-          setFeaturedProjects(FALLBACK_PROJECTS);
-          setRingImages(buildRingImagesFromProjects(FALLBACK_PROJECTS));
+          setFeaturedProjects(DEV_FALLBACK_PROJECTS);
+          setRingImages(buildRingImagesFromProjects(DEV_FALLBACK_PROJECTS));
         }
       } catch {
         if (!opts?.silent) {
           setFeaturedListingsLoading(false);
           setFeaturedListingsError(true);
           if (!featuredProjects.length) {
-            setFeaturedProjects(FALLBACK_PROJECTS);
-            setRingImages(buildRingImagesFromProjects(FALLBACK_PROJECTS));
+            setFeaturedProjects(DEV_FALLBACK_PROJECTS);
+            setRingImages(buildRingImagesFromProjects(DEV_FALLBACK_PROJECTS));
           }
         }
       }
@@ -1245,12 +1251,27 @@ export function ZeniLanding() {
                           zoom={12}
                         />
                       </div>
-                      {mapListings.length === 0 && (
-                        <div className="absolute inset-0 z-[2] flex items-center justify-center bg-[#F7F2EA]/80 backdrop-blur-[2px] pointer-events-none">
+                      {mapListingsError ? (
+                        <div className="absolute inset-0 z-[2] flex flex-col items-center justify-center gap-3 bg-[#F7F2EA]/80 backdrop-blur-[2px]">
                           <span className="font-mono text-xs uppercase tracking-[0.2em] text-[var(--zeni-black)]/65 px-4 py-2 rounded-full border border-[var(--zeni-black)]/10 bg-white/90">
-                            No listings with location data — open full map below
+                            Live map listings are temporarily unavailable
                           </span>
+                          <button
+                            type="button"
+                            onClick={() => fetchMapListings()}
+                            className="font-mono text-xs uppercase tracking-[0.2em] text-[var(--zeni-green)] underline"
+                          >
+                            Retry
+                          </button>
                         </div>
+                      ) : (
+                        mapListings.length === 0 && (
+                          <div className="absolute inset-0 z-[2] flex items-center justify-center bg-[#F7F2EA]/80 backdrop-blur-[2px] pointer-events-none">
+                            <span className="font-mono text-xs uppercase tracking-[0.2em] text-[var(--zeni-black)]/65 px-4 py-2 rounded-full border border-[var(--zeni-black)]/10 bg-white/90">
+                              No listings with location data — open full map below
+                            </span>
+                          </div>
+                        )
                       )}
                     </>
                   )}
