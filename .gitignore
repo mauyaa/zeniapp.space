@@ -13,6 +13,8 @@ dist-ssr
 *.local
 backups
 server/backups
+.release-backups/
+ZENI-RC/
 playwright-report/
 test-results/
 coverage/

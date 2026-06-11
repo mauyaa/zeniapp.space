@@ -22,6 +22,7 @@ describe('pay portal', () => {
   const originalStripeSecretKey = env.stripe.secretKey;
   const originalStripeWebhookSecret = env.stripe.webhookSecret;
   const originalPaymentsEnabled = env.paymentsEnabled;
+  const originalPayStepUpCode = env.payStepUpCode;
   const originalNodeEnv = env.nodeEnv;
   const originalMpesa = { ...env.mpesa };
 
@@ -31,6 +32,7 @@ describe('pay portal', () => {
     env.stripe.secretKey = originalStripeSecretKey;
     env.stripe.webhookSecret = originalStripeWebhookSecret;
     env.paymentsEnabled = originalPaymentsEnabled;
+    env.payStepUpCode = originalPayStepUpCode;
     Object.assign(env.mpesa, originalMpesa);
     (env as { nodeEnv: string }).nodeEnv = originalNodeEnv;
     jest.restoreAllMocks();
@@ -274,6 +276,7 @@ describe('pay portal', () => {
 
   it('treats duplicate refund requests as an audited idempotent replay', async () => {
     if (shouldSkipDbTests()) return;
+    env.payStepUpCode = 'test-step-up';
     const user = await UserModel.create({
       name: 'Refund Owner',
       emailOrPhone: 'refund-owner@test.com',

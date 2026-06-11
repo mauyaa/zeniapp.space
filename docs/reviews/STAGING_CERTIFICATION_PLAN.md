@@ -1,8 +1,8 @@
 # Zeni Staging Certification Plan
 
-Date: 2026-06-03 (Africa/Nairobi)
-Target branch: `codex/p0-production-rescue`
-Target commit SHA: record the exact reviewed PR commit after push
+Date: 2026-06-04 (Africa/Nairobi)
+Target branch: `codex/local-pc-release-certification`
+Target commit SHA: record the exact clean local-source candidate commit after commit/push
 Promotion rule: **No production promotion until every P0 row has evidence and sign-off.**
 
 ## Stage 0: Candidate Integrity

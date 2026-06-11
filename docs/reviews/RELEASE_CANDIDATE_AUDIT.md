@@ -1,25 +1,54 @@
 # Zeni P0 Release Candidate Audit
 
-Date: 2026-06-04 (Africa/Nairobi)
+Date: 2026-06-11 (Africa/Nairobi)
 Decision: **NO-GO** for production, payments, or identity-sensitive use
-Release readiness score: **82/100**
+Local-source candidate readiness: **95/100**
+Overall production readiness: **88/100**
 
-The P0 rescue implementation is now isolated on a dedicated release-candidate branch, but it is
-not a certifiable release artifact yet. Local reliability, privacy, authentication, privileged
-identity, CSP, and payment guardrail changes are materially stronger than `origin/main`. The
-remaining gap is external release evidence: the candidate still requires a pushed/reviewed commit,
-green CI, an exact SHA deployment to staging, staging certification, and production legacy KYC URL
-migration and provider revocation.
+The dirty local PC workspace has been preserved and triaged. The clean local-source candidate keeps
+only reviewed P0 release-hardening changes from the local checkpoint and rejects unsafe local
+regressions documented in `LOCAL_SOURCE_CHANGE_CLASSIFICATION.md`. Zeni remains **NO-GO** until
+the final local SHA is pushed, CI passes, the exact SHA is deployed to staging, staging
+certification is completed, legacy KYC exposure is migrated/revoked with evidence, monitoring
+alert routing is proven, CSP is validated, and payment readiness is verified.
 
 ## Branch and Workspace Status
 
-| Item                     | Finding                                                        | Release impact                                                     |
-| ------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Release branch           | `codex/p0-production-rescue`                                   | Correct dedicated branch exists.                                   |
-| Base commit              | `origin/main` at `07465c0f9a0bd5c14770994fdb651465ce7f656f`    | Candidate started from the reviewed remote baseline.               |
-| Original dirty workspace | Preserved under `.release-backups/` in the original workspace  | Recovery source exists without contaminating this branch.          |
-| RC worktree              | `C:\Users\USER\Downloads\ZENI\ZENI-RC`                         | Moved into the writable workspace for final validation.            |
-| Pull request / CI        | Draft PR #2 opened; GitHub Actions CI failed before job steps   | No certifiable artifact exists until account billing is unlocked and CI passes. |
+| Item | Finding | Release impact |
+| --- | --- | --- |
+| Release branch | `codex/local-pc-release-certification` | Current local-source branch. |
+| Reviewed P0 checkpoint | `357b3f8aabab54acb422c40fae1c4d2c99dcd652` | Used as the safe baseline after local triage. |
+| Original dirty workspace backup | `.release-backups/local-pc-source-20260604-115514` | Preserved before cleanup; do not delete. |
+| Pre-clean backup | `.release-backups/clean-rc-prep-20260604-122245` | Captures the dirty tree immediately before reset/clean. |
+| Local classification | `docs/reviews/LOCAL_SOURCE_CHANGE_CLASSIFICATION.md` | Records kept, rejected, generated/runtime, and unrelated local changes. |
+| Pull request / CI | Not run for this local-source candidate SHA yet | No certifiable artifact exists until pushed CI passes. |
+
+## 2026-06-11 Local-Source Candidate Progress
+
+The dirty PC workspace was reduced to a reviewed P0 candidate tree plus release documentation
+changes. `git diff --check` passes, no tracked generated/runtime artifacts remain, and the complete
+required validation suite passes under Node `v20.19.5`.
+
+Final Node 20.19.5 local validation evidence:
+
+| Command | Result |
+| --- | --- |
+| `npm ci` | Passed; npm reports development-tooling advisories and warns that `@capacitor/cli@8.1.0` requires Node `>=22`. |
+| `npm --prefix server ci` | Passed under Node `v20.19.5`; npm reported 2 moderate advisories. |
+| `npm run format:check` | Passed under Node `v20.19.5`. |
+| `npm run lint` | Passed under Node `v20.19.5`. |
+| `npx tsc --noEmit --pretty false` | Passed under Node `v20.19.5`. |
+| `npm run test` | Passed: 14 files, 79 tests. |
+| `npm run build` | Passed. |
+| `npm --prefix server run lint` | Passed. |
+| `npm --prefix server run build` | Passed. |
+| `npm --prefix server test` | Passed: 19 suites, 106 tests. |
+| `npx playwright test` | Passed: 13 tests. |
+| Root production dependency audit | Passed the high/critical gate; 1 moderate `uuid` advisory remains and requires a breaking upgrade. |
+| Backend production dependency audit | Passed the high/critical gate; 2 moderate `uuid`/`node-cron` advisories remain and require breaking upgrades. |
+
+The local candidate is certifiable for CI and staging evaluation. It is not certified for
+production until the external release gates below are completed with evidence.
 
 ## Difference From `origin/main`
 
@@ -38,8 +67,8 @@ The selected branch scope is limited to P0/P1 release blockers and their tests:
   certification documentation.
 - Focused frontend, backend, and Playwright coverage for the above behavior.
 
-Unrelated feature experiments, UI redesign work, ad hoc recovery scripts, and map/branding
-experiments were excluded from this candidate.
+Unrelated feature experiments, UI redesign work, ad hoc recovery scripts, map/branding
+experiments, and Paystack expansion were excluded from this candidate.
 
 ## Runtime and Generated Artifact Hygiene
 
@@ -51,6 +80,8 @@ The following tracked runtime artifacts are removed from the candidate index:
 
 `.gitignore` now excludes:
 
+- `.release-backups/`
+- `ZENI-RC/`
 - `playwright-report/`
 - `test-results/`
 - `coverage/`
@@ -83,9 +114,18 @@ screenshots, or build output. Do not restore the deleted tracked artifacts liste
 
 ## Files That Must Be Separated
 
-No unrelated source files are intentionally present in the RC worktree. Any newly discovered
+No unrelated source files are intentionally present in the candidate commit. Any newly discovered
 feature experiment, UI redesign, AI/Web3 work, new payment-provider capability, or ad hoc recovery
-script must be moved to a follow-up branch rather than added to this release.
+script must remain in backup or move to a follow-up branch rather than enter this release.
+
+The following local regressions were explicitly rejected:
+
+- removal or weakening of verification document purpose/type allowlists;
+- weakened denied document-access logging;
+- removal of retention/legal-hold handling;
+- weakened generic upload rejection for verification document types;
+- Paystack webhook/provider expansion;
+- wildcard `ADMIN_DOMAIN=*` production permissiveness.
 
 ## Local-Only Fixes Pending Certification
 
@@ -112,24 +152,23 @@ passed from the moved RC worktree. GitHub Actions CI did not execute code: attem
 before any job steps were scheduled because GitHub reported, "The job was not started because your
 account is locked due to a billing issue."
 
-| Command                                                    | Current evidence                                                                                                          |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `npm ci`                                                   | Passed from the RC lockfile. Full dependency tree reports 5 moderate and 1 critical advisory, including dev tooling.      |
-| `npm --prefix server ci`                                   | Passed from the RC lockfile. Local Node 22.20.0 warns because backend declares Node 20.x.                                 |
-| `npm run format:check`                                     | Passed.                                                                                                                   |
-| `npm run lint`                                             | Passed.                                                                                                                   |
-| `npx tsc --noEmit --pretty false`                          | Passed.                                                                                                                   |
-| `npm run test`                                             | Passed: 14 files, 79 tests.                                                                                               |
-| `npm run build`                                            | Passed.                                                                                                                   |
-| `npm --prefix server run lint`                             | Passed.                                                                                                                   |
-| `npm --prefix server run build`                            | Passed.                                                                                                                   |
-| `npm --prefix server test -- --runInBand`                  | Passed: 19 suites, 106 tests.                                                                                             |
-| `npm --prefix server test -- --runInBand --detectOpenHandles` | Passed: 19 suites, 106 tests; no open-handle source reported.                                                           |
-| `npm run test:e2e`                                         | Passed: 13 Playwright tests.                                                                                              |
-| `npm audit --omit=dev --audit-level=high`                  | Passed high/critical gate; 3 moderate production advisories remain.                                                       |
-| `npm --prefix server audit --omit=dev --audit-level=high`  | Passed high/critical gate; 2 moderate production advisories remain.                                                       |
-| `git diff --check`                                         | Passed after final documentation edit and artifact cleanup.                                                               |
-| Generated artifact tracking check                          | Passed after cleanup: no tracked report, upload, coverage, build-output, log, or TypeScript build-metadata paths remain.  |
+| Command | Current evidence |
+| --- | --- |
+| `npm ci` | Passed under Node `v20.19.5`; lockfile is reproducible. |
+| `npm --prefix server ci` | Passed under Node `v20.19.5`; lockfile is reproducible. |
+| `npm run format:check` | Passed. |
+| `npm run lint` | Passed. |
+| `npx tsc --noEmit --pretty false` | Passed. |
+| `npm run test` | Passed: 14 files, 79 tests. |
+| `npm run build` | Passed. |
+| `npm --prefix server run lint` | Passed. |
+| `npm --prefix server run build` | Passed. |
+| `npm --prefix server test` | Passed: 19 suites, 106 tests. |
+| `npx playwright test` | Passed: 13 tests. |
+| `npm audit --omit=dev --audit-level=high` | Passed high/critical gate; 1 moderate production advisory remains. |
+| `npm --prefix server audit --omit=dev --audit-level=high` | Passed high/critical gate; 2 moderate production advisories remain. |
+| `git diff --check` | Passed after final documentation edit and artifact cleanup. |
+| Generated artifact tracking check | Passed: no tracked report, upload, coverage, build-output, log, or TypeScript build-metadata paths remain. |
 
 Local passes do not replace CI or staging certification.
 
@@ -153,42 +192,32 @@ Local passes do not replace CI or staging certification.
    auth, and payment provider behavior.
 3. Payment provider credentials, webhook delivery, reconciliation ownership, and deliberate
    enablement remain staging/operations gates.
-4. The local frontend dependency tree reports a critical development-only advisory during plain
-   `npm ci`; production dependency audit is below the high/critical threshold, but the tooling
-   dependency must be reviewed without a forced upgrade.
-5. Backend local validation uses Node 22 while the backend declares Node 20.x; CI and deployment
-   must use Node 20.
+4. Plain `npm ci` reports development-tooling advisories; the production dependency audits have no
+   high or critical findings, but the remaining moderate `uuid`/`node-cron` findings require
+   planned breaking upgrades rather than a forced rescue-sprint upgrade.
+5. `@capacitor/cli@8.1.0` requires Node `>=22`, while the required release validation runtime is
+   Node 20. The web/frontend/backend validation suite passes on Node 20, but mobile tooling runtime
+   compatibility remains a follow-up dependency-governance decision.
 
 ## Exact Clean Release Procedure
 
-The branch/worktree creation steps have been completed:
+The local-source preservation and branch preparation steps have been completed:
 
 ```powershell
-git fetch origin
-git diff --binary > .release-backups/zeni-working-tree-backup-20260531.patch
-git worktree add ..\ZENI-RC -b codex/p0-production-rescue origin/main
-Set-Location ..\ZENI-RC
+# Preserved local source-of-truth backups:
+# .release-backups/local-pc-source-20260604-115514
+# .release-backups/clean-rc-prep-20260604-122245
+git switch codex/local-pc-release-certification
+# Unsafe/regressive, generated/runtime, and unrelated changes were excluded after classification.
 ```
 
-Remaining release procedure:
+Remaining external release procedure:
 
 ```powershell
-npm ci
-npm --prefix server ci
-npm run format:check
-npm run lint
-npx tsc --noEmit --pretty false
-npm run test
-npm run build
-npm --prefix server run lint
-npm --prefix server run build
-npm --prefix server test -- --runInBand
-npm run test:e2e
-git diff --check
-git status --short
-git add .gitignore docs e2e index.html package.json package-lock.json playwright.config.ts render.yaml server src vercel.json
-git commit -m "Harden P0 production readiness boundaries"
-git push -u origin codex/p0-production-rescue
+git push -u origin codex/local-pc-release-certification
+# Require green CI on the exact pushed SHA.
+# Deploy that exact SHA to staging.
+# Execute STAGING_CERTIFICATION_PLAN.md and attach evidence.
 ```
 
 Open a reviewable pull request only after the branch is clean. Production promotion remains
