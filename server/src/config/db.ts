@@ -145,6 +145,7 @@ export async function connectDB(retries?: number): Promise<void> {
               console.error('='.repeat(80) + '\n');
             }
           }
+          scheduleReconnect('initial_connect_failure');
           throw err;
         }
 

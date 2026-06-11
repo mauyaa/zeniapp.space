@@ -1,5 +1,6 @@
 import { createServer, type Server } from 'http';
 import cron from 'node-cron';
+import mongoose from 'mongoose';
 import { app } from './app';
 import { connectDB } from './config/db';
 import { env, validateRuntimeEnv } from './config/env';
@@ -18,6 +19,7 @@ import { enforcePaymentReadinessAtBoot } from './services/paymentReadiness.servi
 import { expireVerificationDocuments } from './services/verificationDocument.service';
 
 let runtimeServer: Server | null = null;
+let databaseTasksStarted = false;
 
 function shutdownRuntimeServer(code: number) {
   if (!runtimeServer) {
@@ -70,31 +72,10 @@ function scheduleSafeCron(name: string, expression: string, task: CronTask) {
   });
 }
 
-async function start() {
-  installFatalProcessHandlers();
-  validateRuntimeEnv();
-  const paymentReadiness = enforcePaymentReadinessAtBoot();
-  await connectDB();
-  const httpServer = createServer(app);
-  runtimeServer = httpServer;
-  httpServer.requestTimeout = 20000;
-  httpServer.headersTimeout = 25000;
-  httpServer.keepAliveTimeout = 5000;
-  initSocket(httpServer);
-  httpServer.on('error', (error) => {
-    console.error('[server] HTTP server error', error);
-  });
-  httpServer.listen(env.port, '0.0.0.0', () => {
-    console.log(`API running on http://localhost:${env.port}`);
-    console.log('[health] liveness=GET /health readiness=GET /ready contract=json-only');
-    console.log(`[auth] Admin step-up: ${describeAdminStepUpPolicyForLog()}`);
-    console.log(`[payments] readiness=${JSON.stringify(paymentReadiness)}`);
-  });
-
-  if (!env.enableCrons) {
-    console.log('[cron] disabled (set ENABLE_CRONS=true to enable)');
-    return;
-  }
+function startDatabaseTasks() {
+  if (databaseTasksStarted || !env.enableCrons) return;
+  databaseTasksStarted = true;
+  console.log('[DB] Ready; starting database-dependent scheduled tasks');
 
   // Seed gauges once at startup (cron refresh handles ongoing updates).
   registerPayGauges();
@@ -116,15 +97,6 @@ async function start() {
     registerPayGauges();
   });
 
-  // Nightly geo sanity: snap mislocated listings based on area/city geocode.
-  scheduleSafeCron('geo_sanity_sweep', '15 3 * * *', async () => {
-    const result = await runGeoSanitySweep();
-    if (result.fixed) {
-      console.log(`[cron] geo sanity sweep corrected ${result.fixed}/${result.scanned} listings`);
-    }
-  });
-
-  // Detect integrity anomalies (paid tx without receipts).
   scheduleSafeCron('detect_paid_without_receipt', '*/15 * * * *', async () => {
     const n = await detectPaidWithoutReceipt();
     if (n) console.warn(`[cron] found ${n} paid transactions missing receipts (logged to audit)`);
@@ -132,7 +104,13 @@ async function start() {
     registerPayGauges();
   });
 
-  // Daily email transport health at 04:00 (gen4 automation).
+  scheduleSafeCron('geo_sanity_sweep', '15 3 * * *', async () => {
+    const result = await runGeoSanitySweep();
+    if (result.fixed) {
+      console.log(`[cron] geo sanity sweep corrected ${result.fixed}/${result.scanned} listings`);
+    }
+  });
+
   scheduleSafeCron('email_transport_health', '0 4 * * *', async () => {
     const status = await verifyEmailTransport();
     if (!status.ok) {
@@ -151,7 +129,6 @@ async function start() {
     }
 
     if (env.nodeEnv !== 'production' && env.zeniAdminEmail?.includes('@')) {
-      // In dev, send a short heartbeat so we can see previews; in prod we stay silent unless failed.
       await sendMail(
         env.zeniAdminEmail,
         '[ZENI] Email delivery heartbeat',
@@ -161,6 +138,40 @@ async function start() {
         })
       ).catch((err) => console.warn('[cron] email heartbeat failed', err));
     }
+  });
+}
+
+async function start() {
+  installFatalProcessHandlers();
+  validateRuntimeEnv();
+  const paymentReadiness = enforcePaymentReadinessAtBoot();
+  const httpServer = createServer(app);
+  runtimeServer = httpServer;
+  httpServer.requestTimeout = 20000;
+  httpServer.headersTimeout = 25000;
+  httpServer.keepAliveTimeout = 5000;
+  initSocket(httpServer);
+  httpServer.on('error', (error) => {
+    console.error('[server] HTTP server error', error);
+  });
+  httpServer.listen(env.port, '0.0.0.0', () => {
+    console.log(`API running on http://localhost:${env.port}`);
+    console.log('[health] liveness=GET /health readiness=GET /ready contract=json-only');
+    console.log(`[auth] Admin step-up: ${describeAdminStepUpPolicyForLog()}`);
+    console.log(`[payments] readiness=${JSON.stringify(paymentReadiness)}`);
+  });
+
+  if (!env.enableCrons) {
+    console.log('[cron] disabled (set ENABLE_CRONS=true to enable)');
+  } else {
+    mongoose.connection.on('connected', startDatabaseTasks);
+  }
+
+  void connectDB().catch((err) => {
+    console.error(
+      '[DB] Initial connection sequence exhausted; liveness remains available while background reconnect continues:',
+      (err as Error).message
+    );
   });
 }
 

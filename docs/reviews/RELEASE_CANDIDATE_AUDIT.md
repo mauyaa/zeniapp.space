@@ -1,8 +1,8 @@
 # Zeni P0 Release Candidate Audit
 
-Date: 2026-06-11 (Africa/Nairobi)
+Date: 2026-06-12 (Africa/Nairobi)
 Decision: **NO-GO** for production, payments, or identity-sensitive use
-Local-source candidate readiness: **95/100**
+Local-source candidate readiness: **94/100**
 Overall production readiness: **88/100**
 
 The dirty local PC workspace has been preserved and triaged. The clean local-source candidate keeps
@@ -21,7 +21,30 @@ alert routing is proven, CSP is validated, and payment readiness is verified.
 | Original dirty workspace backup | `.release-backups/local-pc-source-20260604-115514` | Preserved before cleanup; do not delete. |
 | Pre-clean backup | `.release-backups/clean-rc-prep-20260604-122245` | Captures the dirty tree immediately before reset/clean. |
 | Local classification | `docs/reviews/LOCAL_SOURCE_CHANGE_CLASSIFICATION.md` | Records kept, rejected, generated/runtime, and unrelated local changes. |
-| Pull request / CI | Not run for this local-source candidate SHA yet | No certifiable artifact exists until pushed CI passes. |
+| Pull request | Draft PR #3 | Reviewable, but must not merge while P0 gates remain. |
+| Prior pushed candidate | `5f0e3086d900b54ddaf77e41f85461f39d1a218a` | CI and preview evidence below apply to this SHA. |
+| CI | Run 42 failed before all job steps | Frontend, backend, and E2E jobs executed zero steps and produced no logs; account-level Actions execution remains blocked. |
+
+## 2026-06-12 Certification Findings
+
+- GitHub draft PR #3 was created for the clean local-source branch.
+- GitHub Actions run 42 targeted exact SHA
+  `5f0e3086d900b54ddaf77e41f85461f39d1a218a`; frontend, backend, and E2E all failed
+  before executing any steps. Job step lists were empty and no logs existed.
+- Vercel created a protected exact-SHA preview in `READY` state:
+  `zeniapp-z6kyw8bbi-mauyaas-projects.vercel.app`.
+- Authenticated access proved the preview frontend artifact loads. Proxied `/api/health`,
+  `/api/ready`, and `/api/listings` requests each exceeded 90 seconds without a response.
+- Direct checks against `https://zeniapp-space.onrender.com/health`, `/ready`, and `/api/listings`
+  each timed out after 30 seconds. The deployed backend therefore fails availability
+  certification.
+- Certification exposed a startup-order defect: the HTTP listener waited for MongoDB connection,
+  preventing `/health` from responding while the database was unavailable. The current local
+  candidate fixes this by binding HTTP before database readiness, continuing background reconnect,
+  delaying database-dependent scheduled tasks until connection, and configuring Render to probe
+  `/health`.
+- A process-level regression test now proves liveness binds while the initial database connection
+  is unreachable.
 
 ## 2026-06-11 Local-Source Candidate Progress
 
@@ -42,8 +65,8 @@ Final Node 20.19.5 local validation evidence:
 | `npm run build` | Passed. |
 | `npm --prefix server run lint` | Passed. |
 | `npm --prefix server run build` | Passed. |
-| `npm --prefix server test` | Passed: 19 suites, 106 tests. |
-| `npx playwright test` | Passed: 13 tests. |
+| `npm --prefix server test` | Passed after startup fix: 20 suites, 107 tests. |
+| `npx playwright test` | Passed: 13 tests on prior SHA `5f0e3086`; rerun after the startup fix was blocked by the local execution approval quota. |
 | Root production dependency audit | Passed the high/critical gate; 1 moderate `uuid` advisory remains and requires a breaking upgrade. |
 | Backend production dependency audit | Passed the high/critical gate; 2 moderate `uuid`/`node-cron` advisories remain and require breaking upgrades. |
 
@@ -147,10 +170,10 @@ These controls are not evidence that the live site is fixed.
 
 ## CI, Build, and E2E State
 
-The repository CI workflow includes frontend, backend, and Playwright jobs. Local validation
-passed from the moved RC worktree. GitHub Actions CI did not execute code: attempts 1 and 2 failed
-before any job steps were scheduled because GitHub reported, "The job was not started because your
-account is locked due to a billing issue."
+The repository CI workflow includes frontend, backend, and Playwright jobs. GitHub Actions run 42
+on prior candidate SHA `5f0e3086d900b54ddaf77e41f85461f39d1a218a` failed all three jobs before
+any steps executed. The API returned empty job-step lists and no job logs, confirming an external
+Actions execution blocker rather than a code-level test failure.
 
 | Command | Current evidence |
 | --- | --- |
@@ -163,8 +186,8 @@ account is locked due to a billing issue."
 | `npm run build` | Passed. |
 | `npm --prefix server run lint` | Passed. |
 | `npm --prefix server run build` | Passed. |
-| `npm --prefix server test` | Passed: 19 suites, 106 tests. |
-| `npx playwright test` | Passed: 13 tests. |
+| `npm --prefix server test` | Passed after startup fix: 20 suites, 107 tests. |
+| `npx playwright test` | Passed: 13 tests on prior SHA; rerun after startup fix not executed because the local approval quota rejected browser/process launch. |
 | `npm audit --omit=dev --audit-level=high` | Passed high/critical gate; 1 moderate production advisory remains. |
 | `npm --prefix server audit --omit=dev --audit-level=high` | Passed high/critical gate; 2 moderate production advisories remain. |
 | `git diff --check` | Passed after final documentation edit and artifact cleanup. |
@@ -176,11 +199,14 @@ Local passes do not replace CI or staging certification.
 
 ### P0
 
-1. GitHub Actions CI is blocked by account billing lockout and has not certified the pushed
-   commit.
-2. The exact reviewed commit has not been deployed to staging or executed against
+1. GitHub Actions CI cannot execute jobs and has not certified the current candidate.
+2. The deployed Render backend is unavailable: direct and exact-preview proxy checks time out.
+   The local startup-order fix is not deployment evidence and must be staged before this blocker
+   can close.
+3. The exact reviewed commit has not been deployed to a complete frontend/backend staging
+   environment or executed against
    `STAGING_CERTIFICATION_PLAN.md`.
-3. Existing public KYC/verification URLs have not been inventoried in production, migrated to
+4. Existing public KYC/verification URLs have not been inventoried in production, migrated to
    private storage, and revoked or deleted at their providers. See
    `LEGACY_KYC_EXPOSURE_AUDIT.md`.
 

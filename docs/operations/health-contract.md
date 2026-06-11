@@ -31,6 +31,8 @@ When the database is unavailable it returns HTTP 503 with `"status": "degraded"`
 
 - Platform liveness probe: `/health`.
 - Platform readiness or traffic-admission probe: `/ready`.
+- The HTTP listener must bind before database connection completes so liveness remains available
+  while readiness reports degraded and database reconnect continues in the background.
 - Responses on these endpoints must be `application/json`, never provider wake-up HTML.
 - API responses routed through the frontend proxy must not be treated as successful when an
   upstream returns HTML. The browser client classifies this as upstream unavailable and displays

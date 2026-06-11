@@ -11,7 +11,8 @@ The local PC workspace remains the source of truth, but the dirty tree contained
 hardening, unsafe regressions, generated/runtime artifacts, and unrelated feature work. The clean
 candidate keeps the reviewed P0 hardening checkpoint at
 `357b3f8aabab54acb422c40fae1c4d2c99dcd652`, adds release hygiene for local backup/worktree
-exclusion, and rejects unsafe local deviations.
+exclusion, adds the certification-proven startup liveness fix, and rejects unsafe local
+deviations.
 
 ## P0-Safe Release Hardening Kept
 
@@ -82,6 +83,7 @@ from source control:
 - `server/tests/pay.test.ts`
 - `server/tests/payPortal.test.ts`
 - `server/tests/stepUpPolicy.test.ts`
+- `server/tests/startupHealth.test.ts`
 - `server/tests/verificationDocument.test.ts`
 - `src/context/AdminStepUpContext.tsx`
 - `src/context/AuthProvider.tsx`
